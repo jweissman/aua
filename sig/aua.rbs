@@ -1,0 +1,45 @@
+module Aua
+  VERSION: String
+  type environment = Hash[String, String]
+
+  class Token
+    attr_reader type: String
+    attr_reader value: String
+  end
+
+  class Lex
+    def tokens: (String) -> Array[Token]
+  end
+
+  module AST
+    class Node
+    end
+  end
+
+  class Parse
+    def initialize: (Array[Token]) -> void
+    def tree: () -> AST::Node
+  end
+
+  class VM
+    def evaluate: (AST::Node) -> Obj
+  end
+
+  class PrettyPrinter
+    def pretty: (Obj) -> String
+  end
+
+  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+  # 
+  # 
+  class Interpreter
+    def initialize: (environment) -> void
+
+    def lex: (String) -> Array[Token]
+    def parse: (Array[Token]) -> AST::Node
+    def evaluate: (AST::Node) -> Obj
+    def pretty: (Obj) -> String
+
+    def run: (String) -> String
+  end
+end
