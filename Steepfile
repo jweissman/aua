@@ -5,7 +5,6 @@
 target :lib do
   signature "sig"
   ignore_signature "sig/test"
-  #
   check "lib" # Directory name
 end
 #   check "path/to/source.rb"         # File name

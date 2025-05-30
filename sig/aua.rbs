@@ -1,45 +1,173 @@
 module Aua
   VERSION: String
-  type environment = Hash[String, String]
+  type environment = Hash[String, untyped]
+
 
   class Token
-    attr_reader type: String
-    attr_reader value: String
+    attr_reader type: Symbol
+    attr_reader value: untyped
+    def initialize: (type: Symbol, value: untyped) -> void
+    def eos?: () -> bool
   end
 
+  module Syntax
+    def t: (Symbol, untyped) -> Token
+         | (Symbol) -> Token
+  end
+
+  type char = String
+
   class Lex
-    def tokens: (String) -> Array[Token]
+    include Syntax
+    def initialize: (String) -> void
+    def tokens: () -> Array[Token]
+    def advance: () -> void
+    def current_line: () -> Integer
+    def current_column: () -> Integer
+    def current_char: () -> char
+    def identifier: () -> Token
+    def number_lit: () -> Token
+    def string: () -> Token
+    def lex: () -> void
+    def eof?: () -> bool
+    def recognize: () -> void
+    def update_position: () -> void
+    def update_line_and_column: () -> void
+    def unexpected_character_message: () -> String
+    @tokens: Array[Token]
   end
 
   module AST
     class Node
+      attr_reader type: Symbol
+      attr_reader value: untyped
+      def initialize: (type: Symbol, value: untyped) -> void
     end
   end
 
+  module Grammar
+    def s: (Symbol, *untyped) -> AST::Node
+  end
+  def self.s: (Symbol, *untyped) -> AST::Node
+
   class Parse
+    include Grammar
+    include Syntax
     def initialize: (Array[Token]) -> void
     def tree: () -> AST::Node
+    def consume: (Symbol) -> void
+    def next_token: () -> Token
+    def parse: () -> AST::Node
+    def parse_expression: () -> AST::Node
+    def parse_primary: () -> AST::Node
+    def parse_negation: () -> AST::Node
+    def parse_id: () -> AST::Node
+    def parse_number: () -> AST::Node
+    def parse_float: () -> AST::Node
+    def parse_bool: () -> AST::Node
+    def parse_str: () -> AST::Node
+    def unexpected_tokens?: () -> bool
+    def self.ast: (Array[Token]) -> AST::Node
+  end
+
+  class Obj
+    def klass: () -> Klass
+  end
+
+  class Klass < Obj
+    def initialize: (String, Obj) -> void
+    def klass: () -> Klass
+    def self.klass: () -> Klass
+    def self.obj: () -> Klass
+  end
+
+  class Nihil < Obj
+    def klass: () -> Klass
+    def name: () -> String
+  end
+
+  class Int < Obj
+    def initialize: (Integer) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    attr_reader value: Integer
+  end
+
+  class Float < Obj
+    def initialize: (Float) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    attr_reader value: Float
+  end
+
+  class Str < Obj
+    def initialize: (String) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    attr_reader value: String
+  end
+
+  class Bool < Obj
+    def initialize: (bool) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    attr_reader value: bool
+  end
+
+  class Statement
+    attr_reader type: Symbol
+    attr_reader value: untyped
+    def initialize: (type: Symbol, value: untyped) -> void
+  end
+
+  module Semantics
+    def self.inst: (Symbol, *untyped) -> Statement
+    MEMO : String
   end
 
   class VM
-    def evaluate: (AST::Node) -> Obj
+    extend Semantics
+    def initialize: (?environment) -> void
+    def recall_primary: (AST::Node) -> Array[Statement]
+    def translate_negation: (AST::Node) -> Array[Statement]
+    def translate: (AST::Node) -> Array[Statement]
+    def evaluate: (AST::Node) -> untyped
+    def evaluate_one: (Statement) -> untyped
   end
 
   class PrettyPrinter
     def pretty: (Obj) -> String
   end
 
-  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
-  # 
-  # 
   class Interpreter
-    def initialize: (environment) -> void
-
+    def initialize: (?environment) -> void
     def lex: (String) -> Array[Token]
     def parse: (Array[Token]) -> AST::Node
-    def evaluate: (AST::Node) -> Obj
-    def pretty: (Obj) -> String
-
-    def run: (String) -> String
+    def vm: () -> VM
+    def run: (String) -> untyped
   end
+
+  class Error < StandardError
+  end
+
+  module Text
+    class Cursor
+      attr_reader line: Integer
+      attr_reader column: Integer
+
+      def initialize: (Integer, Integer) -> void
+      def advance: () -> void
+      def newline: () -> void
+    end
+    def self.indicate: (String, Cursor) -> Array[String]
+  end
+
+  # Constants and helpers
+  EOS: Token
+  NOTHING: AST::Node
+  LET: untyped
+  RECALL: untyped
+
+  def self.run: (String) -> untyped
 end
+

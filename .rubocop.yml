@@ -1,9 +1,18 @@
 AllCops:
   TargetRubyVersion: 3.4
   SuggestExtensions: false
+  NewCops: enable
+  Exclude:
+    - 'spec/**/*'
+
+Style/GlobalStdStream:
+  Enabled: true
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+
+Style/DataInheritance:
+  Enabled: false
