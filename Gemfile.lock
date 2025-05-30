@@ -71,6 +71,8 @@ GEM
     rdoc (6.14.0)
       erb
       psych (>= 4.0.0)
+    readline (0.0.4)
+      reline
     regexp_parser (2.10.0)
     reline (0.6.1)
       io-console (~> 0.5)
@@ -140,6 +142,7 @@ DEPENDENCIES
   aua!
   irb
   rake (~> 13.0)
+  readline (~> 0.0.4)
   rspec (~> 3.0)
   rubocop (~> 1.21)
   rufo (~> 0.18.1)

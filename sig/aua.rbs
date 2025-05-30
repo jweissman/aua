@@ -2,6 +2,31 @@ module Aua
   VERSION: String
   type environment = Hash[String, untyped]
 
+  module Text
+    class Cursor
+      attr_reader line: Integer
+      attr_reader column: Integer
+
+      def initialize: (Integer, Integer) -> void
+      def advance: () -> void
+      def newline: () -> void
+    end
+
+    class Document
+      attr_reader text: String
+      attr_reader cursor: Cursor
+      attr_reader position: Integer
+
+      def initialize: (String) -> void
+      def advance: () -> void
+      def peek: () -> String?
+      def slice: (Integer, Integer) -> String?
+      def indicate: () -> Array[String]
+      def finished?: () -> bool
+    end
+
+    def self.indicate: (String, Cursor) -> Array[String]
+  end
 
   class Token
     attr_reader type: Symbol
@@ -35,6 +60,18 @@ module Aua
     def update_line_and_column: () -> void
     def unexpected_character_message: () -> String
     @tokens: Array[Token]
+    private
+    def handle_whitespace: () -> void
+    def handle_comment: () -> void
+    def handle_string: () -> void
+    def handle_identifier: () -> void
+    def handle_number: () -> void
+    def handle_symbol: () -> void
+    def handle_minus: () -> void
+    def handle_lparen: () -> void
+    def handle_rparen: () -> void
+    def handle_unexpected: () -> void
+    def number_token_from_string: (String, bool) -> Token
   end
 
   module AST
@@ -46,27 +83,37 @@ module Aua
   end
 
   module Grammar
+    attr_reader parse: Parse
     def s: (Symbol, *untyped) -> AST::Node
+    class Primitives
+      include Grammar
+      def initialize: (Parse) -> void
+      def parse_negation: () -> AST::Node
+      def parse_id: () -> AST::Node
+      def parse_number: () -> AST::Node
+      def parse_nihil: () -> AST::Node
+      def parse_float: () -> AST::Node
+      def parse_bool: () -> AST::Node
+      def parse_str: () -> AST::Node
+      def parse_parens: () -> AST::Node
+    end
   end
   def self.s: (Symbol, *untyped) -> AST::Node
+
 
   class Parse
     include Grammar
     include Syntax
+    attr_reader current_token: Token
     def initialize: (Array[Token]) -> void
     def tree: () -> AST::Node
     def consume: (Symbol) -> void
-    def next_token: () -> Token
+    def next_token: () -> Token?
     def parse: () -> AST::Node
     def parse_expression: () -> AST::Node
     def parse_primary: () -> AST::Node
-    def parse_negation: () -> AST::Node
-    def parse_id: () -> AST::Node
-    def parse_number: () -> AST::Node
-    def parse_float: () -> AST::Node
-    def parse_bool: () -> AST::Node
-    def parse_str: () -> AST::Node
     def unexpected_tokens?: () -> bool
+    def unexpected_token: () -> untyped
     def self.ast: (Array[Token]) -> AST::Node
   end
 
@@ -84,6 +131,7 @@ module Aua
   class Nihil < Obj
     def klass: () -> Klass
     def name: () -> String
+    def value: () -> nil
   end
 
   class Int < Obj
@@ -150,17 +198,6 @@ module Aua
   class Error < StandardError
   end
 
-  module Text
-    class Cursor
-      attr_reader line: Integer
-      attr_reader column: Integer
-
-      def initialize: (Integer, Integer) -> void
-      def advance: () -> void
-      def newline: () -> void
-    end
-    def self.indicate: (String, Cursor) -> Array[String]
-  end
 
   # Constants and helpers
   EOS: Token

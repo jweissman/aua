@@ -46,4 +46,30 @@ RSpec.describe Aua do
     expect(result).to be_a(Aua::Str)
     expect(result.value).to eq("hello")
   end
+
+  it "recognizes nil literal" do
+    result = Aua.run("nihil")
+    expect(result).to be_a(Aua::Nihil)
+    expect(result.value).to be_nil
+  end
+
+  it "recognizes boolean literal" do
+    result = Aua.run("true")
+    expect(result).to be_a(Aua::Bool)
+    expect(result.value).to eq(true)
+
+    result = Aua.run("false")
+    expect(result).to be_a(Aua::Bool)
+    expect(result.value).to eq(false)
+  end
+
+  it "raises an error for parsing problems" do
+    expect { Aua.run("123abc") }.to raise_error(Aua::Error)
+  end
+
+  it "recognizes parenthesized expressions" do
+    result = Aua.run("(123)")
+    expect(result).to be_a(Aua::Int)
+    expect(result.value).to eq(123)
+  end
 end

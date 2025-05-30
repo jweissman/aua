@@ -36,6 +36,32 @@ module Aua
       def newline = @line += 1
     end
 
+    # Represents a document containing source code, with methods to navigate and manipulate it.
+    class Document
+      attr_reader :cursor, :position
+
+      def initialize(text)
+        @text = text
+        @cursor = Cursor.new(1, 1)
+        @position = 0
+      end
+
+      def peek = @text.chars.fetch(@position, nil)
+      def finished? = @position >= @text.length
+      def slice(start, length) = @text.slice(start, length)
+
+      # Advances the lexer by one character, updating position and line/column counters.
+      def advance
+        @position += 1
+        @cursor.advance
+        return unless peek == "\n"
+
+        @cursor.newline
+      end
+
+      def indicate = Text.indicate(@text, @cursor)
+    end
+
     # Indicates the position of a character in the code by printing the line
     # and an indicator pointing to the character's position.
     #
@@ -43,8 +69,8 @@ module Aua
     # @param column [Integer] The column number to point to (1-based).
     # @param line [Integer, nil] The line number to point to (1-based), or nil for all lines.
     # @return [Array<String>] The lines with an indicator.
-    def self.indicate(code, cursor)
-      lines = code.lines
+    def self.indicate(text, cursor)
+      lines = text.lines
       line = cursor.line
       column = cursor.column
       lines.each_with_index.map do |line_content, index|
@@ -73,38 +99,13 @@ module Aua
     # @see Aua::Parse for parsing functionality
     # @see Aua::VM for virtual machine execution
     def initialize(code)
-      @code = code
-      @cursor = Text::Cursor.new(0, 1)
-      @position = 0
-      @length = code.length
+      @doc = Text::Document.new(code)
       @tokens = []
-      @chars = @code.chars
     end
 
-    def current_line   = @cursor.line
-    def current_column = @cursor.column
-    def current_char   = @chars.fetch(@position, nil)
-
-    # Advances the lexer by one character, updating position and line/column counters.
-    def advance
-      update_position
-      update_line_and_column
-      puts " - Advanced to position #{@position} (#{current_char.inspect}) " \
-           "at line #{current_line}, column #{current_column}"
-    end
-
-    private
-
-    def update_position
-      @position += 1
-      @cursor.advance
-    end
-
-    def update_line_and_column
-      return unless current_char == "\n"
-
-      @cursor.newline
-    end
+    def current_line   = @doc.cursor.line
+    def current_column = @doc.cursor.column
+    def current_char   = @doc.peek
 
     # Returns the array of tokens generated from the source code.
     def tokens
@@ -114,12 +115,13 @@ module Aua
 
     # Lexes an identifier or boolean literal.
     def identifier
-      start_pos = @position #  - 1
+      start_pos = @doc.position #  - 1
       advance while current_char&.match?(/[a-zA-Z_]/)
-      value = @code[start_pos...@position]
+      value = @doc.slice(start_pos, @doc.position - start_pos)
       case value
       when "true" then t(:bool, true)
       when "false" then t(:bool, false)
+      when "nihil" then t(:nihil, true)
       else
         t(:id, value)
       end
@@ -127,18 +129,18 @@ module Aua
 
     # Lexes an integer or floating-point literal.
     def number_lit
-      start_pos = @position
+      start_pos = @doc.position
       has_dot = false
       while current_char&.match?(/\d|\./)
         has_dot = true if current_char == "."
         advance
       end
-      number_str = @code[(start_pos)..@position]
-      if has_dot
-        t(:float, number_str.to_f)
-      else
-        t(:number, number_str.to_i)
-      end
+      number_str = @doc.slice(start_pos, @doc.position - start_pos)
+      number_token_from_string(number_str, has_dot)
+    end
+
+    def number_token_from_string(str, has_dot)
+      has_dot ? t(:float, str.to_f) : t(:number, str.to_i)
     end
 
     # Lexes a string literal, accumulating characters between quotes.
@@ -153,25 +155,22 @@ module Aua
       t(:str, chars.join)
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
     def recognize
-      puts "Recognizing token at position #{@position} (#{current_char.inspect}) " \
-           "at line #{current_line}, column #{current_column}"
       case current_char
-      when /\s/
-        advance
-      when /[a-zA-Z]/
-        @tokens << identifier
-      when '"'
-        @tokens << string
-      when "-"
-        advance
-        @tokens << t(:minus)
-      when /\d/
-        @tokens << number_lit
-      else
-        raise Error, unexpected_character_message
+      when /\s/ then handle_whitespace
+      when /\d/ then handle_number
+      when /[a-zA-Z_]/ then handle_identifier
+      when '"' then handle_string
+      when "-" then handle_minus
+      when "(" then handle_lparen
+      when ")" then handle_rparen
+      else handle_unexpected
       end
     end
+    # rubocop:enable Metrics/CyclomaticComplexity
+
+    def advance = @doc.advance
 
     # Main lexing loop: emits tokens for the input code.
     def lex
@@ -180,18 +179,42 @@ module Aua
     end
 
     def eof?
-      @position >= @length && current_char.nil?
+      @doc.peek.nil? || @doc.finished?
     end
 
     def unexpected_character_message
       <<~ERROR
         Unexpected character '#{current_char.inspect}' at line #{current_line}, column #{current_column}
 
-        #{Text.indicate(@code, @cursor)}
+        #{@doc.indicate}
 
         Please check your code for syntax errors.
       ERROR
     end
+
+    private
+
+    def handle_whitespace = advance
+    def handle_identifier = @tokens << identifier
+    def handle_string = @tokens << string
+
+    def handle_minus
+      advance
+      @tokens << t(:minus)
+    end
+
+    def handle_lparen
+      advance
+      @tokens << t(:lparen)
+    end
+
+    def handle_rparen
+      advance
+      @tokens << t(:rparen)
+    end
+
+    def handle_number = @tokens << number_lit
+    def handle_unexpected = raise(Error, unexpected_character_message)
   end
 
   # The AST (Abstract Syntax Tree) node definitions for Aua.
@@ -209,6 +232,70 @@ module Aua
                           end
       AST::Node.new(type:, value: normalized_values)
     end
+
+    # A class for parsing primitive values in Aua.
+    class Primitives
+      include Grammar
+
+      def initialize(parse)
+        @parse = parse
+      end
+
+      def parse_id
+        identifier = @parse.current_token.value
+        @parse.consume(:id)
+        s(:id, identifier)
+      end
+
+      def parse_number
+        number = @parse.current_token.value
+        @parse.consume(:number)
+        s(:int, number)
+      end
+
+      def parse_float
+        float = @parse.current_token.value
+        @parse.consume(:float)
+        s(:float, float)
+      end
+
+      def parse_bool
+        bool = @parse.current_token.value
+        @parse.consume(:bool)
+        s(:bool, bool)
+      end
+
+      def parse_str
+        str = @parse.current_token.value
+        @parse.consume(:str)
+        s(:str, str)
+      end
+
+      def parse_nihil
+        @parse.consume(:nihil)
+        s(:nihil, nil)
+      end
+
+      def parse_parens
+        @parse.consume(:lparen)
+        expr = @parse.parse_expression
+        @parse.consume(:rparen)
+        expr
+      end
+
+      # Parses a unary minus expression.
+      def parse_negation
+        @parse.consume(:minus)
+        raise Error, "Unexpected end of input after unary minus" if @parse.current_token.type == :eos
+
+        unless %i[number float bool str id minus].include?(@parse.current_token.type)
+          raise Error, "Unary minus must be followed by a literal or identifier, got #{@current_token.type}"
+        end
+
+        operand = @parse.parse_primary
+        s(:negate, operand)
+      end
+    end
   end
 
   extend Grammar
@@ -217,6 +304,8 @@ module Aua
   # A parser for the Aua language that builds an abstract syntax tree (AST).
   # Consumes tokens and produces an AST.
   class Parse
+    attr_reader :current_token
+
     include Grammar
     include Syntax
 
@@ -225,7 +314,6 @@ module Aua
       @current_token_index = 0
       @current_token = @tokens[@current_token_index]
       @length = @tokens.length
-      # puts "Parsing tokens: #{@tokens.inspect}"
     end
 
     def consume(expected_type)
@@ -261,13 +349,6 @@ module Aua
 
       raise(Error, "Unexpected tokens after parsing: #{@current_token.inspect}") if unexpected_tokens?
 
-      # unless @length == @current_token_index
-      #   remaining_tokens = @tokens[@current_token_index..].reject(&:eos?)
-      #   if remaining_tokens.any?
-      #     raise Error, "Unexpected tokens after parsing: #{remaining_tokens.map(&:inspect).join(", ")}"
-      #   end
-      # end
-
       ast
     end
 
@@ -278,61 +359,27 @@ module Aua
     def parse = parse_expression
     def parse_expression = parse_primary
 
-    # Parses a unary minus expression.
-    def parse_negation
-      consume(:minus)
-      raise Error, "Unexpected end of input after unary minus" if @current_token.type == :eos
-
-      unless %i[number float bool str id minus].include?(@current_token.type)
-        raise Error, "Unary minus must be followed by a literal or identifier, got #{@current_token.type}"
-      end
-
-      operand = parse_primary
-      s(:negate, operand)
-    end
-
-    def parse_id
-      identifier = @current_token.value
-      consume(:id)
-      s(:id, identifier)
-    end
-
-    def parse_number
-      number = @current_token.value
-      consume(:number)
-      s(:int, number)
-    end
-
-    def parse_float
-      float = @current_token.value
-      consume(:float)
-      s(:float, float)
-    end
-
-    def parse_bool
-      bool = @current_token.value
-      consume(:bool)
-      s(:bool, bool)
-    end
-
-    def parse_str
-      str = @current_token.value
-      consume(:str)
-      s(:str, str)
-    end
+    PRIMARY_MAP = {
+      lparen: :parse_parens,
+      minus: :parse_negation,
+      id: :parse_id,
+      number: :parse_number,
+      float: :parse_float,
+      bool: :parse_bool,
+      str: :parse_str,
+      nihil: :parse_nihil
+    }.freeze
 
     # Parses a primary expression (literal, identifier, or unary minus).
     def parse_primary
-      case @current_token.type
-      when :minus then parse_negation
-      when :id then parse_id
-      when :number then parse_number
-      when :float then parse_float
-      when :bool then parse_bool
-      when :str then parse_str
-      else
-        raise Error, "Unexpected token in primary expression: #{@current_token.type}"
-      end
+      primitives = Primitives.new(self)
+      return primitives.send PRIMARY_MAP[@current_token.type] if PRIMARY_MAP.key?(@current_token.type)
+
+      raise Error, "Unexpected token type: #{@current_token.type}"
+    end
+
+    def unexpected_token
+      raise Error, "Unexpected token in primary expression: #{@current_token.type}"
     end
 
     def self.ast(...) = new(...).tree
@@ -363,6 +410,7 @@ module Aua
     end
 
     def name = "nothing"
+    def value = nil
   end
 
   # Integer value in Aua.
@@ -440,26 +488,24 @@ module Aua
     end
 
     def recall_primary(node)
-      case node.type
-      when :int then [RECALL[Int.new(node.value)]]
-      when :float then [RECALL[Float.new(node.value)]]
-      when :bool then [RECALL[Bool.new(node.value)]]
-      when :str then [RECALL[Str.new(node.value)]]
-      else
-        puts "Unknown primary node type: #{node.type.inspect}"
-        [RECALL[Nihil.new]]
-      end
+      recollect = case node.type
+                  when :int then Int.new(node.value)
+                  when :float then Float.new(node.value)
+                  when :bool then Bool.new(node.value)
+                  when :str then Str.new(node.value)
+                  else
+                    puts "Unknown primary node type: #{node.type.inspect}"
+                    Nihil.new
+                  end
+      [RECALL[recollect]]
     end
 
     def translate_negation(node)
-      operand = translate(node.value).last
-      # unless operand.is_a?(Statement) && operand.value.is_a?(Array)
-      #   raise Error, "Negation only supported for Int and Float"
-      # end
+      operand = node.value
 
-      negated = case operand.value.last
-                when Int then Int.new(-operand.value.last.value)
-                when Float then Float.new(-operand.value.last.value)
+      negated = case operand.type
+                when :int then Int.new(-operand.value)
+                when :float then Float.new(-operand.value)
                 else
                   raise Error, "Negation only supported for Int and Float"
                 end
@@ -468,6 +514,7 @@ module Aua
 
     def translate(ast)
       case ast.type
+      when :nihil then [RECALL[Nihil.new]]
       when :id then [RECALL[@env[ast.value] || Nihil.new]]
       when :int, :float, :bool, :str then recall_primary(ast)
       when :negate then translate_negation(ast)
@@ -539,7 +586,6 @@ module Aua
       rescue Aua::Error => e
         puts "Error during processing: #{e.message}"
         # would be nice but we'd have to thread the position through the pipeline!
-        # puts Text.indicate(code, e.message.index(e.message.split.last))
         raise e
       end
     end
@@ -556,7 +602,6 @@ module Aua
     puts "Aua interpreter error: #{e.message}"
     puts e.backtrace&.join("\n")
     # would be nice but we'd have to thread the position through the pipeline!
-    # puts Text.indicate(code, e.message.index(e.message.split.last))
     raise e
   end
 end
