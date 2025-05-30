@@ -289,7 +289,7 @@ module Aua
         raise Error, "Unexpected end of input after unary minus" if @parse.current_token.type == :eos
 
         unless %i[number float bool str id minus].include?(@parse.current_token.type)
-          raise Error, "Unary minus must be followed by a literal or identifier, got #{@current_token.type}"
+          raise Error, "Unary minus must be followed by a literal or identifier, got #{@parse.current_token.type}"
         end
 
         operand = @parse.parse_primary
@@ -341,13 +341,8 @@ module Aua
     end
 
     def tree
-      ast = begin
-        parse
-      rescue Error
-        NOTHING
-      end
-
-      raise(Error, "Unexpected tokens after parsing: #{@current_token.inspect}") if unexpected_tokens?
+      ast = parse
+      raise(Error, "Unexpected tokens after parsing: \\#{@current_token.inspect}") if unexpected_tokens?
 
       ast
     end
@@ -372,6 +367,11 @@ module Aua
 
     # Parses a primary expression (literal, identifier, or unary minus).
     def parse_primary
+      if @current_token.nil?
+        puts "!!! No current token to parse"
+        raise Aua::Error, "No current token to parse"
+      end
+
       primitives = Primitives.new(self)
       return primitives.send PRIMARY_MAP[@current_token.type] if PRIMARY_MAP.key?(@current_token.type)
 
@@ -585,7 +585,7 @@ module Aua
         out
       rescue Aua::Error => e
         puts "Error during processing: #{e.message}"
-        # would be nice but we'd have to thread the position through the pipeline!
+        # would be nice to trace errors here somehow but we'd have to thread the position through the pipeline!
         raise e
       end
     end

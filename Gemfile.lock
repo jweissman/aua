@@ -103,6 +103,9 @@ GEM
     rubocop-ast (1.44.1)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
+    rubocop-rubycw (0.2.2)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.72, >= 1.72.1)
     ruby-progressbar (1.13.0)
     rufo (0.18.1)
     securerandom (0.4.1)
@@ -145,6 +148,7 @@ DEPENDENCIES
   readline (~> 0.0.4)
   rspec (~> 3.0)
   rubocop (~> 1.21)
+  rubocop-rubycw
   rufo (~> 0.18.1)
   steep (~> 1.10)
 
