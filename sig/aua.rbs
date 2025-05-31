@@ -2,6 +2,8 @@ module Aua
   VERSION: String
   type environment = Hash[String, untyped]
 
+  type char = String
+
   module Text
     class Cursor
       attr_reader line: Integer
@@ -19,7 +21,9 @@ module Aua
 
       def initialize: (String) -> void
       def advance: () -> void
-      def peek: () -> String?
+      def current: () -> char?
+      def peek: () -> char?
+
       def slice: (Integer, Integer) -> String?
       def indicate: () -> Array[String]
       def finished?: () -> bool
@@ -28,28 +32,43 @@ module Aua
     def self.indicate: (String, Cursor) -> Array[String]
   end
 
-  class Token
-    attr_reader type: Symbol
-    attr_reader value: untyped
-    def initialize: (type: Symbol, value: untyped) -> void
-    def eos?: () -> bool
-  end
-
   module Syntax
     def t: (Symbol, untyped) -> Token
          | (Symbol) -> Token
+
+    class Token
+      attr_reader type: Symbol
+      attr_reader value: untyped
+      def initialize: (type: Symbol, value: untyped) -> void
+    end
+
+    ONE_CHAR_TOKEN_NAMES: Hash[String, Symbol]
+    TWO_CHAR_TOKEN_NAMES: Hash[String, Symbol]
   end
 
-  type char = String
+  type token = Syntax::Token
+  type matchy = Regexp | String
 
   class Lex
     include Syntax
     MAX_TOKENS: Integer
-    TOKEN_HANDLERS: Hash[untyped, Symbol]
-    @tokens: Array[Token]
-
+    TOKEN_HANDLERS: Hash[matchy, Symbol]
+    TWO_CHAR_TOKEN_HANDLERS: Hash[matchy, Symbol]
+    class Lens
+      def initialize: (Text::Document) -> void
+      def current_pos: () -> Integer
+      def current_line: () -> Integer
+      def current_column: () -> Integer
+      def current_char: () -> char
+      def describe: () -> String
+      def describe_character: (char) -> String
+      def identify: (message: String, hint: String) -> String
+    end
+    @tokens: Array[token]
+    @doc: Text::Document
+    @lens: Lens
     def initialize: (String) -> void
-    def tokens: () -> Array[Token]
+    def tokens: () -> Array[token]
     def advance: () -> void
     def current_line: () -> Integer
     def current_column: () -> Integer
@@ -58,38 +77,47 @@ module Aua
     def eof?: () -> bool
     def unexpected_character_message: () -> String
     def lex: () -> void
-    def accept: () -> void
+    def accept: () -> untyped
+    def accept_one: (char?) -> untyped
+    def accept_two: (char?, char?) -> untyped
     def current_pos: () -> Integer
     def slice_from: (Integer) -> String?
-
-    def each_token: () { (Token) -> void } -> void
-    def accept_token: () -> Token?
-
-    def tokenize: () { (Token) -> void } -> void
+    def each_token: () { (token) -> void } -> void
+    def accept_token: () -> token?
+    def tokenize: () { (token) -> void } -> void
 
     private
 
+    def handle_plus: () -> token?
+    def handle_star: () -> token?
+    def handle_slash: () -> token?
+    def handle_pow: () -> token?
+    def handle_lparen: () -> token?
+    def handle_rparen: () -> token?
+    def handle_number: () -> token?
+    def handle_equals: () -> token?
+    def handle_identifier: () -> token?
+    def handle_string: () -> token?
+    def handle_minus: () -> token?
     def handle_whitespace: () -> void
-    def handle_string: () -> void
-    def handle_identifier: () -> void
-    def handle_number: () -> void
-    def handle_minus: () -> void
-    def handle_lparen: () -> void
-    def handle_rparen: () -> void
-    def handle_equals: () -> void
     def handle_unexpected: () -> void
 
     class Recognizer
+      KEYWORDS : Set[Symbol]
       def initialize: (Lex) -> void
-      def identifier: () -> Token
-      def number_lit: () -> Token
-      def string: () -> Token
-      def number_token_from_string: (String, bool) -> Token
+      def identifier: () -> token
+      def number_lit: () -> token
+      def string: () -> token
+      def number_token_from_string: (String, bool) -> token
       def current_char: () -> char
       def advance: () -> void
-      def t: (Symbol, untyped) -> Token
-           | (Symbol) -> Token
+      def t: (Symbol, untyped) -> token
+           | (Symbol) -> token
       def eof?: () -> bool
+      def current_pos: () -> Integer
+      private
+      def invalid_token_message: (String) -> String
+      def check_number_followed_by_identifier: () -> void
     end
   end
 
@@ -109,12 +137,14 @@ module Aua
       def initialize: (Parse) -> void
       def parse_negation: () -> AST::Node
       def parse_id: () -> AST::Node
-      def parse_number: () -> AST::Node
+      def parse_int: () -> AST::Node
       def parse_nihil: () -> AST::Node
       def parse_float: () -> AST::Node
       def parse_bool: () -> AST::Node
       def parse_str: () -> AST::Node
       def parse_parens: () -> AST::Node
+      private
+      def parse_one: (Symbol) -> AST::Node
     end
   end
   def self.s: (Symbol, *untyped) -> AST::Node
@@ -124,28 +154,41 @@ module Aua
     include Grammar
     include Syntax
     PRIMARY_MAP: Hash[Symbol, Symbol]
+    BINARY_PRECEDENCE: Hash[Symbol, Integer]
 
-    attr_reader current_token: Token
-    def initialize: (Array[Token]) -> void
+    attr_reader current_token: token
+    def initialize: (Enumerator[token]) -> void
     def tree: () -> AST::Node
     def consume: (Symbol) -> void
-    def next_token: () -> Token?
-    def peek_token: () -> Token?
+               | (Symbol, untyped?) -> void
+    def next_token: () -> token?
+    def peek_token: () -> token?
     def parse: () -> AST::Node
     def parse_expression: () -> AST::Node
+    def parse_assignment: () -> AST::Node?
+    def parse_binop: (?Integer) -> AST::Node
     def parse_primary: () -> AST::Node
+    def parse_conditional: () -> AST::Node?
+    def parse_condition_body: () -> [AST::Node, AST::Node?]
     def unexpected_tokens?: () -> bool
     def unexpected_token: () -> untyped
-    def self.ast: (Array[Token]) -> AST::Node
+    def self.ast: (Array[token]) -> AST::Node
+    def binary_op?: (Symbol) -> bool
+    def advance: () -> void
+
+    def precedent?: (Symbol, Integer) -> bool
+    def consume_binary_op: (AST::Node) -> AST::Node
   end
 
   class Obj
     def klass: () -> Klass
+    def introspect: () -> String
   end
 
   class Klass < Obj
     def initialize: (String, Obj) -> void
     def klass: () -> Klass
+    def introspect: () -> String
     def self.klass: () -> Klass
     def self.obj: () -> Klass
   end
@@ -154,26 +197,30 @@ module Aua
     def klass: () -> Klass
     def name: () -> String
     def value: () -> nil
+    def introspect: () -> String
   end
 
   class Int < Obj
     def initialize: (Integer) -> void
     def klass: () -> Klass
     def name: () -> String
+    def introspect: () -> String
     attr_reader value: Integer
   end
 
   class Float < Obj
-    def initialize: (Float) -> void
+    def initialize: (::Float) -> void
     def klass: () -> Klass
     def name: () -> String
-    attr_reader value: Float
+    def introspect: () -> String
+    attr_reader value: ::Float
   end
 
   class Str < Obj
     def initialize: (String) -> void
     def klass: () -> Klass
     def name: () -> String
+    def introspect: () -> String
     attr_reader value: String
   end
 
@@ -181,6 +228,7 @@ module Aua
     def initialize: (bool) -> void
     def klass: () -> Klass
     def name: () -> String
+    def introspect: () -> String
     attr_reader value: bool
   end
 
@@ -191,20 +239,48 @@ module Aua
   end
 
   module Semantics
+    MEMO: String
     def self.inst: (Symbol, *untyped) -> Statement
-    MEMO : String
   end
+
+  type primary = Int | Float | Str | Bool | Nihil
+  type statement = Array[Statement] | Statement | primary
 
   class VM
     extend Semantics
     def initialize: (?environment) -> void
-    def recall_primary: (AST::Node) -> Array[Statement]
-    def translate_negation: (AST::Node) -> Array[Statement]
-    def translate: (AST::Node) -> Array[Statement]
+    private
+    def reduce: (AST::Node) -> Array[Statement]
     def evaluate: (AST::Node) -> untyped
     def evaluate_one: (Statement) -> untyped
-    def translate_assignment: (AST::Node) -> Array[Statement]
-    TRANSLATIONS: Hash[Symbol, Array[Statement]]
+    def eval_id: (untyped) -> untyped
+    def eval_let: (untyped, untyped) -> untyped
+    def eval_if: (untyped, untyped, untyped?) -> untyped
+    class Translator
+      def initialize: (VM) -> void
+      def environment: () -> environment
+      def reify_primary: (AST::Node) -> primary
+      def translate_negation: (AST::Node) -> Array[Statement]
+      def translate: (AST::Node) -> statement
+      def translate_assignment: (AST::Node) -> Array[Statement]
+      def translate_binop: (AST::Node) -> statement
+      def translate_if: (AST::Node) -> statement
+      module Binop
+        def self.binary_operation: (Symbol, statement, statement) -> statement
+        def self.binop_plus: (statement, statement) -> statement
+        def self.binop_minus: (statement, statement) -> statement
+        def self.binop_slash: (statement, statement) -> statement
+        def self.float_slash: (statement, statement) -> statement
+        def self.int_slash: (Int, Int) -> statement
+        def self.int_plus: (Int, Int) -> statement
+        def self.float_plus: (Float, Float) -> statement
+        def self.str_plus: (Str, Str) -> statement
+        def self.raise_binop_type_error: (Symbol, statement, statement) -> statement
+        def self.binop_star: (statement, statement) -> statement
+        def self.binop_pow: (statement, statement) -> statement
+      end
+      TRANSLATIONS: Hash[Symbol, Array[Statement]]
+    end
   end
 
   class PrettyPrinter
@@ -213,8 +289,8 @@ module Aua
 
   class Interpreter
     def initialize: (?environment) -> void
-    def lex: (String) -> Array[Token]
-    def parse: (Array[Token]) -> AST::Node
+    def lex: (String) -> Enumerator[token]
+    def parse: (Enumerator[token]) -> AST::Node
     def vm: () -> VM
     def run: (String) -> untyped
   end
@@ -224,11 +300,28 @@ module Aua
 
 
   # Constants and helpers
-  EOS: Token
+  EOS: token
   NOTHING: AST::Node
   LET: untyped
   RECALL: untyped
+  LOCAL_VARIABLE_GET: untyped
+  SEND: untyped
 
   def self.run: (String) -> untyped
+end
+
+module Binop
+  def self.binary_operation: (Symbol, untyped, untyped) -> untyped
+  def self.binop_plus: (untyped, untyped) -> untyped
+  def self.int_plus: (untyped, untyped) -> untyped
+  def self.float_plus: (untyped, untyped) -> untyped
+  def self.str_plus: (untyped, untyped) -> untyped
+  def self.raise_binop_type_error: (Symbol, untyped, untyped) -> untyped
+  def self.binop_minus: (untyped, untyped) -> untyped
+  def self.binop_star: (untyped, untyped) -> untyped
+  def self.binop_slash: (untyped, untyped) -> untyped
+  def self.int_slash: (untyped, untyped) -> untyped
+  def self.float_slash: (untyped, untyped) -> untyped
+  def self.binop_pow: (untyped, untyped) -> untyped
 end
 

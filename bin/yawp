@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 require "bundler/setup"
 require "aua"
-while true
+loop do
   print "> "
   input = gets
   break if input.nil? || input.strip.empty?

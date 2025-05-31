@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Aua
   # Provides utility methods for text processing, such as indicating a position in code.
   module Text
@@ -24,7 +26,8 @@ module Aua
         @position = 0
       end
 
-      def peek = @text.chars.fetch(@position, nil)
+      def current = @text.chars.fetch(@position, nil)
+      def peek = @text.chars.fetch(@position + 1, nil)
       def finished? = @position >= @text.length
       def slice(start, length) = @text.slice(start, length)
 

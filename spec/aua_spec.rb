@@ -100,15 +100,22 @@ RSpec.describe Aua do
       expect { Aua.run("") }.to raise_error(Aua::Error)
     end
 
-    it "recognizes identifiers" do
-      result = Aua.run("foo")
-      expect(result).to be_a(Aua::Obj) # or Aua::Nihil if not bound
+    it "raises on unknown identifiers" do
+      expect { Aua.run("foo") }.to raise_error(Aua::Error, /Undefined variable/)
     end
 
     it "recognizes string with spaces" do
       result = Aua.run('"hello world"')
       expect(result).to be_a(Aua::Str)
       expect(result.value).to eq("hello world")
+    end
+
+    it "raises on unbalanced parentheses" do
+      expect { Aua.run("(1 + 2") }.to raise_error(Aua::Error, /Unmatched opening parenthesis/)
+    end
+
+    it "raises on unterminated string" do
+      expect { Aua.run('"unterminated string') }.to raise_error(Aua::Error, /Unterminated string literal/)
     end
   end
 
@@ -128,68 +135,124 @@ RSpec.describe Aua do
   end
 
   describe "Binary Operations" do
-    it "adds two integers" do
-      result = Aua.run("1 + 2")
-      expect(result).to be_a(Aua::Int)
-      expect(result.value).to eq(3)
+    describe "Basic Arithmetic" do
+      it "adds two integers" do
+        result = Aua.run("1 + 2")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(3)
+      end
+
+      it "subtracts two integers" do
+        result = Aua.run("5 - 3")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(2)
+      end
+
+      it "multiplies two integers" do
+        result = Aua.run("4 * 2")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(8)
+      end
+
+      it "divides two integers" do
+        result = Aua.run("8 / 2")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(4)
+      end
+
+      it "raises error for division by zero" do
+        expect { Aua.run("1 / 0") }.to raise_error(Aua::Error)
+      end
+
+      it "adds two floats" do
+        result = Aua.run("1.5 + 2.5")
+        expect(result).to be_a(Aua::Float)
+        expect(result.value).to eq(4.0)
+      end
+
+      it "subtracts two floats" do
+        result = Aua.run("5.5 - 3.5")
+        expect(result).to be_a(Aua::Float)
+        expect(result.value).to eq(2.0)
+      end
+
+      it "multiplies two floats" do
+        result = Aua.run("4.0 * 2.0")
+        expect(result).to be_a(Aua::Float)
+        expect(result.value).to eq(8.0)
+      end
+
+      it "divides two floats" do
+        result = Aua.run("8.0 / 2.0")
+        expect(result).to be_a(Aua::Float)
+        expect(result.value).to eq(4.0)
+      end
+
+      it "concatenates two strings" do
+        result = Aua.run('"hello" + " world"')
+        expect(result).to be_a(Aua::Str)
+        expect(result.value).to eq("hello world")
+      end
+
+      it "raises error for unsupported operations on different types" do
+        expect { Aua.run("1 + true") }.to raise_error(Aua::Error)
+        expect { Aua.run('"hello" + 42') }.to raise_error(Aua::Error)
+        expect { Aua.run("true + false") }.to raise_error(Aua::Error)
+      end
+
+      it "exponentiates two integers" do
+        result = Aua.run("2 ** 3")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(8)
+      end
+
+      it "exponentiates two floats" do
+        result = Aua.run("0.2 ** 3.14159265")
+        expect(result).to be_a(Aua::Float)
+        expect(result.value).to eq(0.2**3.14159265)
+      end
     end
 
-    it "subtracts two integers" do
-      result = Aua.run("5 - 3")
+    describe "Operator Precedence" do
+      it "right-associates exponentiation" do
+        result = Aua.run("2 ** 3 ** 2")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(512)
+      end
+
+      it "handles mixed operations with correct precedence" do
+        result = Aua.run("2 + 3 * 4 - 5 / 5")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(13)
+
+        result = Aua.run("10 - 2 ** 3 + 1")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(3)
+      end
+
+      it "handles parentheses correctly" do
+        result = Aua.run("(1 + 2) * 3")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(9)
+
+        result = Aua.run("2 * (3 + 4)")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(14)
+      end
+    end
+  end
+
+  describe "Control Flow" do
+
+
+    it 'conditional execution with if-else' do
+      result = Aua.run('if true then 1 else 2 end')
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(1)
+
+      result = Aua.run('if false then 1 else 2 end')
       expect(result).to be_a(Aua::Int)
       expect(result.value).to eq(2)
-    end
-
-    it "multiplies two integers" do
-      result = Aua.run("4 * 2")
-      expect(result).to be_a(Aua::Int)
-      expect(result.value).to eq(8)
-    end
-
-    it "divides two integers" do
-      result = Aua.run("8 / 2")
-      expect(result).to be_a(Aua::Int)
-      expect(result.value).to eq(4)
-    end
-
-    it "raises error for division by zero" do
-      expect { Aua.run("1 / 0") }.to raise_error(Aua::Error)
-    end
-
-    it "adds two floats" do
-      result = Aua.run("1.5 + 2.5")
-      expect(result).to be_a(Aua::Float)
-      expect(result.value).to eq(4.0)
-    end
-
-    it "subtracts two floats" do
-      result = Aua.run("5.5 - 3.5")
-      expect(result).to be_a(Aua::Float)
-      expect(result.value).to eq(2.0)
-    end
-
-    it "multiplies two floats" do
-      result = Aua.run("4.0 * 2.0")
-      expect(result).to be_a(Aua::Float)
-      expect(result.value).to eq(8.0)
-    end
-
-    it "divides two floats" do
-      result = Aua.run("8.0 / 2.0")
-      expect(result).to be_a(Aua::Float)
-      expect(result.value).to eq(4.0)
-    end
-
-    it "concatenates two strings" do
-      result = Aua.run('"hello" + " world"')
-      expect(result).to be_a(Aua::Str)
-      expect(result.value).to eq("hello world")
-    end
-
-    it "raises error for unsupported operations on different types" do
-      expect { Aua.run("1 + true") }.to raise_error(Aua::Error)
-      expect { Aua.run('"hello" + 42') }.to raise_error(Aua::Error)
-      expect { Aua.run("true + false") }.to raise_error(Aua::Error)
     end
   end
 end
