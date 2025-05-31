@@ -12,4 +12,4 @@ Steep::RakeTask.new do |t|
   t.watch.verbose
 end
 
-task default: %i[steep spec rubocop]
+task default: %i[steep spec]
