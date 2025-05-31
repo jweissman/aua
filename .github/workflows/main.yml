@@ -23,5 +23,7 @@ jobs:
           bundler-cache: true
       - name: Test aua
         run: bundle exec rake
+      - name: List files RuboCop will inspect
+        run: bundle exec rubocop -L
       - name: Run rubocop
-        run: bundle exec rubocop -c .rubocop.yml --debug --show-cops
+        run: bundle exec rubocop -c .rubocop.yml --debug --format progress
