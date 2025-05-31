@@ -23,7 +23,6 @@ module Aua
       def advance: () -> void
       def current: () -> char?
       def peek: () -> char?
-
       def slice: (Integer, Integer) -> String?
       def indicate: () -> Array[String]
       def finished?: () -> bool
@@ -115,7 +114,9 @@ module Aua
            | (Symbol) -> token
       def eof?: () -> bool
       def current_pos: () -> Integer
+
       private
+
       def invalid_token_message: (String) -> String
       def check_number_followed_by_identifier: () -> void
     end
@@ -143,12 +144,13 @@ module Aua
       def parse_bool: () -> AST::Node
       def parse_str: () -> AST::Node
       def parse_parens: () -> AST::Node
+
       private
+
       def parse_one: (Symbol) -> AST::Node
     end
   end
   def self.s: (Symbol, *untyped) -> AST::Node
-
 
   class Parse
     include Grammar
@@ -249,7 +251,9 @@ module Aua
   class VM
     extend Semantics
     def initialize: (?environment) -> void
+
     private
+
     def reduce: (AST::Node) -> Array[Statement]
     def evaluate: (AST::Node) -> untyped
     def evaluate_one: (Statement) -> untyped
@@ -297,7 +301,6 @@ module Aua
 
   class Error < StandardError
   end
-
 
   # Constants and helpers
   EOS: token

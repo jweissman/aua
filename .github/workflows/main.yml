@@ -23,3 +23,5 @@ jobs:
           bundler-cache: true
       - name: Test aua
         run: bundle exec rake
+      - name: Run rubocop
+        run: bundle exec rubocop --display-cop-names --display-style-guide
