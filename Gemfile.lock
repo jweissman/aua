@@ -76,6 +76,8 @@ GEM
     regexp_parser (2.10.0)
     reline (0.6.1)
       io-console (~> 0.5)
+    rerun (0.14.0)
+      listen (~> 3.0)
     rspec (3.13.1)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -146,6 +148,7 @@ DEPENDENCIES
   irb
   rake (~> 13.0)
   readline (~> 0.0.4)
+  rerun (~> 0.14.0)
   rspec (~> 3.0)
   rubocop (~> 1.21)
   rubocop-rubycw

@@ -112,18 +112,84 @@ RSpec.describe Aua do
     end
   end
 
-  pending "Assignments", :skip do
-    # it "assigns values to variables" do
-    #   result = Aua.run("x = 42")
-    #   expect(result).to be_a(Aua::Obj)
-    #   expect(result.value).to eq(42)
-    # end
+  describe "Assignments" do
+    it "assigns values to variables" do
+      result = Aua.run("x = 42")
+      expect(result).to be_a(Aua::Obj)
+      expect(result.value).to eq(42)
+    end
 
-    # it "updates variable values" do
-    #   Aua.run("x = 42")
-    #   result = Aua.run("x = 100")
-    #   expect(result).to be_a(Aua::Obj)
-    #   expect(result.value).to eq(100)
-    # end
+    it "updates variable values" do
+      Aua.run("x = 42")
+      result = Aua.run("x = 100")
+      expect(result).to be_a(Aua::Obj)
+      expect(result.value).to eq(100)
+    end
+  end
+
+  describe "Binary Operations" do
+    it "adds two integers" do
+      result = Aua.run("1 + 2")
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(3)
+    end
+
+    it "subtracts two integers" do
+      result = Aua.run("5 - 3")
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(2)
+    end
+
+    it "multiplies two integers" do
+      result = Aua.run("4 * 2")
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(8)
+    end
+
+    it "divides two integers" do
+      result = Aua.run("8 / 2")
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(4)
+    end
+
+    it "raises error for division by zero" do
+      expect { Aua.run("1 / 0") }.to raise_error(Aua::Error)
+    end
+
+    it "adds two floats" do
+      result = Aua.run("1.5 + 2.5")
+      expect(result).to be_a(Aua::Float)
+      expect(result.value).to eq(4.0)
+    end
+
+    it "subtracts two floats" do
+      result = Aua.run("5.5 - 3.5")
+      expect(result).to be_a(Aua::Float)
+      expect(result.value).to eq(2.0)
+    end
+
+    it "multiplies two floats" do
+      result = Aua.run("4.0 * 2.0")
+      expect(result).to be_a(Aua::Float)
+      expect(result.value).to eq(8.0)
+    end
+
+    it "divides two floats" do
+      result = Aua.run("8.0 / 2.0")
+      expect(result).to be_a(Aua::Float)
+      expect(result.value).to eq(4.0)
+    end
+
+    it "concatenates two strings" do
+      result = Aua.run('"hello" + " world"')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to eq("hello world")
+    end
+
+    it "raises error for unsupported operations on different types" do
+      expect { Aua.run("1 + true") }.to raise_error(Aua::Error)
+      expect { Aua.run('"hello" + 42') }.to raise_error(Aua::Error)
+      expect { Aua.run("true + false") }.to raise_error(Aua::Error)
+    end
   end
 end

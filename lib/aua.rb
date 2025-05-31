@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "aua/version"
+require_relative "aua/text"
+require_relative "aua/lex"
 
 # The main Aua interpreter module.
 #
@@ -12,210 +14,6 @@ require "aua/version"
 #   Aua.run("let x = 42")
 module Aua
   class Error < StandardError; end
-
-  Token = Data.define(:type, :value)
-
-  # Provides utility methods for syntax-related tasks.
-  module Syntax
-    # Creates a new token with the given type and optional value.
-    def t(type, value = nil) = Token.new(type:, value:)
-  end
-
-  # Provides utility methods for text processing, such as indicating a position in code.
-  module Text
-    # Represents a cursor in the source code, tracking the current column and line.
-    class Cursor
-      attr_reader :column, :line
-
-      def initialize(col, line)
-        @column = col
-        @line = line
-      end
-
-      def advance = @column += 1
-      def newline = @line += 1
-    end
-
-    # Represents a document containing source code, with methods to navigate and manipulate it.
-    class Document
-      attr_reader :cursor, :position
-
-      def initialize(text)
-        @text = text
-        @cursor = Cursor.new(1, 1)
-        @position = 0
-      end
-
-      def peek = @text.chars.fetch(@position, nil)
-      def finished? = @position >= @text.length
-      def slice(start, length) = @text.slice(start, length)
-
-      # Advances the lexer by one character, updating position and line/column counters.
-      def advance
-        @position += 1
-        @cursor.advance
-        return unless peek == "\n"
-
-        @cursor.newline
-      end
-
-      def indicate = Text.indicate(@text, @cursor)
-    end
-
-    # Indicates the position of a character in the code by printing the line
-    # and an indicator pointing to the character's position.
-    #
-    # @param code [String] The code to indicate within.
-    # @param column [Integer] The column number to point to (1-based).
-    # @param line [Integer, nil] The line number to point to (1-based), or nil for all lines.
-    # @return [Array<String>] The lines with an indicator.
-    def self.indicate(text, cursor)
-      lines = text.lines
-      line = cursor.line
-      column = cursor.column
-      lines.each_with_index.map do |line_content, index|
-        if line.nil? || index + 1 == line
-          "#{line_content.chomp}\n#{" " * (column - 1)}^"
-        else
-          line_content.chomp
-        end
-      end
-    end
-  end
-
-  # A lexer for the Aua language.
-  # Responsible for converting source code into a stream of tokens.
-  class Lex
-    include Syntax
-
-    # @param code [String] The source code to lex.
-    # @raise [Error] If an unexpected character is encountered.
-    #
-    # @example
-    #   lexer = Aua::Lex.new("let x = 42")
-    #   tokens = lexer.tokens
-    #
-    # @see Aua::Interpreter for the main entry point
-    # @see Aua::Parse for parsing functionality
-    # @see Aua::VM for virtual machine execution
-    def initialize(code)
-      @doc = Text::Document.new(code)
-      @tokens = []
-    end
-
-    def current_line   = @doc.cursor.line
-    def current_column = @doc.cursor.column
-    def current_char   = @doc.peek
-
-    # Returns the array of tokens generated from the source code.
-    def tokens
-      lex
-      @tokens
-    end
-
-    # Lexes an identifier or boolean literal.
-    def identifier
-      start_pos = @doc.position #  - 1
-      advance while current_char&.match?(/[a-zA-Z_]/)
-      value = @doc.slice(start_pos, @doc.position - start_pos)
-      case value
-      when "true" then t(:bool, true)
-      when "false" then t(:bool, false)
-      when "nihil" then t(:nihil, true)
-      else
-        t(:id, value)
-      end
-    end
-
-    # Lexes an integer or floating-point literal.
-    def number_lit
-      start_pos = @doc.position
-      has_dot = false
-      while current_char&.match?(/\d|\./)
-        has_dot = true if current_char == "."
-        advance
-      end
-      number_str = @doc.slice(start_pos, @doc.position - start_pos)
-      number_token_from_string(number_str, has_dot)
-    end
-
-    def number_token_from_string(str, has_dot)
-      has_dot ? t(:float, str.to_f) : t(:number, str.to_i)
-    end
-
-    # Lexes a string literal, accumulating characters between quotes.
-    def string
-      advance # skip opening quote
-      chars = [] # : Array[String]
-      while current_char && current_char != '"'
-        chars << current_char
-        advance
-      end
-      advance # skip closing quote
-      t(:str, chars.join)
-    end
-
-    # rubocop:disable Metrics/CyclomaticComplexity
-    def recognize
-      case current_char
-      when /\s/ then handle_whitespace
-      when /\d/ then handle_number
-      when /[a-zA-Z_]/ then handle_identifier
-      when '"' then handle_string
-      when "-" then handle_minus
-      when "(" then handle_lparen
-      when ")" then handle_rparen
-      else handle_unexpected
-      end
-    end
-    # rubocop:enable Metrics/CyclomaticComplexity
-
-    def advance = @doc.advance
-
-    # Main lexing loop: emits tokens for the input code.
-    def lex
-      recognize until eof?
-      @tokens
-    end
-
-    def eof?
-      @doc.peek.nil? || @doc.finished?
-    end
-
-    def unexpected_character_message
-      <<~ERROR
-        Unexpected character '#{current_char.inspect}' at line #{current_line}, column #{current_column}
-
-        #{@doc.indicate}
-
-        Please check your code for syntax errors.
-      ERROR
-    end
-
-    private
-
-    def handle_whitespace = advance
-    def handle_identifier = @tokens << identifier
-    def handle_string = @tokens << string
-
-    def handle_minus
-      advance
-      @tokens << t(:minus)
-    end
-
-    def handle_lparen
-      advance
-      @tokens << t(:lparen)
-    end
-
-    def handle_rparen
-      advance
-      @tokens << t(:rparen)
-    end
-
-    def handle_number = @tokens << number_lit
-    def handle_unexpected = raise(Error, unexpected_character_message)
-  end
 
   # The AST (Abstract Syntax Tree) node definitions for Aua.
   module AST
@@ -304,56 +102,6 @@ module Aua
   # A parser for the Aua language that builds an abstract syntax tree (AST).
   # Consumes tokens and produces an AST.
   class Parse
-    attr_reader :current_token
-
-    include Grammar
-    include Syntax
-
-    def initialize(tokens)
-      @tokens = tokens
-      @current_token_index = 0
-      @current_token = @tokens[@current_token_index]
-      @length = @tokens.length
-    end
-
-    def consume(expected_type)
-      unless @current_token.type == expected_type
-        raise Error, "Expected token type #{expected_type}, but got #{@current_token&.type || "EOF"}"
-      end
-
-      next_token
-
-      # @current_token = next_token
-    end
-
-    def next_token
-      # Advances to the next token in the token stream.
-      @current_token_index += 1
-      @current_token = if @current_token_index < @length
-                         @tokens[@current_token_index]
-                       else
-                         Token.new(type: :eos, value: nil)
-                       end
-      @current_token
-    rescue IndexError
-      @current_token = Token.new(type: :eos, value: nil)
-      nil
-    end
-
-    def tree
-      ast = parse
-      raise(Error, "Unexpected tokens after parsing: \\#{@current_token.inspect}") if unexpected_tokens?
-
-      ast
-    end
-
-    def unexpected_tokens?
-      @length != @current_token_index && @current_token.type != :eos
-    end
-
-    def parse = parse_expression
-    def parse_expression = parse_primary
-
     PRIMARY_MAP = {
       lparen: :parse_parens,
       minus: :parse_negation,
@@ -365,11 +113,107 @@ module Aua
       nihil: :parse_nihil
     }.freeze
 
-    # Parses a primary expression (literal, identifier, or unary minus).
+    attr_reader :current_token
+
+    include Grammar
+    include Syntax
+
+    def initialize(tokens)
+      @tokens = tokens # .is_a?(Enumerator) ? tokens : tokens.each
+      @buffer = []
+
+      puts "Initializing parser with tokens: #{tokens.inspect}"
+
+      advance # fill @current_token
+    end
+
+    def advance
+      @current_token = @buffer.shift || next_token
+      # rescue StandardError
+      #   AST::Node.new(type: :eos, value: nil)
+      # end
+    end
+
+    def consume(expected_type)
+      unless @current_token.type == expected_type
+        raise Error, "Expected token type #{expected_type}, but got #{@current_token&.type || "EOF"}"
+      end
+
+      advance
+    end
+
+    def next_token
+      @tokens.next
+    rescue StopIteration
+      AST::Node.new(type: :eos, value: nil) # End of stream token
+    end
+
+    def peek_token
+      @buffer[0] ||= begin
+        @tokens.next
+      rescue StandardError
+        AST::Node.new(type: :eos, value: nil)
+      end
+    end
+
+    def tree
+      # raise(Error, "Empty input") if @tokens.empty?
+
+      ast = parse
+      raise(Error, "Unexpected tokens after parsing: \\#{@current_token.inspect}") if unexpected_tokens?
+
+      ast
+    end
+
+    def unexpected_tokens?
+      @length != @current_token_index && @current_token.type != :eos
+    end
+
+    def parse = parse_expression
+
+    # Operator precedence (higher number = higher precedence)
+    BINARY_PRECEDENCE = {
+      plus: 1, minus: 1,
+      star: 2, slash: 2
+    }.freeze
+
+    # Parses an expression with binary operators, respecting precedence and associativity.
+    def parse_expression(min_prec = 0)
+      # Assignment: id = expr
+      if @current_token.type == :id && peek_token&.type == :equals
+        id = @current_token
+        consume(:id)
+        name = id.value
+        consume(:equals)
+        value = parse_expression
+        return s(:assign, name, value)
+        # return s(:id, name) # just an identifier...?
+      end
+      left = parse_primary
+      while binary_op?(@current_token.type) && BINARY_PRECEDENCE[@current_token.type] >= min_prec
+        op_token = @current_token
+        op = op_token.type
+        prec = BINARY_PRECEDENCE[op]
+        consume(op)
+        # Right-associative: parse_expression(prec), left-associative: parse_expression(prec+1)
+        right = parse_expression(prec + 1)
+        left = s(:binop, op, left, right)
+      end
+
+      left
+    end
+
+    def binary_op?(type) = BINARY_PRECEDENCE.key?(type)
+
     def parse_primary
       if @current_token.nil?
         puts "!!! No current token to parse"
         raise Aua::Error, "No current token to parse"
+      end
+
+      if @current_token.type == :eos
+        puts "!!! Unexpected end of input"
+        raise Aua::Error, "Unexpected end of input while parsing primary expression"
       end
 
       primitives = Primitives.new(self)
@@ -512,14 +356,76 @@ module Aua
       [RECALL[negated]]
     end
 
+    def translate_assignment(node)
+      name, value_node = node.value
+      value = evaluate(value_node)
+      @env[name] = value
+      [Semantics.inst(:let, name, value)]
+    end
+
+    def translate_binop(node)
+      op, left_node, right_node = node.value
+      left = evaluate(left_node)
+      right = evaluate(right_node)
+      result =
+        case op
+        when :plus
+          if left.is_a?(Int) && right.is_a?(Int)
+            Int.new(left.value + right.value)
+          elsif left.is_a?(Float) && right.is_a?(Float)
+            Float.new(left.value + right.value)
+          elsif left.is_a?(Str) && right.is_a?(Str)
+            Str.new(left.value + right.value)
+          else
+            raise Error, "Unsupported operand types for +: #{left.class} and #{right.class}"
+          end
+        when :minus
+          if left.is_a?(Int) && right.is_a?(Int)
+            Int.new(left.value - right.value)
+          elsif left.is_a?(Float) && right.is_a?(Float)
+            Float.new(left.value - right.value)
+          else
+            raise Error, "Unsupported operand types for -: #{left.class} and #{right.class}"
+          end
+        when :star
+          if left.is_a?(Int) && right.is_a?(Int)
+            Int.new(left.value * right.value)
+          elsif left.is_a?(Float) && right.is_a?(Float)
+            Float.new(left.value * right.value)
+          else
+            raise Error, "Unsupported operand types for *: #{left.class} and #{right.class}"
+          end
+        when :slash
+          if left.is_a?(Int) && right.is_a?(Int)
+            raise Error, "Division by zero" if right.value == 0
+
+            Int.new(left.value / right.value)
+          elsif left.is_a?(Float) && right.is_a?(Float)
+            raise Error, "Division by zero" if right.value == 0.0
+
+            Float.new(left.value / right.value)
+          else
+            raise Error, "Unsupported operand types for /: #{left.class} and #{right.class}"
+          end
+        else
+          raise Error, "Unknown binary operator: #{op}"
+        end
+      [RECALL[result]]
+    end
+
+    TRANSLATIONS = { nihil: [RECALL[Nihil.new]] }.freeze
+
     def translate(ast)
+      return TRANSLATIONS[ast.type] if TRANSLATIONS.key?(ast.type)
+
       case ast.type
-      when :nihil then [RECALL[Nihil.new]]
-      when :id then [RECALL[@env[ast.value] || Nihil.new]]
       when :int, :float, :bool, :str then recall_primary(ast)
       when :negate then translate_negation(ast)
+      when :id then [RECALL[@env[ast.value] || Nihil.new]]
+      when :assign then translate_assignment(ast)
+      when :binop then translate_binop(ast)
       else
-        raise Error, "Unknown AST node type: #{ast.type}"
+        raise Error, "Unknown AST node type: \\#{ast.type}"
       end
     end
 
@@ -563,7 +469,7 @@ module Aua
       @env = env
     end
 
-    def lex(code) = Lex.new(code).send :tokens
+    def lex(code) = Lex.new(code).enum_for(:tokenize)
     def parse(tokens) = Parse.ast tokens
     def vm = VM.new @env
 

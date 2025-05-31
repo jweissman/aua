@@ -44,34 +44,53 @@ module Aua
 
   class Lex
     include Syntax
+    MAX_TOKENS: Integer
+    TOKEN_HANDLERS: Hash[untyped, Symbol]
+    @tokens: Array[Token]
+
     def initialize: (String) -> void
     def tokens: () -> Array[Token]
     def advance: () -> void
     def current_line: () -> Integer
     def current_column: () -> Integer
     def current_char: () -> char
-    def identifier: () -> Token
-    def number_lit: () -> Token
-    def string: () -> Token
-    def lex: () -> void
+    def recognize: () -> Lex::Recognizer
     def eof?: () -> bool
-    def recognize: () -> void
-    def update_position: () -> void
-    def update_line_and_column: () -> void
     def unexpected_character_message: () -> String
-    @tokens: Array[Token]
+    def lex: () -> void
+    def accept: () -> void
+    def current_pos: () -> Integer
+    def slice_from: (Integer) -> String?
+
+    def each_token: () { (Token) -> void } -> void
+    def accept_token: () -> Token?
+
+    def tokenize: () { (Token) -> void } -> void
+
     private
+
     def handle_whitespace: () -> void
-    def handle_comment: () -> void
     def handle_string: () -> void
     def handle_identifier: () -> void
     def handle_number: () -> void
-    def handle_symbol: () -> void
     def handle_minus: () -> void
     def handle_lparen: () -> void
     def handle_rparen: () -> void
+    def handle_equals: () -> void
     def handle_unexpected: () -> void
-    def number_token_from_string: (String, bool) -> Token
+
+    class Recognizer
+      def initialize: (Lex) -> void
+      def identifier: () -> Token
+      def number_lit: () -> Token
+      def string: () -> Token
+      def number_token_from_string: (String, bool) -> Token
+      def current_char: () -> char
+      def advance: () -> void
+      def t: (Symbol, untyped) -> Token
+           | (Symbol) -> Token
+      def eof?: () -> bool
+    end
   end
 
   module AST
@@ -104,11 +123,14 @@ module Aua
   class Parse
     include Grammar
     include Syntax
+    PRIMARY_MAP: Hash[Symbol, Symbol]
+
     attr_reader current_token: Token
     def initialize: (Array[Token]) -> void
     def tree: () -> AST::Node
     def consume: (Symbol) -> void
     def next_token: () -> Token?
+    def peek_token: () -> Token?
     def parse: () -> AST::Node
     def parse_expression: () -> AST::Node
     def parse_primary: () -> AST::Node
@@ -181,6 +203,8 @@ module Aua
     def translate: (AST::Node) -> Array[Statement]
     def evaluate: (AST::Node) -> untyped
     def evaluate_one: (Statement) -> untyped
+    def translate_assignment: (AST::Node) -> Array[Statement]
+    TRANSLATIONS: Hash[Symbol, Array[Statement]]
   end
 
   class PrettyPrinter

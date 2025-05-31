@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+require "bundler/setup"
+require "aua"
+while true
+  print "> "
+  input = gets
+  break if input.nil? || input.strip.empty?
+
+  begin
+    result = Aua.run(input)
+    puts result.inspect
+  rescue Aua::Error => e
+    puts "Error: #{e.message}"
+  end
+end
