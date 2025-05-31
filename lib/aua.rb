@@ -21,6 +21,7 @@ module Aua
     def klass = Klass.klass
     def inspect = "<#{self.class.name} #{introspect}>"
     def introspect = ""
+    def pretty = introspect
   end
 
   # The class object for Aua types.
@@ -382,7 +383,7 @@ module Aua
       pipeline.reduce(code) do |input, step|
         # $stdout.puts "#{step.name}: #{input.inspect}..."
         out = step.call(input)
-        $stdout.puts "#{step.name}: #{input.inspect} -> #{out.inspect}"
+        $stdout.puts "#{step.name}: #{input.inspect} -> #{out.inspect}" if $DEBUG
         out
       rescue Aua::Error => e
         warn "Error during processing: #{e.message}"

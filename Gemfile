@@ -15,3 +15,7 @@ gem "rufo", "~> 0.18.1"
 gem "steep", "~> 1.10"
 
 gem "rerun", "~> 0.14.0"
+
+gem "rainbow", "~> 3.1"
+
+gem "rubocop-on-rbs", "~> 1.7"

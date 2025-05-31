@@ -3,14 +3,26 @@
 
 require "bundler/setup"
 require "aua"
+require "rainbow"
+require "rainbow/refinement"
+using Rainbow
 loop do
-  print "> "
+  print "> ".cyan
   input = gets
   break if input.nil? || input.strip.empty?
 
   begin
     result = Aua.run(input)
-    puts result.inspect
+    out = case result
+          when Aua::Int   then result.value.to_s.blue
+          when Aua::Float then result.value.to_s.yellow
+          when Aua::Bool  then result.value ? "true".green : "false".red
+          when Aua::Str   then result.value.magenta
+          when Aua::Nihil then "nihil".black
+          else result.inspect.violet
+          end
+
+    puts out
   rescue Aua::Error => e
     puts "Error: #{e.message}"
   end
