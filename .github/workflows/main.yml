@@ -24,4 +24,4 @@ jobs:
       - name: Test aua
         run: bundle exec rake
       - name: Run rubocop
-        run: bundle exec rubocop -c .rubocop.yml --debug --show-cops --display-cop-names --display-style-guide
+        run: bundle exec rubocop -c .rubocop.yml
