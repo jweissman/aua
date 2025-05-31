@@ -8,6 +8,9 @@ AllCops:
   NewCops: enable
   Exclude:
     - 'spec/**/*'
+    - 'vendor/**/*'
+    - 'bundle/**/*'
+    - 'node_modules/**/*'
 
 Style/GlobalStdStream:
   Enabled: true
