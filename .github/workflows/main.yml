@@ -3,9 +3,7 @@ name: Ruby
 on:
   push:
     branches:
-      - master
-
-  pull_request:
+      - main
 
 jobs:
   build:
@@ -23,5 +21,5 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
+      - name: Test aua
         run: bundle exec rake
