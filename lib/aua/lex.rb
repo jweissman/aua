@@ -26,6 +26,10 @@ module Aua
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
 
+    THREE_CHAR_TOKEN_NAMES = {
+      "\"\"\"" => :prompt
+    }.freeze
+
     KEYWORDS = Set[:if, :then, :else, :elif].freeze
   end
 
@@ -40,10 +44,12 @@ module Aua
         @lexer = lexer
       end
 
-      def current_pos = @lexer.lens.current_pos
+      def advance(...) = @lexer.advance(...)
       def current_char = @lexer.lens.current_char
-      def advance = @lexer.advance
+      def current_pos = @lexer.lens.current_pos
       def eof? = @lexer.eof?
+      def next_char = @lexer.lens.peek
+      def next_next_char = @lexer.lens.peek_n(2).last
 
       # Lexes an identifier or boolean literal.
       #
@@ -81,18 +87,45 @@ module Aua
       end
 
       # Lexes a string literal, accumulating characters between quotes.
-      MAX_STRING_LENGTH = 512
-      def string
+      MAX_STRING_LENGTH = 65_536
+      def string(quote = '"')
         advance # skip opening quote
         chars = [] # : Array[String]
-        while current_char && current_char != '"' && chars.length < MAX_STRING_LENGTH
+        quote_chars = quote.chars.to_a
+        warn "Recognizing string with quote: #{quote.inspect}"
+        while current_char && chars.length < MAX_STRING_LENGTH
           chars << current_char
           advance
+          if quote.length == 1
+            if current_char == quote_chars.first
+              break # end of string
+            end
+          elsif quote.length == 2
+            if current_char == quote_chars.first && next_char == quote_chars.last
+              advance # skip closing quote
+              break # end of string
+            end
+          elsif quote.length == 3
+            char_matches = [current_char, next_char, next_next_char].each_with_index.all? do |c, i|
+              c == quote_chars[i]
+            end
+            if char_matches
+              chars.shift(quote_chars.length - 1) # drop the quote characters
+              advance(2) # skip closing quote
+              break # end of string
+            end
+          end
         end
         advance # skip closing quote
         raise Error, "Unterminated string literal (of length #{chars.length})" if chars.length >= MAX_STRING_LENGTH
 
-        t(:str, chars.join)
+        case quote
+        when "\"\"\"" then t :gen_lit, chars.join
+        # when "\"\"" then t :prompt, chars.join
+        when "'" then t :char, chars.join
+        when "`" then t :raw_str, chars.join
+        else t(:str, chars.join)
+        end
       end
 
       private
@@ -113,6 +146,12 @@ module Aua
       def initialize(doc)
         @doc = doc
       end
+
+      def eof? = @doc.finished?
+      def peek = @doc.peek
+      def peek_n(n) = @doc.peek_n(n)
+
+      # Current position and character information
 
       def current_pos    = @doc.position
       def current_line   = @doc.cursor.line
@@ -161,12 +200,12 @@ module Aua
     end
 
     def inspect = "#<#{self.class.name}@#{@lens.describe}>"
-    def advance = @doc.advance
+    def advance(...) = @doc.advance(...)
     def slice_from(start) = @doc.slice(start, @doc.position - start)
 
     # Enumerator-based token stream for memory efficiency and streaming.
     def tokenize
-      until @doc.finished?
+      until @lens.eof?
         token = accept
 
         yield token unless token.nil?
@@ -175,7 +214,10 @@ module Aua
 
     def accept(&)
       current_char = @lens.current_char
-      peek_char = @doc.peek
+      peek_char, next_peek_char = @doc.peek_n(2)
+
+      accepted = accept_three(current_char, peek_char, next_peek_char)
+      return accepted if accepted
 
       accepted = accept_two(current_char, peek_char)
       return accepted if accepted
@@ -183,6 +225,18 @@ module Aua
       accepted = accept_one(current_char)
       return accepted if accepted
 
+      nil
+    end
+
+    def accept_three(fst, snd, thd)
+      three_char_string = "#{fst}#{snd}#{thd}"
+
+      THREE_CHAR_TOKEN_NAMES.each do |pattern, token_name|
+        next unless three_char_string == pattern
+
+        handler = "handle_#{token_name}"
+        return send(handler)
+      end
       nil
     end
 
@@ -212,6 +266,7 @@ module Aua
     def handle_whitespace = advance
     def handle_identifier = recognize.identifier
     def handle_string = recognize.string
+    def handle_prompt = recognize.string("\"\"\"")
 
     def handle_minus
       advance

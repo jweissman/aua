@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rspec"
+require "debug"
 require "aua"
 
 RSpec.configure do |config|

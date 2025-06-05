@@ -3,6 +3,25 @@
 require "spec_helper"
 
 RSpec.describe Aua do
+  before { Aua.testing = true }
+
+  # define a helper method to run Aua code and return the result
+  RSpec::Matchers.define :be_aua do |code|
+    match do |actual, type: Aua::Obj|
+      @result = Aua.run(code)
+      @result.is_a?(type) && @result.value == actual
+    end
+    failure_message do
+      "expected Aua to return #{actual.inspect}, but got #{@result.inspect}"
+    end
+    failure_message_when_negated do
+      "expected Aua not to return #{actual.inspect}, but it did"
+    end
+    description do
+      "run Aua code and return #{actual.inspect}"
+    end
+  end
+
   describe "Data Types" do
     it "returns an Int object for integer literals" do
       result = Aua.run("123")
@@ -127,7 +146,6 @@ RSpec.describe Aua do
     end
 
     it "updates variable values" do
-      Aua.run("x = 42")
       result = Aua.run("x = 100")
       expect(result).to be_a(Aua::Obj)
       expect(result.value).to eq(100)
@@ -243,8 +261,6 @@ RSpec.describe Aua do
   end
 
   describe "Control Flow" do
-
-
     it 'conditional execution with if-else' do
       result = Aua.run('if true then 1 else 2 end')
       expect(result).to be_a(Aua::Int)
@@ -253,6 +269,15 @@ RSpec.describe Aua do
       result = Aua.run('if false then 1 else 2 end')
       expect(result).to be_a(Aua::Int)
       expect(result.value).to eq(2)
+    end
+  end
+
+  describe "Generative String Literals" do
+    it "evaluates a generative string literal and returns a string containing Rayleigh" do
+      # result = Aua.run('"""Why is the sky blue?"""')
+      result = Aua.run('"""What is the name of the physical phenomena responsible for the sky being blue?"""')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to match(/Rayleigh/i)
     end
   end
 end

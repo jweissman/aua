@@ -23,6 +23,8 @@ module Aua
       def advance: () -> void
       def current: () -> char?
       def peek: () -> char?
+      def peek_at: (Integer) -> char?
+      def peek_n: (Integer) -> Array[char]
       def slice: (Integer, Integer) -> String?
       def indicate: () -> Array[String]
       def finished?: () -> bool
@@ -38,11 +40,13 @@ module Aua
     class Token
       attr_reader type: Symbol
       attr_reader value: untyped
-      def initialize: (type: Symbol, value: untyped) -> void
+      attr_reader location: Text::Cursor
+      def initialize: (type: Symbol, value: untyped, at: Text::Cursor) -> void
     end
 
     ONE_CHAR_TOKEN_NAMES: Hash[String, Symbol]
     TWO_CHAR_TOKEN_NAMES: Hash[String, Symbol]
+    THREE_CHAR_TOKEN_NAMES: Hash[String, Symbol]
   end
 
   type token = Syntax::Token
@@ -51,8 +55,6 @@ module Aua
   class Lex
     include Syntax
     MAX_TOKENS: Integer
-    TOKEN_HANDLERS: Hash[matchy, Symbol]
-    TWO_CHAR_TOKEN_HANDLERS: Hash[matchy, Symbol]
     class Lens
       def initialize: (Text::Document) -> void
       def current_pos: () -> Integer
@@ -79,6 +81,7 @@ module Aua
     def accept: () -> untyped
     def accept_one: (char?) -> untyped
     def accept_two: (char?, char?) -> untyped
+    def accept_three: (char?, char?, char?) -> untyped
     def current_pos: () -> Integer
     def slice_from: (Integer) -> String?
     def each_token: () { (token) -> void } -> void
@@ -103,6 +106,7 @@ module Aua
 
     class Recognizer
       KEYWORDS : Set[Symbol]
+      MAX_STRING_LENGTH: Integer
       def initialize: (Lex) -> void
       def identifier: () -> token
       def number_lit: () -> token
@@ -111,6 +115,7 @@ module Aua
       def current_char: () -> char
       def advance: () -> void
       def t: (Symbol, untyped) -> token
+           | (Symbol, untyped, untyped) -> token
            | (Symbol) -> token
       def eof?: () -> bool
       def current_pos: () -> Integer
@@ -126,11 +131,15 @@ module Aua
     class Node
       attr_reader type: Symbol
       attr_reader value: untyped
-      def initialize: (type: Symbol, value: untyped) -> void
+      attr_reader location: Text::Cursor
+      def initialize: (type: Symbol, value: untyped, at: Text::Cursor) -> void
     end
   end
 
   module Grammar
+    PRIMARY_NAMES: Hash[Symbol, Symbol]
+    BINARY_PRECEDENCE: Hash[Symbol, Integer]
+
     attr_reader parse: Parse
     def s: (Symbol, *untyped) -> AST::Node
     class Primitives
@@ -155,8 +164,8 @@ module Aua
   class Parse
     include Grammar
     include Syntax
-    PRIMARY_MAP: Hash[Symbol, Symbol]
-    BINARY_PRECEDENCE: Hash[Symbol, Integer]
+    @tokens: Enumerator[token]
+    @buffer: Array[token]
 
     attr_reader current_token: token
     def initialize: (Enumerator[token]) -> void
@@ -234,6 +243,21 @@ module Aua
     attr_reader value: bool
   end
 
+  class Box[T] < Obj
+    def initialize: (T) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    def introspect: () -> String
+    attr_reader value: T
+  end
+
+  class Rec < Box[Hash[String, Obj]]
+    def initialize: (String, Hash[String, Obj]) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    def introspect: () -> String
+  end
+
   class Statement
     attr_reader type: Symbol
     attr_reader value: untyped
@@ -283,6 +307,7 @@ module Aua
         def self.binop_star: (statement, statement) -> statement
         def self.binop_pow: (statement, statement) -> statement
       end
+
       TRANSLATIONS: Hash[Symbol, Array[Statement]]
     end
   end
@@ -291,12 +316,16 @@ module Aua
     def pretty: (Obj) -> String
   end
 
+  class Context
+    def source_document: () -> Text::Document
+  end
+
   class Interpreter
     def initialize: (?environment) -> void
-    def lex: (String) -> Enumerator[token]
-    def parse: (Enumerator[token]) -> AST::Node
-    def vm: () -> VM
-    def run: (String) -> untyped
+    def lex:   (Context, String) -> Enumerator[token]
+    def parse: (Context, Enumerator[token]) -> AST::Node
+    def vm:    (Context, ) -> VM
+    def run:   (Context, String) -> untyped
   end
 
   class Error < StandardError
@@ -311,20 +340,6 @@ module Aua
   SEND: untyped
 
   def self.run: (String) -> untyped
+  
+  def self.configuration: () -> config
 end
-
-module Binop
-  def self.binary_operation: (Symbol, untyped, untyped) -> untyped
-  def self.binop_plus: (untyped, untyped) -> untyped
-  def self.int_plus: (untyped, untyped) -> untyped
-  def self.float_plus: (untyped, untyped) -> untyped
-  def self.str_plus: (untyped, untyped) -> untyped
-  def self.raise_binop_type_error: (Symbol, untyped, untyped) -> untyped
-  def self.binop_minus: (untyped, untyped) -> untyped
-  def self.binop_star: (untyped, untyped) -> untyped
-  def self.binop_slash: (untyped, untyped) -> untyped
-  def self.int_slash: (untyped, untyped) -> untyped
-  def self.float_slash: (untyped, untyped) -> untyped
-  def self.binop_pow: (untyped, untyped) -> untyped
-end
-

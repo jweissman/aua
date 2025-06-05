@@ -27,13 +27,19 @@ module Aua
       end
 
       def current = @text.chars.fetch(@position, nil)
-      def peek = @text.chars.fetch(@position + 1, nil)
+      def peek_at(index) = @text.chars.fetch(@position + index, nil)
+      def peek = peek_at(1)
+
+      # Returns an array of the next n characters from the current position.
+      # If there are fewer than n characters left, it returns as many as possible.
+      # If n is 0, it returns an empty array.
+      def peek_n(count) = 1.upto(count).map { |char| peek_at(char) || "" }
       def finished? = @position >= @text.length
       def slice(start, length) = @text.slice(start, length)
 
       # Advances the lexer by one character, updating position and line/column counters.
-      def advance
-        @position += 1
+      def advance(n = 1)
+        @position += n
         @cursor.advance
         return unless peek == "\n"
 

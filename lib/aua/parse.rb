@@ -20,7 +20,8 @@ module Aua
       float: :float,
       bool: :bool,
       str: :str,
-      nihil: :nihil
+      nihil: :nihil,
+      gen_lit: :generative_lit
     }.freeze
 
     # Operator precedence (higher number = higher precedence)
@@ -78,6 +79,13 @@ module Aua
         s(:negate, operand)
       end
 
+      def parse_generative_lit
+        puts "Parsing generative literal"
+        value = @parse.current_token.value
+        @parse.consume(:gen_lit)
+        s(:gen_lit, value)
+      end
+
       private
 
       def parse_one(type)
@@ -101,7 +109,8 @@ module Aua
 
     def initialize(tokens)
       @tokens = tokens
-      @buffer = [] # : Array[token]
+      @buffer = []
+
       advance
     end
 

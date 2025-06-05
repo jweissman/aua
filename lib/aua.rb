@@ -1,9 +1,17 @@
 # frozen_string_literal: true
 
+# require "json"
+# require "net/http"
+require "ostruct"
+require "rainbow"
+require "rainbow/refinement"
+
 require "aua/version"
-require_relative "aua/text"
-require_relative "aua/lex"
-require_relative "aua/parse"
+require "aua/text"
+require "aua/lex"
+require "aua/parse"
+require "aua/obj"
+require "aua/llm/provider"
 
 # The main Aua interpreter module.
 #
@@ -15,90 +23,6 @@ require_relative "aua/parse"
 #   Aua.run("let x = 42")
 module Aua
   class Error < StandardError; end
-
-  # The base object for all Aua values.
-  class Obj
-    def klass = Klass.klass
-    def inspect = "<#{self.class.name} #{introspect}>"
-    def introspect = ""
-    def pretty = introspect
-  end
-
-  # The class object for Aua types.
-  class Klass < Obj
-    def initialize(name, parent = nil)
-      super()
-      @name = name
-      @parent = parent
-    end
-
-    def klass = send :itself
-    def self.klass = Klass.new("Klass", klass)
-    def self.obj = Klass.new("Obj", klass)
-    def introspect = @name
-  end
-
-  # The 'nothing' value in Aua.
-  class Nihil < Obj
-    def klass
-      Klass.obj # : Klass
-    end
-
-    def name = "nothing"
-    def value = nil
-  end
-
-  # Integer value in Aua.
-  class Int < Obj
-    def initialize(value)
-      super()
-      @value = value
-    end
-
-    def klass = Klass.new("Int", Klass.obj)
-    def name = "int"
-    def introspect = @value.inspect
-    attr_reader :value
-  end
-
-  # Floating-point value in Aua.
-  class Float < Obj
-    def initialize(value)
-      super()
-      @value = value
-    end
-
-    def klass = Klass.new("Float", Klass.obj)
-    def name = "float"
-    def introspect = @value.inspect
-    attr_reader :value
-  end
-
-  # Boolean value in Aua.
-  class Bool < Obj
-    def initialize(value)
-      super()
-      @value = value
-    end
-
-    def klass = Klass.new("Bool", Klass.obj)
-    def name = "bool"
-    def introspect = @value.inspect ? "true" : "false"
-    attr_reader :value
-  end
-
-  # String value in Aua.
-  class Str < Obj
-    def initialize(value)
-      super()
-      @value = value
-    end
-
-    def klass = Klass.new("Str", Klass.obj)
-    def name = "str"
-    def introspect = @value.inspect
-    attr_reader :value
-  end
 
   # Represents a statement in Aua, which can be an assignment, expression, or control flow.
   class Statement < Data.define(:type, :value)
@@ -147,6 +71,7 @@ module Aua
         when :id then [LOCAL_VARIABLE_GET[ast.value]]
         when :assign then translate_assignment(ast)
         when :binop then translate_binop(ast)
+        when :gen_lit then translate_gen_lit(ast)
         else
           raise Error, "Unknown AST node type: \\#{ast.type}"
         end
@@ -187,6 +112,15 @@ module Aua
         name, value_node = node.value
         value = translate(value_node)
         [Semantics.inst(:let, name, value)]
+      end
+
+      def translate_gen_lit(node)
+        value = node.value
+
+        # Just return the value as a Str by default
+        # ret = Str.new(value)
+        current_conversation = Aua::LLM.chat
+        [Str.new(current_conversation.ask(value))]
       end
 
       def translate_binop(node)
@@ -269,7 +203,7 @@ module Aua
           end
 
           def float_slash(left, right)
-            lhs = left # : Float
+            lhs = left  # : Float
             rhs = right # : Float
             raise Error, "Division by zero" if rhs.value == 0.0
 
@@ -383,7 +317,7 @@ module Aua
       pipeline.reduce(code) do |input, step|
         # $stdout.puts "#{step.name}: #{input.inspect}..."
         out = step.call(input)
-        $stdout.puts "#{step.name}: #{input.inspect} -> #{out.inspect}" if $DEBUG
+        $stdout.puts "#{step.name}: #{input.inspect} -> #{out.inspect}" if Aua.testing
         out
       rescue Aua::Error => e
         warn "Error during processing: #{e.message}"
@@ -401,5 +335,49 @@ module Aua
     @current_interpreter ||= Interpreter.new
 
     @current_interpreter.run(code)
+  end
+
+  def self.testing = @testing ||= !!configuration.testing
+
+  def self.testing=(value)
+    @testing = value
+  end
+
+  # Configuration = Data.define(:testing, :model)
+
+  def self.configuration
+    @configuration ||= OpenStruct.new({
+                                        # format: :text,
+                                        # runtime: "aura-lang #{Aua::VERSION}",
+                                        testing: false,
+                                        #  llm: {
+                                        model: "qwen-2.5-1.5b-chat"
+                                        #  }
+                                        #   temperature: 0.7,
+                                        #   system_prompt: "You are an agent who is both part of the runtime for the Aua programming language, and metacircularly, an assistant for users of Aura Web as a widget and tool system. Please try to handle this superposition as gracefully as you can.",
+                                        #   max_tokens: 1024,
+                                        #   top_p: 0.9,
+                                        #   frequency_penalty: 0.0,
+                                        #   presence_penalty: 0.0,
+                                        #   stop_sequences: ["\n\n", "###"],
+                                        #   # base_uri: "https://api.aura-lang.org/v1/llm",
+                                        #   base_uri: "localhost:3000/v1/chat/completions",
+                                        #   # permits: [
+                                        #   #   :structured_outputs,
+                                        #   #   tools: [
+                                        #   #     {
+                                        #   #       type: "function",
+                                        #   #       name: "Write an Aua function",
+                                        #   #       description: "In this task, you will write an Aua function that performs a specific goal for the user. The function should be well-structured and follow Aua's syntax and semantics.",
+                                        #   #     }
+                                        #   #   ]
+                                        #   # ]
+                                        # },
+
+                                      })
+  end
+
+  def self.configure
+    yield(configuration) if block_given?
   end
 end
