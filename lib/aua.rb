@@ -236,7 +236,7 @@ module Aua
 
     def reduce(ast) = @tx.translate(ast)
 
-    def evaluate(ast)
+    def evaluate(ctx, ast)
       ret = Nihil.new
       stmts = reduce(ast)
       stmts = [stmts] unless stmts.is_a? Array
@@ -299,8 +299,8 @@ module Aua
       @env = env
     end
 
-    def lex(code) = Lex.new(code).enum_for(:tokenize)
-    def parse(tokens) = Parse.new(tokens).tree
+    def lex(ctx, code) = Lex.new(code).enum_for(:tokenize)
+    def parse(ctx, tokens) = Parse.new(tokens).tree
     def vm = VM.new @env
 
     # Runs the Aua interpreter pipeline: lexing, parsing, and evaluation.
@@ -312,11 +312,11 @@ module Aua
     #   vm.evaluate ast
     #
     # @param code [String] The source code to interpret.
-    def run(code)
+    def run(ctx, code)
       pipeline = [method(:lex), method(:parse), vm.method(:evaluate)]
       pipeline.reduce(code) do |input, step|
         # $stdout.puts "#{step.name}: #{input.inspect}..."
-        out = step.call(input)
+        out = step.call(ctx, input)
         $stdout.puts "#{step.name}: #{input.inspect} -> #{out.inspect}" if Aua.testing
         out
       rescue Aua::Error => e
@@ -333,48 +333,31 @@ module Aua
   #   Aua.run("some code")
   def self.run(code)
     @current_interpreter ||= Interpreter.new
+    ctx = { source_document: Text::Document.new(code) }
 
-    @current_interpreter.run(code)
+    @current_interpreter.run(ctx, code)
   end
 
   def self.testing = @testing ||= !!configuration.testing
+  def self.testing? = testing || false
 
   def self.testing=(value)
     @testing = value
   end
 
-  # Configuration = Data.define(:testing, :model)
+  class Configuration < Data.define(:testing, :model, :base_uri)
+    def initialize(
+      testing: false,
+      model: "qwen-2.5-1.5b-chat",
+      base_uri: # "http://localhost:1234/v1"
+              "http://10.0.0.158:1234/v1"
+    )
+      super
+    end
+  end
 
   def self.configuration
-    @configuration ||= OpenStruct.new({
-                                        # format: :text,
-                                        # runtime: "aura-lang #{Aua::VERSION}",
-                                        testing: false,
-                                        #  llm: {
-                                        model: "qwen-2.5-1.5b-chat"
-                                        #  }
-                                        #   temperature: 0.7,
-                                        #   system_prompt: "You are an agent who is both part of the runtime for the Aua programming language, and metacircularly, an assistant for users of Aura Web as a widget and tool system. Please try to handle this superposition as gracefully as you can.",
-                                        #   max_tokens: 1024,
-                                        #   top_p: 0.9,
-                                        #   frequency_penalty: 0.0,
-                                        #   presence_penalty: 0.0,
-                                        #   stop_sequences: ["\n\n", "###"],
-                                        #   # base_uri: "https://api.aura-lang.org/v1/llm",
-                                        #   base_uri: "localhost:3000/v1/chat/completions",
-                                        #   # permits: [
-                                        #   #   :structured_outputs,
-                                        #   #   tools: [
-                                        #   #     {
-                                        #   #       type: "function",
-                                        #   #       name: "Write an Aua function",
-                                        #   #       description: "In this task, you will write an Aua function that performs a specific goal for the user. The function should be well-structured and follow Aua's syntax and semantics.",
-                                        #   #     }
-                                        #   #   ]
-                                        #   # ]
-                                        # },
-
-                                      })
+    @configuration ||= Configuration.new
   end
 
   def self.configure

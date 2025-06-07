@@ -1,0 +1,13 @@
+module Rainbow
+end
+
+class String
+  def blue: () -> String
+  def red: () -> String
+  def green: () -> String
+  def yellow: () -> String
+  def magenta: () -> String
+  def white: () -> String
+  def black: () -> String
+  def cyan: () -> String
+end

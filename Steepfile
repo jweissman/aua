@@ -6,6 +6,7 @@ target :lib do
   signature "sig"
   ignore_signature "sig/test"
   check "lib" # Directory name
+  # library "json"
 end
 #   check "path/to/source.rb"         # File name
 #   check "app/models/**/*.rb"        # Glob

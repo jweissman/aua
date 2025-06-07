@@ -9,3 +9,6 @@
 
 # rspec failure tracking
 .rspec_status
+
+# ignore development interpreter traces/logs/cache/etc
+/.aua

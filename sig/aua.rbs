@@ -1,6 +1,11 @@
+Net: untyped
+# JSON: untyped
+
 module Aua
   VERSION: String
-  type environment = Hash[String, untyped]
+
+  class Error < StandardError
+  end
 
   type char = String
 
@@ -194,6 +199,7 @@ module Aua
   class Obj
     def klass: () -> Klass
     def introspect: () -> String
+    def pretty: () -> String
   end
 
   class Klass < Obj
@@ -269,8 +275,14 @@ module Aua
     def self.inst: (Symbol, *untyped) -> Statement
   end
 
+  class Context
+    def source_document: () -> Text::Document
+  end
+
   type primary = Int | Float | Str | Bool | Nihil
-  type statement = Array[Statement] | Statement | primary
+  type environment = Hash[String, untyped]
+
+  type statement = Array[Statement] | Statement | Array[primary] | primary
 
   class VM
     extend Semantics
@@ -279,7 +291,7 @@ module Aua
     private
 
     def reduce: (AST::Node) -> Array[Statement]
-    def evaluate: (AST::Node) -> untyped
+    def evaluate: (Context, AST::Node) -> untyped
     def evaluate_one: (Statement) -> untyped
     def eval_id: (untyped) -> untyped
     def eval_let: (untyped, untyped) -> untyped
@@ -293,6 +305,7 @@ module Aua
       def translate_assignment: (AST::Node) -> Array[Statement]
       def translate_binop: (AST::Node) -> statement
       def translate_if: (AST::Node) -> statement
+      def translate_gen_lit: (untyped) -> Array[Aua::Str]
       module Binop
         def self.binary_operation: (Symbol, statement, statement) -> statement
         def self.binop_plus: (statement, statement) -> statement
@@ -316,20 +329,57 @@ module Aua
     def pretty: (Obj) -> String
   end
 
-  class Context
-    def source_document: () -> Text::Document
-  end
-
   class Interpreter
     def initialize: (?environment) -> void
     def lex:   (Context, String) -> Enumerator[token]
     def parse: (Context, Enumerator[token]) -> AST::Node
-    def vm:    (Context, ) -> VM
     def run:   (Context, String) -> untyped
+
+    private
+    def vm:    () -> VM
   end
 
-  class Error < StandardError
+
+  module LLM
+    class Provider
+      class Error < Aua::Error
+      end
+
+      def initialize: (base_uri: String) -> void
+      def generation_parameters: () -> Hash[Symbol, untyped]
+      def request: (prompt: String, ?model: String, ?generation: Hash[Symbol, untyped]) -> Provider::Response
+
+      class Response
+        attr_reader model: String
+        attr_reader prompt: String
+        attr_reader message: String
+        attr_reader requested_at: Time
+        attr_reader duration: ::Float
+        attr_reader tokens_used: Integer?
+        def initialize: (model: String, prompt: String, message: String, requested_at: Time, responded_at: Time, ?tokens_used: Integer, ?parameters: Hash[untyped, untyped]) -> void
+        def to_s: () -> String
+      end
+    end
+
+    class Chat
+      def initialize: () -> void
+      def ask: (String) -> String
+    end
+
+    def self.chat: () -> Chat
   end
+
+  class Configuration
+    attr_reader base_uri: String
+    attr_reader model: String
+    attr_reader testing: bool
+    def initialize: (?base_uri: String, ?model: String, ?testing: bool) -> void
+  end
+
+  def self.testing: () -> bool
+  def self.testing=: (bool) -> void
+  def self.configure: () { (untyped) -> void } -> void
+  def self.configuration: () -> Configuration
 
   # Constants and helpers
   EOS: token
@@ -340,6 +390,4 @@ module Aua
   SEND: untyped
 
   def self.run: (String) -> untyped
-  
-  def self.configuration: () -> config
 end
