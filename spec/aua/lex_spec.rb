@@ -24,6 +24,13 @@ module Aua
           ])
         end
       end
+
+      it "ignores comments on their own line" do
+        input = "# just a comment\n"
+        lexer = described_class.new(input)
+        tokens = lexer.tokens.to_a
+        expect(tokens).to be_empty
+      end
     end
 
     describe "literal" do
@@ -50,6 +57,46 @@ module Aua
           expect(str_token).not_to be_nil
           expect(str_token.value).to eq("hello")
         end
+      end
+
+      describe "empty str" do
+        it "lexes an empty string literal" do
+          input = '""'
+          lexer = described_class.new(input)
+          tokens = lexer.tokens.to_a
+          str_token = tokens.find { |t| t.type == :str }
+          expect(str_token).not_to be_nil
+          expect(str_token.value).to eq("")
+        end
+      end
+
+      describe "empty single-quoted str" do
+        it "lexes an empty single-quoted string literal" do
+          input = "''"
+          lexer = described_class.new(input)
+          tokens = lexer.tokens.to_a
+          str_token = tokens.find { |t| t.type == :simple_str }
+          expect(str_token).not_to be_nil
+          expect(str_token.value).to eq("")
+        end
+      end
+    end
+
+    describe "whitespace" do
+      it "ignores leading and trailing whitespace" do
+        input = "   42   "
+        lexer = described_class.new(input)
+        tokens = lexer.tokens.to_a
+        expect(tokens.map { |t| [t.type, t.value] }).to eq([[:int, 42]])
+      end
+
+      it "ignores whitespace between tokens" do
+        input = "x   =   42"
+        lexer = described_class.new(input)
+        tokens = lexer.tokens.to_a
+        expect(tokens.map { |t| [t.type, t.value] }).to eq([
+          [:id, "x"], [:equals, "="], [:int, 42],
+        ])
       end
     end
   end

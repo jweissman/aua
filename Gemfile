@@ -20,3 +20,5 @@ gem "rainbow", "~> 3.1"
 gem "readline", "~> 0.0.4"
 
 gem "ostruct", "~> 0.6.1"
+
+gem "pbt", "~> 0.5.0"

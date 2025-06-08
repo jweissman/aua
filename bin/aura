@@ -18,6 +18,10 @@ def color_for(klass)
   end
 end
 
+def info(msg)
+  $stdout.puts(msg)
+end
+
 HISTFILE = File.expand_path("~/.aua_history")
 File.readlines(HISTFILE, chomp: true).each { |line| Readline::HISTORY.push(line) } if File.exist?(HISTFILE)
 
@@ -32,12 +36,12 @@ loop do
   next if input.strip.empty?
 
   result = Aua.run(input)
-  puts result.pretty.color(color_for(result.class)).bright
-  puts
+  info result.pretty.color(color_for(result.class)).bright
+  info
 rescue Interrupt
-  puts "\nExiting shell..."
+  warn "\nExiting shell..."
   break
 rescue StandardError => e
-  puts "An error occurred: #{e.message}"
-  puts "Please try again."
+  warn "An error occurred: #{e.message}"
+  info "Please try again."
 end

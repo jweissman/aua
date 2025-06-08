@@ -118,7 +118,7 @@ module Aua
 
       def consume_string_chars: (String) -> String
       def encode_string: (String, quote: String) -> Syntax::Token
-      def string_end?: (Array[String], Array[String]) -> bool
+      def string_end?: (Array[String]) -> bool
       def invalid_token_message: (String) -> String
       def check_number_followed_by_identifier: () -> void
     end
@@ -156,7 +156,6 @@ module Aua
     def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
          | (Symbol, untyped) -> Syntax::Token
          | (Symbol) -> Syntax::Token
-
 
     private
 

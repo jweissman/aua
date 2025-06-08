@@ -23,22 +23,18 @@ module Aua
       "(" => :lparen,
       ")" => :rparen,
       "=" => :equals,
-      "#" => :comment,
+      "#" => :comment
     }.freeze
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
-
-    THREE_CHAR_TOKEN_NAMES = {
-      "\"\"\"" => :prompt,
-    }.freeze
-
+    THREE_CHAR_TOKEN_NAMES = { "\"\"\"" => :prompt }.freeze
     KEYWORDS = Set.new(%i[if then else elif]).freeze
   end
 
   # A lexer for the Aua language.
   # Responsible for converting source code into a stream of tokens.
   class Lex
-    # Handle lexing entrypoints, recognizing tokens and managing the lexer state.
+    # Dispatch manager (lexing entrypoints / first-level handlers).
     class Handler
       def initialize(lexer)
         @lexer = lexer
@@ -105,7 +101,7 @@ module Aua
         hint = "The character #{the_lens.current_char.inspect} is not valid in the current context."
         msg = the_lens.identify(
           message: "Invalid token: unexpected character",
-          hint:,
+          hint:
         )
         puts msg
         msg
@@ -124,7 +120,7 @@ module Aua
       def eof? = lens.eof?
     end
 
-    # Encapsulates specific logic for recognizing different types of tokens.
+    # Encapsulates token logic.
     class Recognizer
       include Syntax
 
@@ -181,10 +177,12 @@ module Aua
       MAX_STRING_LENGTH = 65_536
 
       def string(quote = "'")
-        advance
+        quote.length.times { advance } # skip opening quote
+        # advance
         chars = consume_string_chars(quote)
 
-        advance # skip closing quote
+        # advance # skip closing quote
+        quote.length.times { advance } # skip opening quote
         raise Error, "Unterminated string literal (of length #{chars.length})" if chars.length >= MAX_STRING_LENGTH
 
         encode_string(chars, quote:)
@@ -194,15 +192,17 @@ module Aua
 
       def consume_string_chars(quote)
         chars = [] # : Array[String]
+
         while current_char != "" && chars.length < MAX_STRING_LENGTH
+          break if string_end?(quote.chars)
+
           chars << current_char
           advance
-          break if string_end?(quote.chars, chars)
         end
 
         return chars.join if current_char == quote.chars.last
 
-        raise Error, "Unterminated string literal (expected closing quote '#{quote}') at #{@lexer.lens.describe}"
+        raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe
       end
 
       def encode_string(val, quote:)
@@ -214,14 +214,13 @@ module Aua
         end
       end
 
-      def string_end?(quote_chars, chars)
+      # , chars)
+      def string_end?(quote_chars)
         lookahead = [current_char, next_char, next_next_char].take(quote_chars.length)
         if lookahead == quote_chars
           # For multi-char quotes, shift out the quote chars and advance as needed
-          if quote_chars.length > 1
-            chars.shift(quote_chars.length - 1)
-            (quote_chars.length - 1).times { advance }
-          end
+          (quote_chars.length - 1).times { advance } if quote_chars.length > 1
+
           true
         else
           false
@@ -331,7 +330,7 @@ module Aua
       peek_char, next_peek_char = @doc.peek_n(2)
       chars = [current_char, peek_char, next_peek_char]
       (1..chars.size).map { |n| chars.take(n).compact }.reverse
-        .each do |characters|
+                     .each do |characters|
         accepted = accept_n(characters)
         return accepted if accepted
       end
