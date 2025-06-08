@@ -42,12 +42,14 @@ Aura is for users who want to build, audit, and evolve their own tools.
   end
 
   reasoning = """Why is the sky blue?""" as Reason
-  decision_point = (answer ~|- the_REAL_answer)
+  decision_point = answer ~|- the_REAL_answer
 
   value_function = """Which is more interesting?""" 
-  actual_response = decision_point.collapse(value_function)
+  actual_response = decision_point |- value_function
   say actual_response
   ```
+
+In fact casts can be between any two objects with a reified schema (arrays, graphs, records, etc).
 
 ### Type System
 - Aura supports primitive types (Int, Float, Bool, Str, Nihil), records, and user-defined interfaces.

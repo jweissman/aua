@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Aua
   # The base object for all Aua values.
   class Obj

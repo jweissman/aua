@@ -14,6 +14,8 @@ module Aua
 
       def advance = @column += 1
       def newline = @line += 1
+
+      def to_s = "at line #{@line}, column #{@column}"
     end
 
     # Represents a document containing source code, with methods to navigate and manipulate it.
@@ -30,6 +32,8 @@ module Aua
       def peek_at(index) = @text.chars.fetch(@position + index, nil)
       def peek = peek_at(1)
 
+      def caret = @cursor.dup.freeze
+
       # Returns an array of the next n characters from the current position.
       # If there are fewer than n characters left, it returns as many as possible.
       # If n is 0, it returns an empty array.
@@ -38,12 +42,18 @@ module Aua
       def slice(start, length) = @text.slice(start, length)
 
       # Advances the lexer by one character, updating position and line/column counters.
-      def advance(n = 1)
-        @position += n
-        @cursor.advance
-        return unless peek == "\n"
+      def advance(inc = 1)
+        count = inc.dup
+        return if count.zero?
 
-        @cursor.newline
+        while inc.positive? && !finished?
+          inc -= 1
+          @position += 1
+          @cursor.advance
+          next unless peek == "\n"
+
+          @cursor.newline
+        end
       end
 
       def indicate = Text.indicate(@text, @cursor)

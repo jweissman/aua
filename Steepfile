@@ -1,13 +1,19 @@
 # frozen_string_literal: true
 
-# D = Steep::Diagnostic
-#
+D = Steep::Diagnostic
+
 target :lib do
   signature "sig"
   ignore_signature "sig/test"
-  check "lib" # Directory name
-  # library "json"
+  check "lib"
+  library "uri"
+  library "json"
+  library "time"
+  library "digest"
+  library "net-http"
+  library "fileutils"
 end
+
 #   check "path/to/source.rb"         # File name
 #   check "app/models/**/*.rb"        # Glob
 #   # ignore "lib/templates/*.rb"
@@ -16,7 +22,7 @@ end
 #   # library "strong_json"           # Gems
 #
 #   # configure_code_diagnostics(D::Ruby.default)      # `default` diagnostics setting (applies by default)
-#   # configure_code_diagnostics(D::Ruby.strict)       # `strict` diagnostics setting
+# configure_code_diagnostics(D::Ruby.strict) # `strict` diagnostics setting
 #   # configure_code_diagnostics(D::Ruby.lenient)      # `lenient` diagnostics setting
 #   # configure_code_diagnostics(D::Ruby.silent)       # `silent` diagnostics setting
 #   # configure_code_diagnostics do |hash|             # You can setup everything yourself

@@ -236,7 +236,7 @@ module Aua
 
     def reduce(ast) = @tx.translate(ast)
 
-    def evaluate(ctx, ast)
+    def evaluate(_ctx, ast)
       ret = Nihil.new
       stmts = reduce(ast)
       stmts = [stmts] unless stmts.is_a? Array
@@ -299,8 +299,8 @@ module Aua
       @env = env
     end
 
-    def lex(ctx, code) = Lex.new(code).enum_for(:tokenize)
-    def parse(ctx, tokens) = Parse.new(tokens).tree
+    def lex(_ctx, code) = Lex.new(code).enum_for(:tokenize)
+    def parse(_ctx, tokens) = Parse.new(tokens).tree
     def vm = VM.new @env
 
     # Runs the Aua interpreter pipeline: lexing, parsing, and evaluation.
@@ -345,19 +345,30 @@ module Aua
     @testing = value
   end
 
-  class Configuration < Data.define(:testing, :model, :base_uri)
-    def initialize(
+  # Global interpreter settings.
+  class Configuration < Data.define(:testing, :model, :base_uri, :temperature, :top_p, :max_tokens)
+    # Default values for the configuration
+    def self.default(
       testing: false,
       model: "qwen-2.5-1.5b-chat",
-      base_uri: # "http://localhost:1234/v1"
-              "http://10.0.0.158:1234/v1"
+      base_uri: "http://10.0.0.158:1234/v1",
+      temperature: 0.7,
+      # top_p: 0.9,
+      max_tokens: 1024
     )
-      super
+      new(
+        testing:,
+        model:,
+        base_uri:,
+        temperature:,
+        top_p: 0.9,
+        max_tokens:
+      )
     end
   end
 
   def self.configuration
-    @configuration ||= Configuration.new
+    @configuration ||= Configuration.default
   end
 
   def self.configure

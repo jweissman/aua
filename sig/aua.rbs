@@ -1,5 +1,6 @@
-Net: untyped
-# JSON: untyped
+# Net: untyped
+# URI: untyped
+# FileUtils: untyped
 
 module Aua
   VERSION: String
@@ -25,7 +26,7 @@ module Aua
       attr_reader position: Integer
 
       def initialize: (String) -> void
-      def advance: () -> void
+      def advance: (?Integer) -> void
       def current: () -> char?
       def peek: () -> char?
       def peek_at: (Integer) -> char?
@@ -33,25 +34,25 @@ module Aua
       def slice: (Integer, Integer) -> String?
       def indicate: () -> Array[String]
       def finished?: () -> bool
+      def caret: () -> Cursor
     end
 
     def self.indicate: (String, Cursor) -> Array[String]
   end
 
   module Syntax
-    def t: (Symbol, untyped) -> Token
-         | (Symbol) -> Token
-
     class Token
       attr_reader type: Symbol
       attr_reader value: untyped
-      attr_reader location: Text::Cursor
-      def initialize: (type: Symbol, value: untyped, at: Text::Cursor) -> void
+      attr_reader at: ::Aua::Text::Cursor
+      def initialize: (type: Symbol, value: untyped, at: ::Aua::Text::Cursor) -> void
     end
 
     ONE_CHAR_TOKEN_NAMES: Hash[String, Symbol]
     TWO_CHAR_TOKEN_NAMES: Hash[String, Symbol]
     THREE_CHAR_TOKEN_NAMES: Hash[String, Symbol]
+
+    KEYWORDS: Set[Symbol]
   end
 
   type token = Syntax::Token
@@ -59,6 +60,7 @@ module Aua
 
   class Lex
     include Syntax
+
     MAX_TOKENS: Integer
     class Lens
       def initialize: (Text::Document) -> void
@@ -69,29 +71,37 @@ module Aua
       def describe: () -> String
       def describe_character: (char) -> String
       def identify: (message: String, hint: String) -> String
+      def eof?: () -> bool
+      def peek: () -> char
+      def peek_n: (Integer) -> Array[char]
     end
     @tokens: Array[token]
     @doc: Text::Document
     @lens: Lens
     def initialize: (String) -> void
-    def tokens: () -> Array[token]
-    def advance: () -> void
+    def tokens: () -> Enumerator[token]
+    def advance: (?Integer) -> void
+    def slice_from: (Integer) -> String?
+    def caret: () -> Text::Cursor
+
     def current_line: () -> Integer
     def current_column: () -> Integer
     def current_char: () -> char
     def recognize: () -> Lex::Recognizer
     def eof?: () -> bool
     def unexpected_character_message: () -> String
-    def lex: () -> void
     def accept: () -> untyped
     def accept_one: (char?) -> untyped
     def accept_two: (char?, char?) -> untyped
     def accept_three: (char?, char?, char?) -> untyped
     def current_pos: () -> Integer
-    def slice_from: (Integer) -> String?
     def each_token: () { (token) -> void } -> void
     def accept_token: () -> token?
     def tokenize: () { (token) -> void } -> void
+
+    def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
+         | (Symbol, untyped) -> Syntax::Token
+         | (Symbol) -> Syntax::Token
 
     private
 
@@ -108,22 +118,25 @@ module Aua
     def handle_minus: () -> token?
     def handle_whitespace: () -> void
     def handle_unexpected: () -> void
+    def handle_prompt: () -> token?
 
     class Recognizer
-      KEYWORDS : Set[Symbol]
+      KEYWORDS: Set[Symbol]
       MAX_STRING_LENGTH: Integer
       def initialize: (Lex) -> void
       def identifier: () -> token
       def number_lit: () -> token
-      def string: () -> token
+      def string: (?String) -> token
       def number_token_from_string: (String, bool) -> token
       def current_char: () -> char
-      def advance: () -> void
-      def t: (Symbol, untyped) -> token
-           | (Symbol, untyped, untyped) -> token
-           | (Symbol) -> token
+      def advance: (?Integer) -> void
+      def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
+           | (Symbol, untyped) -> Syntax::Token
+           | (Symbol) -> Syntax::Token
       def eof?: () -> bool
       def current_pos: () -> Integer
+      def next_char: () -> char
+      def next_next_char: () -> char
 
       private
 
@@ -136,8 +149,8 @@ module Aua
     class Node
       attr_reader type: Symbol
       attr_reader value: untyped
-      attr_reader location: Text::Cursor
-      def initialize: (type: Symbol, value: untyped, at: Text::Cursor) -> void
+      attr_reader at: ::Aua::Text::Cursor
+      def initialize: (type: Symbol, value: untyped, at: ::Aua::Text::Cursor) -> void
     end
   end
 
@@ -147,6 +160,7 @@ module Aua
 
     attr_reader parse: Parse
     def s: (Symbol, *untyped) -> AST::Node
+    def normalize_maybe_list: (untyped) -> untyped
     class Primitives
       include Grammar
       def initialize: (Parse) -> void
@@ -158,6 +172,7 @@ module Aua
       def parse_bool: () -> AST::Node
       def parse_str: () -> AST::Node
       def parse_parens: () -> AST::Node
+      def parse_generative_lit: () -> AST::Node
 
       private
 
@@ -168,11 +183,12 @@ module Aua
 
   class Parse
     include Grammar
-    include Syntax
+
     @tokens: Enumerator[token]
-    @buffer: Array[token]
+    @buffer: Array[token?]
 
     attr_reader current_token: token
+
     def initialize: (Enumerator[token]) -> void
     def tree: () -> AST::Node
     def consume: (Symbol) -> void
@@ -331,34 +347,86 @@ module Aua
 
   class Interpreter
     def initialize: (?environment) -> void
-    def lex:   (Context, String) -> Enumerator[token]
+    def lex: (Context, String) -> Enumerator[token]
     def parse: (Context, Enumerator[token]) -> AST::Node
-    def run:   (Context, String) -> untyped
+    def run: (Context, String) -> untyped
 
     private
-    def vm:    () -> VM
-  end
 
+    def vm: () -> VM
+  end
 
   module LLM
     class Provider
       class Error < Aua::Error
       end
 
-      def initialize: (base_uri: String) -> void
-      def generation_parameters: () -> Hash[Symbol, untyped]
-      def request: (prompt: String, ?model: String, ?generation: Hash[Symbol, untyped]) -> Provider::Response
+      class Cache[T = untyped]
+        @cache: Hash[String, T]
+        @cache_miss_lambda: ^(String, T) -> void
+        def key: (*untyped) -> String
+        def fetch: (String) { () -> T } -> T
+        def hydrate: (String) -> void
+        def dump: (String) -> void
+        def miss: () { (String, T) -> void } -> void
+        def append_to_cache_file: (String, T, untyped) -> void
+        def self.instance: () -> Cache[untyped]
+        def self.file_path: () -> String
+        def self.simple_key: (untyped) -> String
+        def with_cache: (String) { () -> T } -> T
+      end
 
       class Response
-        attr_reader model: String
+        class Metadata
+          attr_reader model: String
+          attr_reader requested_at: Time
+          attr_reader responded_at: Time
+          attr_reader duration: ::Float
+          attr_reader tokens_used: Integer?
+          attr_reader parameters: Hash[untyped, untyped]
+          def initialize: (
+            model: String, requested_at: Time, responded_at: Time,
+            ?tokens_used: Integer, ?parameters: Hash[untyped, untyped]
+          ) -> void
+          def timing: () -> String
+          def self.coerce_timestamp: (untyped) -> Time
+        end
         attr_reader prompt: String
         attr_reader message: String
-        attr_reader requested_at: Time
-        attr_reader duration: ::Float
-        attr_reader tokens_used: Integer?
-        def initialize: (model: String, prompt: String, message: String, requested_at: Time, responded_at: Time, ?tokens_used: Integer, ?parameters: Hash[untyped, untyped]) -> void
+        def initialize: (prompt: String, message: String, metadata: Metadata) -> void
         def to_s: () -> String
       end
+
+      type completion_trace = {
+          message: String,
+          model: String,
+          prompt: String,
+          tokens_used: Integer?,
+          parameters: Hash[untyped, untyped],
+          requested_at: Time,
+          responded_at: Time
+        }
+
+      class Completion
+        attr_reader model: String
+        attr_reader prompt: String
+        attr_reader generation: Hash[Symbol, untyped]
+
+        def initialize: (prompt: String, model: String, generation: Hash[Symbol, untyped]) -> void
+
+        def generate: () -> completion_trace
+        def call: () -> completion_trace
+        def request: (prompt: String, ?model: String, ?generation: Hash[Symbol, untyped]) -> completion_trace
+        def read_response: (String, prompt: String, meta: Hash[Symbol, untyped]) -> completion_trace
+
+        def post: (untyped, untyped) -> untyped
+        def db: () -> Cache[completion_trace]
+        def request_body: (String, model: String, generation: Hash[Symbol, untyped]) -> untyped
+      end
+
+      def initialize: (?base_uri: String) -> void
+      def chat_completion: (prompt: String, ?model: String, ?generation: Hash[Symbol, untyped]) -> Response
+      def generation_parameters: () -> Hash[Symbol, untyped]
     end
 
     class Chat
@@ -373,7 +441,17 @@ module Aua
     attr_reader base_uri: String
     attr_reader model: String
     attr_reader testing: bool
-    def initialize: (?base_uri: String, ?model: String, ?testing: bool) -> void
+    attr_reader temperature: ::Float
+    attr_reader max_tokens: Integer
+    attr_reader top_p: ::Float
+    attr_reader frequency_penalty: ::Float
+    attr_reader presence_penalty: ::Float
+    def initialize: (
+      ?base_uri: String, ?model: String, ?testing: bool, ?temperature: ::Float,
+      ?max_tokens: Integer, ?top_p: ::Float, ?frequency_penalty: ::Float,
+      ?presence_penalty: ::Float
+    ) -> void
+    def self.default: () -> Configuration
   end
 
   def self.testing: () -> bool
@@ -390,4 +468,5 @@ module Aua
   SEND: untyped
 
   def self.run: (String) -> untyped
+  def self.testing?: () -> bool
 end

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
+require "rainbow/refinement"
+
 module Aua
   # Provides utility methods for syntax-related tasks.
   module Syntax
     # Token = Data.define(:type, :value)
-    class Token < Data.define(:type, :value)
+    class Token < Data.define(:type, :value, :at)
+      attr_reader :at
     end
-
-    # Creates a new token with the given type and optional value.
-    def t(type, value = nil) = Token.new(type:, value:)
 
     ONE_CHAR_TOKEN_NAMES = {
       /\s/ => :whitespace,
@@ -30,7 +30,7 @@ module Aua
       "\"\"\"" => :prompt
     }.freeze
 
-    KEYWORDS = Set[:if, :then, :else, :elif].freeze
+    KEYWORDS = Set.new(%i[if then else elif]).freeze
   end
 
   # A lexer for the Aua language.
@@ -44,12 +44,25 @@ module Aua
         @lexer = lexer
       end
 
-      def advance(...) = @lexer.advance(...)
+      def advance(n = 1) = @lexer.advance(n)
       def current_char = @lexer.lens.current_char
       def current_pos = @lexer.lens.current_pos
       def eof? = @lexer.eof?
-      def next_char = @lexer.lens.peek
-      def next_next_char = @lexer.lens.peek_n(2).last
+
+      def next_char
+        @lexer.lens.peek
+      end
+
+      def next_next_char
+        @lexer.lens.peek_n(2).last
+      end
+
+      # Creates a new token with the given type and optional value.
+      def t(type, value = nil, at: @lexer.caret)
+        # puts "Creating token: #{type.inspect} with value: #{value.inspect} at position: #{at}"
+        # puts "Current position: #{@lexer.lens.describe}" if Aua.testing?
+        Syntax::Token.new(type:, value:, at: at || @lexer.caret)
+      end
 
       # Lexes an identifier or boolean literal.
       #
@@ -89,43 +102,55 @@ module Aua
       # Lexes a string literal, accumulating characters between quotes.
       MAX_STRING_LENGTH = 65_536
       def string(quote = '"')
-        advance # skip opening quote
         chars = [] # : Array[String]
+        advance
         quote_chars = quote.chars.to_a
-        warn "Recognizing string with quote: #{quote.inspect}"
-        while current_char && chars.length < MAX_STRING_LENGTH
+        warn "Recognizing string with quote: #{quote_chars} at #{@lexer.lens.describe}" if Aua.testing?
+
+        while current_char != "" && chars.length < MAX_STRING_LENGTH
           chars << current_char
           advance
-          if quote.length == 1
+          case quote.length
+          when 1
             if current_char == quote_chars.first
               break # end of string
             end
-          elsif quote.length == 2
+          when 2
             if current_char == quote_chars.first && next_char == quote_chars.last
               advance # skip closing quote
               break # end of string
             end
-          elsif quote.length == 3
+          when 3
             char_matches = [current_char, next_char, next_next_char].each_with_index.all? do |c, i|
               c == quote_chars[i]
             end
             if char_matches
               chars.shift(quote_chars.length - 1) # drop the quote characters
-              advance(2) # skip closing quote
+              advance
+              advance
               break # end of string
             end
           end
         end
+        unless current_char == quote_chars.last
+          raise Error, "Unterminated string literal (expected closing quote '#{quote}') at #{@lexer.lens.describe}"
+        end
+
         advance # skip closing quote
         raise Error, "Unterminated string literal (of length #{chars.length})" if chars.length >= MAX_STRING_LENGTH
 
-        case quote
-        when "\"\"\"" then t :gen_lit, chars.join
-        # when "\"\"" then t :prompt, chars.join
-        when "'" then t :char, chars.join
-        when "`" then t :raw_str, chars.join
-        else t(:str, chars.join)
-        end
+        val = chars.join
+
+        ret = case quote
+              when "'" then t :char, val
+              when "`" then t :raw_str, val
+              when "\"\"\"" then t :gen_lit, val
+              else t :str, val
+              end
+
+        puts "Recognized string token: #{ret.inspect}" if Aua.testing?
+
+        ret
       end
 
       private
@@ -149,16 +174,15 @@ module Aua
 
       def eof? = @doc.finished?
       def peek = @doc.peek
-      def peek_n(n) = @doc.peek_n(n)
+      def peek_n(inc) = @doc.peek_n(inc)
 
       # Current position and character information
-
-      def current_pos    = @doc.position
+      def current_pos    = @doc.position || 0
       def current_line   = @doc.cursor.line
       def current_column = @doc.cursor.column
       def current_char   = @doc.current || ""
 
-      def describe = "#{current_line}:#{current_column} #{current_char.inspect} (#{describe_character(current_char)})"
+      def describe = "#{current_line}:#{current_column} #{describe_character(current_char)}"
 
       def describe_character(char)
         case char
@@ -200,8 +224,16 @@ module Aua
     end
 
     def inspect = "#<#{self.class.name}@#{@lens.describe}>"
-    def advance(...) = @doc.advance(...)
+
+    def tokens = enum_for(:tokenize).lazy
+    def advance(inc = 1) = @doc.advance(inc)
     def slice_from(start) = @doc.slice(start, @doc.position - start)
+    def caret = @doc.caret
+
+    # Creates a new token with the given type and optional value.
+    def t(type, value = nil, at: caret)
+      Token.new(type:, value:, at: at || caret)
+    end
 
     # Enumerator-based token stream for memory efficiency and streaming.
     def tokenize
@@ -266,7 +298,7 @@ module Aua
     def handle_whitespace = advance
     def handle_identifier = recognize.identifier
     def handle_string = recognize.string
-    def handle_prompt = recognize.string("\"\"\"")
+    def handle_prompt = recognize.string('"""')
 
     def handle_minus
       advance
@@ -320,17 +352,6 @@ module Aua
         message: "Unexpected character",
         hint: "This character is not valid in the current context."
       )
-      # current_char = @lens.current_char
-      # current_line = @lens.current_line
-      # current_column = @lens.current_column
-
-      # <<~ERROR
-      #   Unexpected #{describe_character(current_char)} at line #{current_line}, column #{current_column}.
-
-      #   #{@doc.indicate.join("\n")}
-      #   This character (#{current_char.inspect}) is not valid in the current context.
-      #   Please check the syntax of your code.
-      # ERROR
     end
   end
 end
