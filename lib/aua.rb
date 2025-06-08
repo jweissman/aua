@@ -66,14 +66,22 @@ module Aua
       def translate(ast)
         case ast.type
         when :nihil, :int, :float, :bool, :str then reify_primary(ast)
-        when :if then translate_if(ast)
-        when :negate then translate_negation(ast)
-        when :id then [LOCAL_VARIABLE_GET[ast.value]]
-        when :assign then translate_assignment(ast)
-        when :binop then translate_binop(ast)
+        when :if, :negate, :id, :assign, :binop then translate_basic(ast)
         when :gen_lit then translate_gen_lit(ast)
         else
           raise Error, "Unknown AST node type: \\#{ast.type}"
+        end
+      end
+
+      def translate_basic(node)
+        case node.type
+        when :if then translate_if(node)
+        when :negate then translate_negation(node)
+        when :id then [LOCAL_VARIABLE_GET[node.value]]
+        when :assign then translate_assignment(node)
+        when :binop then translate_binop(node)
+        else
+          raise Error, "Unknown Basic AST node type: \\#{node.type}"
         end
       end
 

@@ -54,6 +54,8 @@ module Aua
 
           @cursor.newline
         end
+
+        true if inc.positive?
       end
 
       def indicate = Text.indicate(@text, @cursor)

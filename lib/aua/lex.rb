@@ -44,25 +44,15 @@ module Aua
         @lexer = lexer
       end
 
-      def advance(n = 1) = @lexer.advance(n)
+      def advance(inc = 1) = @lexer.advance(inc)
       def current_char = @lexer.lens.current_char
+      def next_char = @lexer.lens.peek
+      def next_next_char = @lexer.lens.peek_n(2).last
       def current_pos = @lexer.lens.current_pos
       def eof? = @lexer.eof?
 
-      def next_char
-        @lexer.lens.peek
-      end
-
-      def next_next_char
-        @lexer.lens.peek_n(2).last
-      end
-
       # Creates a new token with the given type and optional value.
-      def t(type, value = nil, at: @lexer.caret)
-        # puts "Creating token: #{type.inspect} with value: #{value.inspect} at position: #{at}"
-        # puts "Current position: #{@lexer.lens.describe}" if Aua.testing?
-        Syntax::Token.new(type:, value:, at: at || @lexer.caret)
-      end
+      def t(type, value = nil, at: @lexer.caret) = Syntax::Token.new(type:, value:, at: at || @lexer.caret)
 
       # Lexes an identifier or boolean literal.
       #
@@ -102,58 +92,52 @@ module Aua
       # Lexes a string literal, accumulating characters between quotes.
       MAX_STRING_LENGTH = 65_536
       def string(quote = '"')
-        chars = [] # : Array[String]
         advance
-        quote_chars = quote.chars.to_a
-        warn "Recognizing string with quote: #{quote_chars} at #{@lexer.lens.describe}" if Aua.testing?
-
-        while current_char != "" && chars.length < MAX_STRING_LENGTH
-          chars << current_char
-          advance
-          case quote.length
-          when 1
-            if current_char == quote_chars.first
-              break # end of string
-            end
-          when 2
-            if current_char == quote_chars.first && next_char == quote_chars.last
-              advance # skip closing quote
-              break # end of string
-            end
-          when 3
-            char_matches = [current_char, next_char, next_next_char].each_with_index.all? do |c, i|
-              c == quote_chars[i]
-            end
-            if char_matches
-              chars.shift(quote_chars.length - 1) # drop the quote characters
-              advance
-              advance
-              break # end of string
-            end
-          end
-        end
-        unless current_char == quote_chars.last
-          raise Error, "Unterminated string literal (expected closing quote '#{quote}') at #{@lexer.lens.describe}"
-        end
+        chars = consume_string_chars(quote)
 
         advance # skip closing quote
         raise Error, "Unterminated string literal (of length #{chars.length})" if chars.length >= MAX_STRING_LENGTH
 
-        val = chars.join
-
-        ret = case quote
-              when "'" then t :char, val
-              when "`" then t :raw_str, val
-              when "\"\"\"" then t :gen_lit, val
-              else t :str, val
-              end
-
-        puts "Recognized string token: #{ret.inspect}" if Aua.testing?
-
-        ret
+        encode_string(chars, quote:)
       end
 
       private
+
+      def consume_string_chars(quote)
+        chars = []
+        while current_char != "" && chars.length < MAX_STRING_LENGTH
+          chars << current_char
+          advance
+          break if string_end?(quote.chars, chars)
+        end
+
+        return chars.join if current_char == quote.chars.last
+
+        raise Error, "Unterminated string literal (expected closing quote '#{quote}') at #{@lexer.lens.describe}"
+      end
+
+      def encode_string(val, quote:)
+        case quote
+        when "'" then t :char, val
+        when "`" then t :raw_str, val
+        when '"""' then t :gen_lit, val
+        else t :str, val
+        end
+      end
+
+      def string_end?(quote_chars, chars)
+        lookahead = [current_char, next_char, next_next_char].take(quote_chars.length)
+        if lookahead == quote_chars
+          # For multi-char quotes, shift out the quote chars and advance as needed
+          if quote_chars.length > 1
+            chars.shift(quote_chars.length - 1)
+            (quote_chars.length - 1).times { advance }
+          end
+          true
+        else
+          false
+        end
+      end
 
       def check_number_followed_by_identifier
         return unless current_char&.match?(/[a-zA-Z_]/)
@@ -224,16 +208,11 @@ module Aua
     end
 
     def inspect = "#<#{self.class.name}@#{@lens.describe}>"
-
     def tokens = enum_for(:tokenize).lazy
     def advance(inc = 1) = @doc.advance(inc)
     def slice_from(start) = @doc.slice(start, @doc.position - start)
     def caret = @doc.caret
-
-    # Creates a new token with the given type and optional value.
-    def t(type, value = nil, at: caret)
-      Token.new(type:, value:, at: at || caret)
-    end
+    def t(type, value = nil, at: caret) = Token.new(type:, value:, at: at || caret)
 
     # Enumerator-based token stream for memory efficiency and streaming.
     def tokenize
@@ -247,51 +226,30 @@ module Aua
     def accept(&)
       current_char = @lens.current_char
       peek_char, next_peek_char = @doc.peek_n(2)
-
-      accepted = accept_three(current_char, peek_char, next_peek_char)
-      return accepted if accepted
-
-      accepted = accept_two(current_char, peek_char)
-      return accepted if accepted
-
-      accepted = accept_one(current_char)
-      return accepted if accepted
-
-      nil
-    end
-
-    def accept_three(fst, snd, thd)
-      three_char_string = "#{fst}#{snd}#{thd}"
-
-      THREE_CHAR_TOKEN_NAMES.each do |pattern, token_name|
-        next unless three_char_string == pattern
-
-        handler = "handle_#{token_name}"
-        return send(handler)
+      chars = [current_char, peek_char, next_peek_char]
+      (1..chars.size).map { |n| chars.take(n).compact }.reverse
+                     .each do |characters|
+        accepted = accept_n(characters)
+        return accepted if accepted
       end
       nil
     end
 
-    def accept_two(fst, snd)
-      two_char_string = "#{fst}#{snd}"
-
-      TWO_CHAR_TOKEN_NAMES.each do |pattern, token_name|
-        next unless two_char_string == pattern
-
-        handler = "handle_#{token_name}"
-        return send(handler)
-      end
-      nil
+    def token_names(len)
+      [ONE_CHAR_TOKEN_NAMES, TWO_CHAR_TOKEN_NAMES, THREE_CHAR_TOKEN_NAMES][len - 1]
     end
 
-    def accept_one(char)
-      ONE_CHAR_TOKEN_NAMES.each do |pattern, token_name|
+    def accept_n(chars)
+      token_names(chars.count).each do |pattern, token_name|
         handler = "handle_#{token_name}"
         case pattern
-        when Regexp then return send(handler) if char&.match?(pattern)
-        when String then return send(handler) if char == pattern
+        when Regexp
+          return send(handler) if chars.join&.match?(pattern)
+        when String
+          return send(handler) if chars.join == pattern
         end
       end
+      nil
     end
 
     # --- Handler methods: always yield or return nil ---

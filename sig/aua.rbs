@@ -91,13 +91,15 @@ module Aua
     def eof?: () -> bool
     def unexpected_character_message: () -> String
     def accept: () -> untyped
-    def accept_one: (char?) -> untyped
-    def accept_two: (char?, char?) -> untyped
-    def accept_three: (char?, char?, char?) -> untyped
+    def accept_n: (Array[char]) -> untyped
+    # def accept_one: (char?) -> untyped
+    # def accept_two: (char?, char?) -> untyped
+    # def accept_three: (char?, char?, char?) -> untyped
     def current_pos: () -> Integer
     def each_token: () { (token) -> void } -> void
     def accept_token: () -> token?
     def tokenize: () { (token) -> void } -> void
+    def token_names: (Integer) -> untyped
 
     def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
          | (Symbol, untyped) -> Syntax::Token
@@ -140,6 +142,9 @@ module Aua
 
       private
 
+      def consume_string_chars: (String) -> String
+      def encode_string: (String, quote: String) -> Syntax::Token
+      def string_end?: (Array[String], Array[String]) -> bool
       def invalid_token_message: (String) -> String
       def check_number_followed_by_identifier: () -> void
     end
@@ -319,6 +324,7 @@ module Aua
       def translate_negation: (AST::Node) -> Array[Statement]
       def translate: (AST::Node) -> statement
       def translate_assignment: (AST::Node) -> Array[Statement]
+      def translate_basic: (AST::Node) -> statement
       def translate_binop: (AST::Node) -> statement
       def translate_if: (AST::Node) -> statement
       def translate_gen_lit: (untyped) -> Array[Aua::Str]
@@ -364,12 +370,14 @@ module Aua
       class Cache[T = untyped]
         @cache: Hash[String, T]
         @cache_miss_lambda: ^(String, T) -> void
-        def key: (*untyped) -> String
         def fetch: (String) { () -> T } -> T
-        def hydrate: (String) -> void
-        def dump: (String) -> void
-        def miss: () { (String, T) -> void } -> void
+
         def append_to_cache_file: (String, T, untyped) -> void
+        def dump: (String) -> void
+        def fetch!: (String) { () -> T } -> T
+        def hydrate: (String) -> void
+        def hydrate_line: (String) -> void
+        def miss: () { (String, T) -> void } -> void
         def self.instance: () -> Cache[untyped]
         def self.file_path: () -> String
         def self.simple_key: (untyped) -> String

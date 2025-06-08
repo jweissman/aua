@@ -44,20 +44,21 @@ module Aua
           )
         end
 
-        def fetch(key, &block)
+        def fetch(key, &)
           @cache ||= {} # : Hash[String, completion_trace]
-          if @cache.key?(key)
-            puts "Cache hit for key: #{key}" if Aua.testing?
-          else
-            val = block.call
-            puts "Storing value in cache for key: #{key} => #{val}" if Aua.testing?
-            @cache[key] = val
-            if @cache_miss_lambda
-              puts "Executing cache miss lambda for key: #{key}" if Aua.testing?
-              @cache_miss_lambda.call(key, val)
-            end
+          unless @cache.key?(key)
+            val = fetch!(key, &)
+            puts "Executing cache miss lambda for #{key} => #{val}" if Aua.testing?
+            @cache_miss_lambda.call(key, val)
           end
           @cache[key]
+        end
+
+        def fetch!(key, &block)
+          val = block.call
+          puts "Storing value in cache for key: #{key} => #{val}" if Aua.testing?
+          @cache[key] = val
+          val
         end
 
         def with_cache(the_key, &)
@@ -76,16 +77,22 @@ module Aua
 
           File.open(file_path, "r") do |file|
             file.each_line do |line|
-              entry = JSON.parse(line, symbolize_names: true)
-              if @cache.key?(entry[:key])
-                puts "Duplicate cache entry for key: #{entry[:key]}" if Aua.testing?
-                next
-              end
-              @cache[entry[:key]] = entry[:value]
-            rescue JSON::ParserError => e
-              puts "Failed to parse cache entry: #{e.message}"
+              next if line.start_with?("#") || line.strip.empty?
+
+              hydrate_line(line.strip)
             end
           end
+        end
+
+        def hydrate_line(line)
+          entry = JSON.parse(line, symbolize_names: true)
+          if @cache.key?(entry[:key])
+            puts "Cache already contains key: #{entry[:key]}" if Aua.testing?
+            return
+          end
+          @cache[entry[:key]] = entry[:value]
+        rescue JSON::ParserError => e
+          warn "Failed to parse cache entry: #{e.message}"
         end
 
         def dump(file_path)
@@ -96,9 +103,6 @@ module Aua
               file.puts(entry.to_json)
             end
           end
-          puts "Cache dumped to #{file_path}" if Aua.testing?
-        rescue StandardError => e
-          puts "Failed to dump cache: #{e.message}"
         end
 
         def miss(&blk) = @cache_miss_lambda = blk
