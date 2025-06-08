@@ -227,7 +227,7 @@ RSpec.describe Aua do
       it "exponentiates two floats" do
         result = Aua.run("0.2 ** 3.14159265")
         expect(result).to be_a(Aua::Float)
-        expect(result.value).to eq(0.2**3.14159265)
+        expect(result.value).to eq(0.2 ** 3.14159265)
       end
     end
 
@@ -261,12 +261,12 @@ RSpec.describe Aua do
   end
 
   describe "Control Flow" do
-    it 'conditional execution with if-else' do
-      result = Aua.run('if true then 1 else 2 end')
+    it "conditional execution with if-else" do
+      result = Aua.run("if true then 1 else 2 end")
       expect(result).to be_a(Aua::Int)
       expect(result.value).to eq(1)
 
-      result = Aua.run('if false then 1 else 2 end')
+      result = Aua.run("if false then 1 else 2 end")
       expect(result).to be_a(Aua::Int)
       expect(result.value).to eq(2)
     end

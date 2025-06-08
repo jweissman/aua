@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "aua"
+require "readline"
+require "rainbow/refinement"
+using Rainbow
+
+def color_for(klass)
+  case klass
+  when Aua::Int then :blue
+  when Aua::Float then :green
+  when Aua::Str then :yellow
+  when Aua::Bool then :magenta
+  when Aua::Nihil then :red
+  else :black
+  end
+end
+
+HISTFILE = File.expand_path("~/.aua_history")
+File.readlines(HISTFILE, chomp: true).each { |line| Readline::HISTORY.push(line) } if File.exist?(HISTFILE)
+
+at_exit do
+  # Save up to 1000 lines of history
+  File.write(HISTFILE, Readline::HISTORY.to_a.last(1000).join("\n"))
+end
+
+loop do
+  input = Readline.readline("Aua> ", true)
+  break if input.nil? || input.strip == "exit"
+  next if input.strip.empty?
+
+  result = Aua.run(input)
+  puts result.pretty.color(color_for(result.class)).bright
+  puts
+rescue Interrupt
+  puts "\nExiting shell..."
+  break
+rescue StandardError => e
+  puts "An error occurred: #{e.message}"
+  puts "Please try again."
+end

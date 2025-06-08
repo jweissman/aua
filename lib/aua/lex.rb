@@ -15,19 +15,21 @@ module Aua
       /\d/ => :number,
       /[a-zA-Z_]/ => :identifier,
       '"' => :string,
+      "'" => :string,
       "-" => :minus,
       "+" => :plus,
       "*" => :star,
       "/" => :slash,
       "(" => :lparen,
       ")" => :rparen,
-      "=" => :equals
+      "=" => :equals,
+      "#" => :comment,
     }.freeze
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
 
     THREE_CHAR_TOKEN_NAMES = {
-      "\"\"\"" => :prompt
+      "\"\"\"" => :prompt,
     }.freeze
 
     KEYWORDS = Set.new(%i[if then else elif]).freeze
@@ -36,6 +38,92 @@ module Aua
   # A lexer for the Aua language.
   # Responsible for converting source code into a stream of tokens.
   class Lex
+    # Handle lexing entrypoints, recognizing tokens and managing the lexer state.
+    class Handler
+      def initialize(lexer)
+        @lexer = lexer
+      end
+
+      def whitespace(_) = advance
+      def identifier(_) = recognize.identifier
+      def string(quote) = recognize.string(quote)
+      def prompt(_) = recognize.string('"""')
+
+      def minus(_)
+        advance
+        t(:minus)
+      end
+
+      def plus(_)
+        advance
+        t(:plus)
+      end
+
+      def star(_)
+        advance
+        t(:star)
+      end
+
+      def slash(_)
+        advance
+        t(:slash)
+      end
+
+      def lparen(_)
+        advance
+        t(:lparen)
+      end
+
+      def rparen(_)
+        advance
+        t(:rparen)
+      end
+
+      def number(_)
+        recognize.number_lit
+      end
+
+      def equals(eql)
+        advance
+        t(:equals, eql)
+      end
+
+      def pow(_)
+        2.times { advance }
+        t(:pow)
+      end
+
+      def comment(_chars)
+        advance while lens.current_char != "\n" && !lens.eof?
+        advance if lens.current_char == "\n" # skip the newline itself
+        nil
+      end
+
+      def unexpected(_char) = raise(Error, Handler.unexpected_character_message(lens))
+
+      def self.unexpected_character_message(the_lens)
+        hint = "The character #{the_lens.current_char.inspect} is not valid in the current context."
+        msg = the_lens.identify(
+          message: "Invalid token: unexpected character",
+          hint:,
+        )
+        puts msg
+        msg
+      end
+
+      protected
+
+      def lens = @lexer.lens
+      def advance(inc = 1) = @lexer.advance(inc)
+      def recognize = @lexer.recognize
+      def t(type, value = nil, at: @lexer.caret) = @lexer.t(type, value, at:)
+      def current_pos = lens.current_pos
+      def current_char = lens.current_char
+      def next_char = lens.peek
+      def next_next_char = lens.peek_n(2).last
+      def eof? = lens.eof?
+    end
+
     # Encapsulates specific logic for recognizing different types of tokens.
     class Recognizer
       include Syntax
@@ -59,7 +147,7 @@ module Aua
       # @return [Token] The token representing the identifier or boolean literal.
       # Lexes an identifier or boolean literal.
       def identifier
-        start_pos = current_pos #  - 1
+        start_pos = current_pos
         advance while current_char&.match?(/[a-zA-Z_]/)
         value = @lexer.slice_from(start_pos)
         return t(:keyword, value) if KEYWORDS.include?(value.to_sym)
@@ -91,7 +179,8 @@ module Aua
 
       # Lexes a string literal, accumulating characters between quotes.
       MAX_STRING_LENGTH = 65_536
-      def string(quote = '"')
+
+      def string(quote = "'")
         advance
         chars = consume_string_chars(quote)
 
@@ -104,7 +193,7 @@ module Aua
       private
 
       def consume_string_chars(quote)
-        chars = []
+        chars = [] # : Array[String]
         while current_char != "" && chars.length < MAX_STRING_LENGTH
           chars << current_char
           advance
@@ -118,7 +207,7 @@ module Aua
 
       def encode_string(val, quote:)
         case quote
-        when "'" then t :char, val
+        when "'" then t :simple_str, val
         when "`" then t :raw_str, val
         when '"""' then t :gen_lit, val
         else t :str, val
@@ -157,14 +246,15 @@ module Aua
       end
 
       def eof? = @doc.finished?
+      def more? = !eof?
       def peek = @doc.peek
       def peek_n(inc) = @doc.peek_n(inc)
 
       # Current position and character information
-      def current_pos    = @doc.position || 0
-      def current_line   = @doc.cursor.line
+      def current_pos = @doc.position || 0
+      def current_line = @doc.cursor.line
       def current_column = @doc.cursor.column
-      def current_char   = @doc.current || ""
+      def current_char = @doc.current || ""
 
       def describe = "#{current_line}:#{current_column} #{describe_character(current_char)}"
 
@@ -176,14 +266,11 @@ module Aua
       end
 
       def identify(message: nil, hint: nil)
-        current_char = @lens.current_char
-        current_line = @lens.current_line
-        current_column = @lens.current_column
-
         <<~ERROR
-          #{message}: #{describe_character(current_char)} at line #{current_line}, column #{current_column}.
+          #{message} at line #{current_line}, column #{current_column}:
+
           #{@doc.indicate.join("\n")}
-          #{hint || "Have you tried turning it off and on again?"}
+          #{hint || describe_character(current_char)}
         ERROR
       end
     end
@@ -207,20 +294,36 @@ module Aua
       @lens = Lens.new(@doc)
     end
 
-    def inspect = "#<#{self.class.name}@#{@lens.describe}>"
     def tokens = enum_for(:tokenize).lazy
     def advance(inc = 1) = @doc.advance(inc)
-    def slice_from(start) = @doc.slice(start, @doc.position - start)
+    def recognize = @recognize ||= Recognizer.new(self)
+    def inspect = "#<#{self.class.name}@#{@lens.describe}>"
     def caret = @doc.caret
+    def slice_from(start) = @doc.slice(start, @doc.position - start)
     def t(type, value = nil, at: caret) = Token.new(type:, value:, at: at || caret)
 
-    # Enumerator-based token stream for memory efficiency and streaming.
-    def tokenize
-      until @lens.eof?
-        token = accept
+    private
 
-        yield token unless token.nil?
+    def tokenize(&) = (yield_lexeme(&) while @lens.more?)
+
+    def yield_lexeme(&)
+      token = consume_until_acceptance
+      if token.is_a?(Token)
+        yield(token)
+        return
       end
+      return unless @lens.more?
+
+      raise Error, Handler.unexpected_character_message(@lens) if @lens.current_char
+    end
+
+    def consume_until_acceptance(attempts = 16_536)
+      token = nil # : Syntax::Token | nil
+      while token.nil? && @lens.more? && attempts.positive?
+        token = accept
+        attempts -= 1
+      end
+      token
     end
 
     def accept(&)
@@ -228,7 +331,7 @@ module Aua
       peek_char, next_peek_char = @doc.peek_n(2)
       chars = [current_char, peek_char, next_peek_char]
       (1..chars.size).map { |n| chars.take(n).compact }.reverse
-                     .each do |characters|
+        .each do |characters|
         accepted = accept_n(characters)
         return accepted if accepted
       end
@@ -240,76 +343,21 @@ module Aua
     end
 
     def accept_n(chars)
-      token_names(chars.count).each do |pattern, token_name|
-        handler = "handle_#{token_name}"
-        case pattern
-        when Regexp
-          return send(handler) if chars.join&.match?(pattern)
-        when String
-          return send(handler) if chars.join == pattern
-        end
+      matched_handler = token_names(chars.count).find do |pattern, _token_name|
+        pattern_match?(pattern, chars.join)
       end
-      nil
+      handle.send(matched_handler.last, chars.join) if matched_handler
     end
 
-    # --- Handler methods: always yield or return nil ---
-    def handle_whitespace = advance
-    def handle_identifier = recognize.identifier
-    def handle_string = recognize.string
-    def handle_prompt = recognize.string('"""')
-
-    def handle_minus
-      advance
-      t(:minus)
+    def pattern_match?(pattern, content)
+      case pattern
+      when Regexp
+        content.match?(pattern)
+      when String
+        content == pattern
+      end
     end
 
-    def handle_plus
-      advance
-      t(:plus)
-    end
-
-    def handle_star
-      advance
-      t(:star)
-    end
-
-    def handle_slash
-      advance
-      t(:slash)
-    end
-
-    def handle_lparen
-      advance
-      t(:lparen)
-    end
-
-    def handle_rparen
-      advance
-      t(:rparen)
-    end
-
-    def handle_number
-      recognize.number_lit
-    end
-
-    def handle_equals
-      advance
-      t(:equals)
-    end
-
-    def handle_pow
-      2.times { advance }
-      t(:pow)
-    end
-
-    def handle_unexpected = raise(Error, unexpected_character_message)
-    def recognize = @recognize ||= Recognizer.new(self)
-
-    def unexpected_character_message
-      @lens.identify(
-        message: "Unexpected character",
-        hint: "This character is not valid in the current context."
-      )
-    end
+    def handle = @handle ||= Handler.new(self)
   end
 end

@@ -34,6 +34,8 @@ module Aua
 
       def caret = @cursor.dup.freeze
 
+      def content = @text.dup.freeze
+
       # Returns an array of the next n characters from the current position.
       # If there are fewer than n characters left, it returns as many as possible.
       # If n is 0, it returns an empty array.

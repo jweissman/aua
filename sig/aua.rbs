@@ -35,6 +35,7 @@ module Aua
       def indicate: () -> Array[String]
       def finished?: () -> bool
       def caret: () -> Cursor
+      def content: () -> String
     end
 
     def self.indicate: (String, Cursor) -> Array[String]
@@ -59,68 +60,41 @@ module Aua
   type matchy = Regexp | String
 
   class Lex
-    include Syntax
+    class Handler
+      def initialize: (Lex) -> void
 
-    MAX_TOKENS: Integer
-    class Lens
-      def initialize: (Text::Document) -> void
-      def current_pos: () -> Integer
-      def current_line: () -> Integer
-      def current_column: () -> Integer
+      def comment: (String) -> token?
+      def plus: (String) -> token?
+      def star: (String) -> token?
+      def slash: (String) -> token?
+      def pow: (String) -> token?
+      def lparen: (String) -> token?
+      def rparen: (String) -> token?
+      def number: (String) -> token?
+      def equals: (String) -> token?
+      def identifier: (String) -> token?
+      def string: (String) -> token?
+      def minus: (String) -> token?
+      def whitespace: (String) -> void
+      def unexpected: (String) -> void
+      def prompt: (String) -> token?
+
+      private
+
+      def lens: () -> Lex::Lens
+      def advance: (?Integer) -> void
+      def recognize: () -> Lex::Recognizer
+      def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
+           | (Symbol, untyped) -> Syntax::Token
+           | (Symbol) -> Syntax::Token
       def current_char: () -> char
-      def describe: () -> String
-      def describe_character: (char) -> String
-      def identify: (message: String, hint: String) -> String
+      def next_char: () -> char
+      def next_next_char: () -> char
+      def current_pos: () -> Integer
       def eof?: () -> bool
-      def peek: () -> char
-      def peek_n: (Integer) -> Array[char]
+
+      def self.unexpected_character_message: (Lex::Lens) -> String
     end
-    @tokens: Array[token]
-    @doc: Text::Document
-    @lens: Lens
-    def initialize: (String) -> void
-    def tokens: () -> Enumerator[token]
-    def advance: (?Integer) -> void
-    def slice_from: (Integer) -> String?
-    def caret: () -> Text::Cursor
-
-    def current_line: () -> Integer
-    def current_column: () -> Integer
-    def current_char: () -> char
-    def recognize: () -> Lex::Recognizer
-    def eof?: () -> bool
-    def unexpected_character_message: () -> String
-    def accept: () -> untyped
-    def accept_n: (Array[char]) -> untyped
-    # def accept_one: (char?) -> untyped
-    # def accept_two: (char?, char?) -> untyped
-    # def accept_three: (char?, char?, char?) -> untyped
-    def current_pos: () -> Integer
-    def each_token: () { (token) -> void } -> void
-    def accept_token: () -> token?
-    def tokenize: () { (token) -> void } -> void
-    def token_names: (Integer) -> untyped
-
-    def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
-         | (Symbol, untyped) -> Syntax::Token
-         | (Symbol) -> Syntax::Token
-
-    private
-
-    def handle_plus: () -> token?
-    def handle_star: () -> token?
-    def handle_slash: () -> token?
-    def handle_pow: () -> token?
-    def handle_lparen: () -> token?
-    def handle_rparen: () -> token?
-    def handle_number: () -> token?
-    def handle_equals: () -> token?
-    def handle_identifier: () -> token?
-    def handle_string: () -> token?
-    def handle_minus: () -> token?
-    def handle_whitespace: () -> void
-    def handle_unexpected: () -> void
-    def handle_prompt: () -> token?
 
     class Recognizer
       KEYWORDS: Set[Symbol]
@@ -148,6 +122,60 @@ module Aua
       def invalid_token_message: (String) -> String
       def check_number_followed_by_identifier: () -> void
     end
+
+    class Lens
+      def initialize: (Text::Document) -> void
+      def current_pos: () -> Integer
+      def current_line: () -> Integer
+      def current_column: () -> Integer
+      def current_char: () -> char
+      def describe: () -> String
+      def describe_character: (char) -> String
+      def identify: (message: String, hint: String) -> String
+      def eof?: () -> bool
+      def peek: () -> char
+      def peek_n: (Integer) -> Array[char]
+      def more?: () -> bool
+    end
+
+    include Syntax
+
+    @doc: Text::Document
+    @lens: Lens
+    @recognize: Recognizer
+    @handle: Handler
+
+    def initialize: (String) -> void
+
+    def tokens: () -> Enumerator[token]
+    def advance: (?Integer) -> void
+    def recognize: () -> Lex::Recognizer
+    def caret: () -> Text::Cursor
+    def slice_from: (Integer) -> String?
+
+    def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
+         | (Symbol, untyped) -> Syntax::Token
+         | (Symbol) -> Syntax::Token
+
+
+    private
+
+    def tokenize: () { (token) -> void } -> void
+    def accept: () -> untyped
+    def accept_n: (Array[char]) -> untyped
+    def accept_token: () -> token?
+    def consume_until_acceptance: () -> token?
+    def current_char: () -> char
+    def current_column: () -> Integer
+    def current_line: () -> Integer
+    def current_pos: () -> Integer
+    def each_token: () { (token) -> void } -> void
+    def eof?: () -> bool
+    def handle: () -> Lex::Handler
+    def pattern_match?: (String | Regexp, String) -> bool
+    def token_names: (Integer) -> untyped
+    def unexpected_character_message: () -> String
+    def yield_lexeme: () { (token) -> void } -> void
   end
 
   module AST
