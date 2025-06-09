@@ -24,26 +24,27 @@ module Aua
 
     def aura_send(method_name, *args)
       puts "Sending #{method_name} with args: #{args.inspect}"
-      if aura_respond_to?(method_name)
-        meth = self.class.aura_method(method_name)
-        instance_exec(*args, &meth)
-      else
+      unless aura_respond_to?(method_name)
         raise NoMethodError, "Method #{method_name} not defined for #{self.class.name}"
       end
+
+      meth = self.class.aura_method(method_name)
+      instance_exec(*args, &meth)
     end
 
     def self.aura_methods
       @@method_store ||= {}
-      @@method_store[self.name] ||= {}
-      @@method_store[self.name]
+      @@method_store[name] ||= {}
+      @@method_store[name] # Hash[Symbol, Proc]
     end
 
     def self.aura_method(name)
-      if aura_methods.key?(name)
-        aura_methods[name]
-      else
-        raise NoMethodError, "Method #{name} not defined for #{self.name}"
-      end
+      raise NoMethodError, "Method #{name} not defined for #{self.name}" unless aura_methods.key?(name)
+
+      meth = aura_methods[name]
+      raise TypeError, "Aura method #{name} must be a Proc, got #{meth.class}" unless meth.is_a?(Proc)
+
+      meth
     end
 
     # Define a new Aura method for the class.
@@ -52,10 +53,10 @@ module Aua
     # @param block [Proc] The block that implements the method.
     #
     # @example
-    #   Aua::Obj.aura_method(:my_method) { |arg| puts arg }
+    #   Aua::Obj.define_aura_method(:my_method) { |arg| puts arg }
     #
     def self.define_aura_method(name, &block)
-      aura_methods[name] = block
+      aura_methods[name] = block # Store as Proc, not UnboundMethod
       print "#{self.name.split("::").last}##{name} "
     end
   end
@@ -104,7 +105,7 @@ module Aua
     define_aura_method(:*) { Int.new(@value * it.aura_send(:to_i)) }
     define_aura_method(:/) { Int.new(@value / it.aura_send(:to_i)) }
 
-    define_aura_method(:to_i) { value }
+    define_aura_method(:to_i) { @value }
   end
 
   # Floating-point value in Aua.
@@ -133,7 +134,8 @@ module Aua
     def introspect = @value.inspect ? "true" : "false"
 
     attr_reader :value
-    define_aura_method(:to_i) { value ? 1 : 0 }
+
+    define_aura_method(:to_i) { Int.new(@value ? 1 : 0) }
   end
 
   # String value in Aua.

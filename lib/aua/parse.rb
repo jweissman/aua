@@ -25,23 +25,23 @@ module Aua
       nihil: :nihil,
       gen_lit: :generative_lit,
 
-      simple_str: :simple_str,
+      simple_str: :simple_str
     }.freeze
 
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
       plus: 1, minus: 1,
       star: 2, slash: 2,
-      pow: 3,
+      pow: 3
     }.freeze
 
     def s(type, *values)
       normalized_values = normalize_maybe_list(values)
       at = if defined?(@current_token) && @current_token.respond_to?(:location) && @current_token.location
-          @current_token.location
-        else
-          Aua::Text::Cursor.new(0, 0)
-        end
+             @current_token.location
+           else
+             Aua::Text::Cursor.new(0, 0)
+           end
       AST::Node.new(type:, value: normalized_values, at: at)
     end
 
@@ -154,7 +154,7 @@ module Aua
     rescue StopIteration
       # nil
       Syntax::Token.new(
-        type: :eos, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0),
+        type: :eos, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0)
       )
     end
 
@@ -252,6 +252,8 @@ module Aua
 
     def parse_binop(min_prec = 0)
       left = parse_unary
+      raise Error, "Unexpected end of input while parsing binary operation" if left.nil?
+
       left = consume_binary_op(left) while binary_op?(@current_token.type) && precedent?(@current_token.type, min_prec)
       left
     end

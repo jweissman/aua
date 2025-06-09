@@ -230,6 +230,8 @@ module Aua
     def parse_assignment: () -> AST::Node?
     def parse_binop: (?Integer) -> AST::Node
     def parse_primary: () -> AST::Node
+    def parse_command: () -> AST::Node?
+    def parse_unary: () -> AST::Node?
     def parse_conditional: () -> AST::Node?
     def parse_condition_body: () -> [AST::Node, AST::Node?]
     def unexpected_tokens?: () -> bool
@@ -247,6 +249,11 @@ module Aua
     def klass: () -> Klass
     def introspect: () -> String
     def pretty: () -> String
+    def self.aura_methods: () -> Hash[Symbol, Proc]
+    def self.aura_method: (Symbol) -> Proc
+    def self.define_aura_method: (Symbol) { (*untyped) -> untyped } -> void
+    def aura_respond_to?: (Symbol) -> bool
+    def aura_send: (Symbol, *untyped) -> untyped
   end
 
   class Klass < Obj
@@ -333,6 +340,7 @@ module Aua
   end
 
   class Context
+    def initialize: (String) -> void
     def source_document: () -> Text::Document
   end
 
@@ -519,4 +527,5 @@ module Aua
   def self.vm: (?environment) -> VM
   def self.testing?: () -> bool
   def self.builtins: () -> Hash[Symbol, untyped]
+  def self.interpreter: () -> Interpreter
 end

@@ -140,8 +140,9 @@ module Aua
         end
 
         def self.file_path
-          file_name = Aua.testing ? "cache_test.json" : "cache.json"
-          File.expand_path(File.join(Dir.pwd, ".aua", file_name))
+          env = Aua.testing ? "test" : "dev"
+          file_name = "responses.json"
+          File.expand_path(File.join(Dir.pwd, ".aua", env, file_name))
         end
 
         def self.instance
@@ -290,7 +291,7 @@ module Aua
           {
             messages: [{ role: "user", content: prompt }],
             model:,
-            **generation,
+            **generation
           }
         end
 
@@ -311,7 +312,7 @@ module Aua
           max_tokens: fetch_meta[:max_tokens],
           top_p: fetch_meta[:top_p],
           frequency_penalty: 0.0,
-          presence_penalty: 0.0,
+          presence_penalty: 0.0
         }
       end
 
@@ -327,7 +328,7 @@ module Aua
           requested_at: rsp[:requested_at],
           responded_at: rsp[:responded_at],
           tokens_used: rsp[:tokens_used] || 0,
-          parameters: rsp[:parameters],
+          parameters: rsp[:parameters]
         )
         Response.new(prompt:, message: rsp[:message], metadata:)
       end

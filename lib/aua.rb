@@ -106,13 +106,13 @@ module Aua
       def translate_gen_lit(node)
         value = node.value
         current_conversation = Aua::LLM.chat
-        Str.new(current_conversation.ask(value))
+        [Str.new(current_conversation.ask(value))]
       end
 
       def translate_if(node)
         condition, true_branch, false_branch = node.value
         [
-          Semantics.inst(:if, translate(condition), translate(true_branch), translate(false_branch)),
+          Semantics.inst(:if, translate(condition), translate(true_branch), translate(false_branch))
         ]
       end
 
@@ -120,11 +120,11 @@ module Aua
         operand = node.value
 
         negated = case operand.type
-          when :int then Int.new(-operand.value)
-          when :float then Float.new(-operand.value)
-          else
-            raise Error, "Negation only supported for Int and Float"
-          end
+                  when :int then Int.new(-operand.value)
+                  when :float then Float.new(-operand.value)
+                  else
+                    raise Error, "Negation only supported for Int and Float"
+                  end
         [RECALL[negated]]
       end
 
@@ -229,10 +229,10 @@ module Aua
           def binop_pow(left, right)
             if left.is_a?(Int) && right.is_a?(Int)
               Int.new(
-                left.value ** right.value # : Integer
+                left.value**right.value # : Integer
               )
             elsif left.is_a?(Float) && right.is_a?(Float)
-              Float.new(left.value ** right.value)
+              Float.new(left.value**right.value)
             else
               # raise Error, "Unsupported operand types for **: #{left.class} and #{right.class}"
               raise_binop_type_error(:**, left, right)
@@ -264,7 +264,7 @@ module Aua
           puts value.value
 
           Aua::Nihil.new
-        },
+        }
       }
     end
 
@@ -286,10 +286,11 @@ module Aua
     # Evaluates a single statement in the VM.
     def evaluate_one(stmt)
       return stmt if stmt.is_a? Obj
-      if stmt.is_a?(Array) && stmt.size == 1
-        stmt = stmt.first
-        return evaluate_one(stmt)
-      end
+
+      # Unwrap arrays of length 1 until we get a Statement
+      stmt = stmt.first while stmt.is_a?(Array) && stmt.size == 1
+
+      raise Error, "Unexpected array in evaluate_one: \\#{stmt.inspect}" if stmt.is_a?(Array)
 
       warn "[#{::Time.now}] #{stmt.inspect}" if Aua.testing?
 
@@ -301,28 +302,31 @@ module Aua
         eval_if(cond, true_branch, false_branch)
       when :call
         fn_name, *args = stmt.value
-        eval_call(fn_name, *args.map { |a| evaluate_one(a) })
+        eval_call(fn_name, args.map { |a| evaluate_one(a) })
       when :send
         receiver, method, *args = stmt.value
         receiver = evaluate_one(receiver)
         args = args.map { |a| evaluate_one(a) }
 
-        if receiver.is_a?(Obj) && receiver.aura_respond_to?(method)
-          receiver.aura_send(method, *args)
-        else
+        unless receiver.is_a?(Obj) && receiver.aura_respond_to?(method)
           raise Error, "Unknown aura method '#{method}' for #{receiver.class}"
         end
+
+        receiver.aura_send(method, *args)
       else
-        raise Error, "Unknown statement type: #{stmt.type}"
+        raise Error, "Unknown statement type: #{stmt.type}" if stmt.is_a?(Statement)
+
+        raise Error, "Unknown statement: #{stmt.inspect}"
+
       end
     end
 
-    def eval_call(fn_name, *args)
+    def eval_call(fn_name, args)
       fn = Aua.vm.builtins[fn_name.to_sym]
       raise Error, "Unknown builtin: #{fn_name}" unless fn
 
-      evaluated_args = args.map { |a| evaluate_one(a) }
-      fn.call(evaluated_args)
+      evaluated_args = [*args].map { |a| evaluate_one(a) }
+      fn.call(*evaluated_args)
     end
 
     def eval_id(identifier)
@@ -396,13 +400,21 @@ module Aua
     end
   end
 
+  class Context
+    def initialize(source)
+      @source = source
+    end
+
+    def source_document = @source
+  end
+
   # The main entry point for the Aua interpreter.
   #
   # @example
   #   Aua.run("some code")
   def self.run(code)
     # @current_interpreter ||= Interpreter.new
-    ctx = { source_document: Text::Document.new(code) }
+    ctx = Context.new(code) # { source_document: Text::Document.new(code) }
 
     interpreter.run(ctx, code)
   end
@@ -433,7 +445,7 @@ module Aua
         base_uri:,
         temperature:,
         top_p: 0.9,
-        max_tokens:,
+        max_tokens:
       )
     end
   end
