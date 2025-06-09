@@ -65,12 +65,18 @@ module Aua
 
       def translate(ast)
         case ast.type
-        when :nihil, :int, :float, :bool, :str then reify_primary(ast)
+        when :nihil, :int, :float, :bool, :simple_str, :str then reify_primary(ast)
         when :if, :negate, :id, :assign, :binop then translate_basic(ast)
         when :gen_lit then translate_gen_lit(ast)
+        when :call then translate_call(ast)
         else
           raise Error, "Unknown AST node type: \\#{ast.type}"
         end
+      end
+
+      def translate_call(node)
+        fn_name, args = node.value
+        [Semantics.inst(:call, fn_name, *args.map { |a| translate(a) })]
       end
 
       def translate_basic(node)
@@ -90,17 +96,23 @@ module Aua
         when :int then Int.new(node.value)
         when :float then Float.new(node.value)
         when :bool then Bool.new(node.value)
-        when :str then Str.new(node.value)
+        when :str, :simple_str then Str.new(node.value)
         else
           warn "Unknown primary node type: #{node.type.inspect}"
           Nihil.new
         end
       end
 
+      def translate_gen_lit(node)
+        value = node.value
+        current_conversation = Aua::LLM.chat
+        Str.new(current_conversation.ask(value))
+      end
+
       def translate_if(node)
         condition, true_branch, false_branch = node.value
         [
-          Semantics.inst(:if, translate(condition), translate(true_branch), translate(false_branch))
+          Semantics.inst(:if, translate(condition), translate(true_branch), translate(false_branch)),
         ]
       end
 
@@ -108,11 +120,11 @@ module Aua
         operand = node.value
 
         negated = case operand.type
-                  when :int then Int.new(-operand.value)
-                  when :float then Float.new(-operand.value)
-                  else
-                    raise Error, "Negation only supported for Int and Float"
-                  end
+          when :int then Int.new(-operand.value)
+          when :float then Float.new(-operand.value)
+          else
+            raise Error, "Negation only supported for Int and Float"
+          end
         [RECALL[negated]]
       end
 
@@ -122,16 +134,8 @@ module Aua
         [Semantics.inst(:let, name, value)]
       end
 
-      def translate_gen_lit(node)
-        value = node.value
-
-        # Just return the value as a Str by default
-        # ret = Str.new(value)
-        current_conversation = Aua::LLM.chat
-        [Str.new(current_conversation.ask(value))]
-      end
-
       def translate_binop(node)
+        puts "Translating binop: #{node.inspect}" if Aua.testing?
         op, left_node, right_node = node.value
         left = translate(left_node)
         right = translate(right_node)
@@ -143,11 +147,11 @@ module Aua
         class << self
           def binary_operation(operator, left, right)
             case operator
-            when :plus  then Binop.binop_plus(left, right)
+            when :plus then Binop.binop_plus(left, right)
             when :minus then Binop.binop_minus(left, right)
-            when :star  then Binop.binop_star(left, right)
+            when :star then Binop.binop_star(left, right)
             when :slash then Binop.binop_slash(left, right)
-            when :pow   then Binop.binop_pow(left, right)
+            when :pow then Binop.binop_pow(left, right)
             else
               raise Error, "Unknown binary operator: #{operator}"
             end
@@ -174,7 +178,10 @@ module Aua
           end
 
           def raise_binop_type_error(operator, left, right)
-            raise Error, "Unsupported operand types for #{operator}: #{left.class} and #{right.class}"
+            # we could resolve a single id very easily here
+            [SEND[left, operator, right]]
+
+            # raise Error, "Unsupported operand types for #{operator}: #{left.class} and #{right.class}"
           end
 
           def binop_minus(left, right)
@@ -183,7 +190,7 @@ module Aua
             elsif left.is_a?(Float) && right.is_a?(Float)
               Float.new(left.value - right.value)
             else
-              raise Error, "Unsupported operand types for -: #{left.class} and #{right.class}"
+              raise_binop_type_error(:-, left, right)
             end
           end
 
@@ -193,7 +200,8 @@ module Aua
             elsif left.is_a?(Float) && right.is_a?(Float)
               Float.new(left.value * right.value)
             else
-              raise Error, "Unsupported operand types for *: #{left.class} and #{right.class}"
+              # raise Error, "Unsupported operand types for *: #{left.class} and #{right.class}"
+              raise_binop_type_error(:*, left, right)
             end
           end
 
@@ -221,12 +229,13 @@ module Aua
           def binop_pow(left, right)
             if left.is_a?(Int) && right.is_a?(Int)
               Int.new(
-                left.value**right.value # : Integer
+                left.value ** right.value # : Integer
               )
             elsif left.is_a?(Float) && right.is_a?(Float)
-              Float.new(left.value**right.value)
+              Float.new(left.value ** right.value)
             else
-              raise Error, "Unsupported operand types for **: #{left.class} and #{right.class}"
+              # raise Error, "Unsupported operand types for **: #{left.class} and #{right.class}"
+              raise_binop_type_error(:**, left, right)
             end
           end
         end
@@ -238,6 +247,25 @@ module Aua
     def initialize(env = {})
       @env = env
       @tx = Translator.new(self)
+    end
+
+    def builtins
+      @builtins ||= {
+        time: lambda { |_args|
+          puts "Current time: #{Time.now}"
+          Aua::Time.now
+        },
+        say: lambda { |args|
+          raise Error, "say requires a single argument" unless args.size == 1
+
+          value = args.first
+          raise Error, "say only accepts Str arguments, got #{value.class}" unless value.is_a?(Str)
+
+          puts value.value
+
+          Aua::Nihil.new
+        },
+      }
     end
 
     private
@@ -258,6 +286,12 @@ module Aua
     # Evaluates a single statement in the VM.
     def evaluate_one(stmt)
       return stmt if stmt.is_a? Obj
+      if stmt.is_a?(Array) && stmt.size == 1
+        stmt = stmt.first
+        return evaluate_one(stmt)
+      end
+
+      warn "[#{::Time.now}] #{stmt.inspect}" if Aua.testing?
 
       case stmt.type
       when :id then eval_id(stmt.value)
@@ -265,18 +299,42 @@ module Aua
       when :if
         cond, true_branch, false_branch = stmt.value
         eval_if(cond, true_branch, false_branch)
+      when :call
+        fn_name, *args = stmt.value
+        eval_call(fn_name, *args.map { |a| evaluate_one(a) })
+      when :send
+        receiver, method, *args = stmt.value
+        receiver = evaluate_one(receiver)
+        args = args.map { |a| evaluate_one(a) }
+
+        if receiver.is_a?(Obj) && receiver.aura_respond_to?(method)
+          receiver.aura_send(method, *args)
+        else
+          raise Error, "Unknown aura method '#{method}' for #{receiver.class}"
+        end
       else
         raise Error, "Unknown statement type: #{stmt.type}"
       end
     end
 
+    def eval_call(fn_name, *args)
+      fn = Aua.vm.builtins[fn_name.to_sym]
+      raise Error, "Unknown builtin: #{fn_name}" unless fn
+
+      evaluated_args = args.map { |a| evaluate_one(a) }
+      fn.call(evaluated_args)
+    end
+
     def eval_id(identifier)
+      identifier = identifier.first if identifier.is_a?(Array)
+      puts "Getting variable #{identifier}" if Aua.testing?
       raise Error, "Undefined variable: #{identifier}" unless @env.key?(identifier)
 
       @env[identifier]
     end
 
     def eval_let(name, value)
+      puts "Setting variable #{name} to #{value.inspect}" if Aua.testing?
       @env[name] = value
       value
     end
@@ -303,13 +361,16 @@ module Aua
   # @see Aua::Parse for parsing functionality
   # @see Aua::Vm for virtual machine execution
   class Interpreter
+    attr_reader :env
+
     def initialize(env = {})
+      puts "Initializing Aua interpreter with env: #{env.inspect}" if Aua.testing?
       @env = env
     end
 
     def lex(_ctx, code) = Lex.new(code).enum_for(:tokenize)
     def parse(_ctx, tokens) = Parse.new(tokens).tree
-    def vm = VM.new @env
+    def vm = @vm ||= Aua.vm(@env) || VM.new(@env)
 
     # Runs the Aua interpreter pipeline: lexing, parsing, and evaluation.
     # Something like the following:
@@ -340,11 +401,13 @@ module Aua
   # @example
   #   Aua.run("some code")
   def self.run(code)
-    @current_interpreter ||= Interpreter.new
+    # @current_interpreter ||= Interpreter.new
     ctx = { source_document: Text::Document.new(code) }
 
-    @current_interpreter.run(ctx, code)
+    interpreter.run(ctx, code)
   end
+
+  def self.interpreter = @interpreter ||= Interpreter.new
 
   def self.testing = @testing ||= !!configuration.testing
   def self.testing? = testing || false
@@ -357,7 +420,7 @@ module Aua
   class Configuration < Data.define(:testing, :model, :base_uri, :temperature, :top_p, :max_tokens)
     # Default values for the configuration
     def self.default(
-      testing: false,
+      testing: ENV.fetch("AURA_DEBUG", "false") == "true",
       model: "qwen-2.5-1.5b-chat",
       base_uri: "http://10.0.0.158:1234/v1",
       temperature: 0.7,
@@ -370,7 +433,7 @@ module Aua
         base_uri:,
         temperature:,
         top_p: 0.9,
-        max_tokens:
+        max_tokens:,
       )
     end
   end
@@ -381,5 +444,14 @@ module Aua
 
   def self.configure
     yield(configuration) if block_given?
+  end
+
+  def self.vm(env = {})
+    @vm ||= VM.new
+
+    # maybe need to meld envs ???
+    @vm.instance_variable_set(:@env, env.merge(@vm.instance_variable_get(:@env) || {})) unless env.empty?
+
+    @vm
   end
 end

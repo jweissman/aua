@@ -18,30 +18,52 @@ def color_for(klass)
   end
 end
 
-def info(msg)
-  $stdout.puts(msg)
-end
+def info(msg) = $stdout.puts(msg)
 
 HISTFILE = File.expand_path("~/.aua_history")
-File.readlines(HISTFILE, chomp: true).each { |line| Readline::HISTORY.push(line) } if File.exist?(HISTFILE)
 
-at_exit do
-  # Save up to 1000 lines of history
-  File.write(HISTFILE, Readline::HISTORY.to_a.last(1000).join("\n"))
+def repl!
+  File.readlines(HISTFILE, chomp: true).each { |line| Readline::HISTORY.push(line) } if File.exist?(HISTFILE)
+
+  at_exit do
+    File.write(HISTFILE, Readline::HISTORY.to_a.last(1000).join("\n"))
+  end
+
+  loop { rep! }
 end
 
-loop do
-  input = Readline.readline("Aua> ", true)
-  break if input.nil? || input.strip == "exit"
-  next if input.strip.empty?
+def rep!
+  input = Readline.readline("aura >> ".black, true)
+  bye if input.nil? || input.strip == "exit"
+  return if input.strip.empty?
 
   result = Aua.run(input)
   info result.pretty.color(color_for(result.class)).bright
-  info
 rescue Interrupt
   warn "\nExiting shell..."
-  break
+  bye(0)
 rescue StandardError => e
   warn "An error occurred: #{e.message}"
+  warn e.backtrace.join("\n").color(:red)
   info "Please try again."
+end
+
+def bye(code = 0)
+  puts "#{"~".green}|#{"~".blue}"
+  puts "(c) 2023-2024 aura-lang"
+  exit(code)
+end
+
+puts "#{"~".blue}|#{"~".green}"
+if ARGV.empty?
+  repl!
+else
+  ARGV.each do |file|
+    content = File.read(file)
+    result = Aua.run(content)
+    puts result.pretty.color(color_for(result.class)).bright
+  rescue StandardError => e
+    warn "Error processing file #{file}: #{e.message}"
+    puts e.backtrace.join("\n").color(:red)
+  end
 end

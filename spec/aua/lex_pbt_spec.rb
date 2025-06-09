@@ -21,7 +21,7 @@ module Aua
     def int = IntegerArbitrary.new(0, 1_000_000_000).map(
       ->(v) { v.to_s },
       ->(s) { s.to_i } # Convert to integer and back to string for consistency
-    )
+    )    
 
     def float
       tuple(int, int).map(
@@ -71,7 +71,7 @@ module Aua
 
   RSpec.describe "Lexer fuzzing" do
     # DSL for property-based tests that yields a string identifier
-    let(:num_runs) { ENV["CI"] ? 10_000 : 30 }
+    let(:num_runs) { ENV["CI"] ? 10_000 : 100 }
 
     def with_property(arb, &block)
       Pbt.assert(num_runs:) do
@@ -126,7 +126,6 @@ module Aua
       extend Aua::Properties
       valid_types = Set[:id, :int, :float, :plus, :minus, :star, :slash, :equals, :lparen, :rparen, :identifier, :simple_str, :str, :whitespace]
       with_property(binop) do |input|
-        # puts "Testing input: #{input.inspect}"
         lexer = Lex.new(input)
         tokens = lexer.tokens.to_a
         tokens.each do |tok|

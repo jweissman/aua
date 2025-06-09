@@ -1,0 +1,10 @@
+#!/usr/bin/env aura
+
+# name = """Invent a fun character name. Just a single word, no spaces."""
+# 
+# say "hi"
+# say "my name is"
+# say name
+
+say "====== Welcome to the Game ===="
+say "hello world"

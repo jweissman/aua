@@ -36,9 +36,27 @@ module Aua
       #
       # @see Aua::LLM::Provider::Response
       class Cache
+        def initialize(
+          file_path: self.class.file_path
+        )
+          @cache = {} # : Hash[String, completion_trace]
+          @cache_miss_lambda = nil
+
+          unless File.exist?(file_path)
+            warn "Cache file does not exist, creating: #{file_path}"
+            FileUtils.mkdir_p(File.dirname(file_path))
+          end
+
+          hydrate(file_path)
+          miss do |key, val|
+            warn "Cache miss for key: #{key}" if Aua.testing?
+            append_to_cache_file(key, val, file_path)
+            val
+          end
+        end
+
         def self.simple_key(*args)
           key_content = args.join(":")
-          puts "Cache key: #{key_content}" if Aua.testing?
           Digest::SHA256.hexdigest(
             key_content + Aua.configuration.model + Aua.configuration.base_uri
           )
@@ -48,22 +66,23 @@ module Aua
           @cache ||= {} # : Hash[String, completion_trace]
           unless @cache.key?(key)
             val = fetch!(key, &)
-            puts "Executing cache miss lambda for #{key} => #{val}" if Aua.testing?
-            @cache_miss_lambda.call(key, val)
+            if @cache_miss_lambda
+              @cache_miss_lambda.call(key, val)
+            else
+              warn "No cache miss handler defined!"
+            end
           end
           @cache[key]
         end
 
         def fetch!(key, &block)
           val = block.call
-          puts "Storing value in cache for key: #{key} => #{val}" if Aua.testing?
           @cache[key] = val
           val
         end
 
         def with_cache(the_key, &)
-          # the_key = simkey(meta)
-          puts "Using cache key: #{the_key}" if Aua.testing?
+          @cache ||= {} # : Hash[String, completion_trace]
           missed = !@cache.key?(the_key)
           val = fetch(the_key, &)
           @cache_miss_lambda.call(the_key, val) if missed && @cache_miss_lambda
@@ -120,17 +139,17 @@ module Aua
           puts "Failed to append to cache file: #{e.message}"
         end
 
-        def self.file_path = File.expand_path(File.join(Dir.pwd, ".aua", "cache.json"))
+        def self.file_path
+          file_name = Aua.testing ? "cache_test.json" : "cache.json"
+          File.expand_path(File.join(Dir.pwd, ".aua", file_name))
+        end
 
         def self.instance
-          @instance ||= new.tap do |cache|
-            cache.hydrate(file_path)
-            cache.miss do |key, val|
-              puts "Cache miss for key: #{key}" if Aua.testing?
-              cache.append_to_cache_file(key, val, file_path)
-              val
-            end
-          end
+          @instance ||= new
+          # .tap do |cache|
+
+          # end
+          # end
         end
       end
 
@@ -151,19 +170,19 @@ module Aua
 
           def initialize(model:, requested_at:, responded_at:, tokens_used: nil, parameters: {})
             @model = model
-            @requested_at = requested_at.is_a?(Time) ? requested_at : Time.parse(requested_at.to_s)
-            @responded_at = responded_at.is_a?(Time) ? responded_at : Time.parse(responded_at.to_s)
+            @requested_at = requested_at.is_a?(::Time) ? requested_at : ::Time.parse(requested_at.to_s)
+            @responded_at = responded_at.is_a?(::Time) ? responded_at : ::Time.parse(responded_at.to_s)
             @tokens_used = tokens_used || 0
             @parameters = parameters
           end
 
           def self.coerce_timestamp(timestamp)
-            return timestamp if timestamp.is_a?(Time)
+            return timestamp if timestamp.is_a?(::Time)
 
             if timestamp.is_a?(String)
-              Time.parse(timestamp)
+              ::Time.parse(timestamp)
             else
-              Time.now
+              ::Time.now
             end
           end
 
@@ -246,9 +265,9 @@ module Aua
 
         def request(prompt:, model: Aua.configuration.model, generation: nil)
           uri = URI("#{@base_uri}/chat/completions")
-          t0 = Time.now # ::Time
+          t0 = ::Time.now # ::Time
           response = post(uri, request_body(prompt, model:, generation:).to_json)
-          t1 = Time.now # ::Time
+          t1 = ::Time.now # ::Time
           raise Error, "#{response.code} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
           read_response(response.body, prompt:,
@@ -256,13 +275,12 @@ module Aua
         end
 
         def read_response(body, prompt:, meta: {})
-          # meta is  model:, parameters:, requested_at:, responded_at:
           model, parameters, requested_at, responded_at = meta.values_at(
             :model, :parameters, :requested_at, :responded_at
           )
-          json        = JSON.parse(body)
+          json = JSON.parse(body)
           tokens_used = json.dig("usage", "total_tokens") || 0
-          message     = json.dig("choices", 0, "message", "content") || "No response content"
+          message = json.dig("choices", 0, "message", "content") || "No response content"
           { message:, tokens_used:, model:, prompt:, requested_at:, responded_at:, parameters: }
         end
 
@@ -272,7 +290,7 @@ module Aua
           {
             messages: [{ role: "user", content: prompt }],
             model:,
-            **generation
+            **generation,
           }
         end
 
@@ -293,7 +311,7 @@ module Aua
           max_tokens: fetch_meta[:max_tokens],
           top_p: fetch_meta[:top_p],
           frequency_penalty: 0.0,
-          presence_penalty: 0.0
+          presence_penalty: 0.0,
         }
       end
 
@@ -309,7 +327,7 @@ module Aua
           requested_at: rsp[:requested_at],
           responded_at: rsp[:responded_at],
           tokens_used: rsp[:tokens_used] || 0,
-          parameters: rsp[:parameters]
+          parameters: rsp[:parameters],
         )
         Response.new(prompt:, message: rsp[:message], metadata:)
       end

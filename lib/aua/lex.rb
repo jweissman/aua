@@ -159,30 +159,21 @@ module Aua
       # Lexes an integer or floating-point literal.
       def number_lit
         start_pos = current_pos
-        has_dot = false
-        while current_char&.match?(/\d|\./)
-          has_dot = true if current_char == "."
-          advance
-        end
+        has_dot, dot_count = consume_number
         check_number_followed_by_identifier
         number_str = @lexer.slice_from(start_pos)
-        number_token_from_string(number_str, has_dot)
-      end
+        raise Aua::Error, "Invalid token: multiple dots in number at \\#{@lexer.lens.describe}." if dot_count > 1
 
-      def number_token_from_string(str, has_dot)
-        has_dot ? t(:float, str.to_f) : t(:int, str.to_i)
+        number_token_from_string(number_str, has_dot)
       end
 
       # Lexes a string literal, accumulating characters between quotes.
       MAX_STRING_LENGTH = 65_536
 
       def string(quote = "'")
-        quote.length.times { advance } # skip opening quote
-        # advance
+        quote.length.times { advance }
         chars = consume_string_chars(quote)
-
-        # advance # skip closing quote
-        quote.length.times { advance } # skip opening quote
+        quote.length.times { advance }
         raise Error, "Unterminated string literal (of length #{chars.length})" if chars.length >= MAX_STRING_LENGTH
 
         encode_string(chars, quote:)
@@ -190,16 +181,33 @@ module Aua
 
       private
 
+      def consume_number
+        has_dot = false
+        dot_count = 0
+        while current_char&.match?(/\d|\./)
+          if current_char == "."
+            dot_count += 1
+            has_dot = true
+          end
+          advance
+        end
+
+        [has_dot, dot_count]
+      end
+
+      def number_token_from_string(str, has_dot)
+        has_dot ? t(:float, str.to_f) : t(:int, str.to_i)
+      end
+
       def consume_string_chars(quote)
         chars = [] # : Array[String]
-
+        test_end = -> { quote.chars.count == 1 ? current_char == quote.chars.first : string_end?(quote.chars) }
         while current_char != "" && chars.length < MAX_STRING_LENGTH
-          break if string_end?(quote.chars)
+          break if test_end.call
 
           chars << current_char
           advance
         end
-
         return chars.join if current_char == quote.chars.last
 
         raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe
@@ -214,7 +222,6 @@ module Aua
         end
       end
 
-      # , chars)
       def string_end?(quote_chars)
         lookahead = [current_char, next_char, next_next_char].take(quote_chars.length)
         if lookahead == quote_chars

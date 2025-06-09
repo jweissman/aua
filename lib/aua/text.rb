@@ -23,13 +23,15 @@ module Aua
       attr_reader :cursor, :position
 
       def initialize(text)
-        @text = text
+        @text = text.freeze
+
         @cursor = Cursor.new(1, 1)
         @position = 0
+        @chars = @text.chars.freeze
       end
 
-      def current = @text.chars.fetch(@position, nil)
-      def peek_at(index) = @text.chars.fetch(@position + index, nil)
+      def current = @chars.fetch(@position, nil)
+      def peek_at(index) = @chars.fetch(@position + index, nil)
       def peek = peek_at(1)
 
       def caret = @cursor.dup.freeze
@@ -61,6 +63,10 @@ module Aua
       end
 
       def indicate = Text.indicate(@text, @cursor)
+
+      private
+
+      attr_reader :text
     end
 
     # Indicates the position of a character in the code by printing the line

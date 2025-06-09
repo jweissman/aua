@@ -16,30 +16,32 @@ module Aua
   module Grammar
     PRIMARY_NAMES = {
       lparen: :parens,
-      minus: :negation,
+      # minus: :negation,
       id: :id,
       int: :int,
       float: :float,
       bool: :bool,
       str: :str,
       nihil: :nihil,
-      gen_lit: :generative_lit
+      gen_lit: :generative_lit,
+
+      simple_str: :simple_str,
     }.freeze
 
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
       plus: 1, minus: 1,
       star: 2, slash: 2,
-      pow: 3
+      pow: 3,
     }.freeze
 
     def s(type, *values)
       normalized_values = normalize_maybe_list(values)
       at = if defined?(@current_token) && @current_token.respond_to?(:location) && @current_token.location
-             @current_token.location
-           else
-             Aua::Text::Cursor.new(0, 0)
-           end
+          @current_token.location
+        else
+          Aua::Text::Cursor.new(0, 0)
+        end
       AST::Node.new(type:, value: normalized_values, at: at)
     end
 
@@ -57,12 +59,13 @@ module Aua
         @parse = parse
       end
 
-      def parse_id      = parse_one(:id)
-      def parse_int     = parse_one(:int)
-      def parse_float   = parse_one(:float)
-      def parse_bool    = parse_one(:bool)
-      def parse_str     = parse_one(:str)
-      def parse_nihil   = parse_one(:nihil)
+      def parse_id = parse_one(:id)
+      def parse_int = parse_one(:int)
+      def parse_float = parse_one(:float)
+      def parse_bool = parse_one(:bool)
+      def parse_str = parse_one(:str)
+      def parse_nihil = parse_one(:nihil)
+      def parse_simple_str = parse_one(:simple_str)
 
       def parse_parens
         @parse.consume(:lparen)
@@ -76,17 +79,17 @@ module Aua
       end
 
       # Parses a unary minus expression.
-      def parse_negation
-        @parse.consume(:minus)
-        raise Error, "Unexpected end of input after unary minus" if @parse.current_token.type == :eos
+      # def parse_negation
+      #   @parse.consume(:minus)
+      #   raise Error, "Unexpected end of input after unary minus" if @parse.current_token.type == :eos
 
-        unless %i[int float bool str id minus].include?(@parse.current_token.type)
-          raise Error, "Unary minus must be followed by a literal or identifier, got #{@parse.current_token.type}"
-        end
+      #   unless %i[int float bool str id minus].include?(@parse.current_token.type)
+      #     raise Error, "Unary minus must be followed by a literal or identifier, got #{@parse.current_token.type}"
+      #   end
 
-        operand = @parse.send :parse_primary
-        s(:negate, operand)
-      end
+      #   operand = @parse.send :parse_primary
+      #   s(:negate, operand)
+      # end
 
       def parse_generative_lit
         value = @parse.current_token.value
@@ -151,7 +154,7 @@ module Aua
     rescue StopIteration
       # nil
       Syntax::Token.new(
-        type: :eos, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0)
+        type: :eos, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0),
       )
     end
 
@@ -171,7 +174,49 @@ module Aua
       maybe_conditional = parse_conditional
       return maybe_conditional if maybe_conditional
 
+      maybe_command = parse_command
+      return maybe_command if maybe_command
+
       parse_binop
+    end
+
+    # Parses a command or function call: id arg1 arg2 ...
+    def parse_command
+      return unless @current_token.type == :id
+
+      id_token = @current_token
+      puts "Parsing command with ID: #{id_token.value}" if Aua.testing?
+      args = [] # : Array[AST::Node]
+      save_token = @current_token
+      save_buffer = @buffer.dup
+      consume(:id)
+      puts " - Consumed ID: #{id_token.value}" if Aua.testing?
+
+      # debugger if Aua.testing?
+
+      # Accept one or more primary expressions as arguments (space-separated)
+      while PRIMARY_NAMES.key?(@current_token.type)
+        args << Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+        if @current_token.type == :comma
+          consume(:comma)
+          puts " - Consumed comma, expecting more args" if Aua.testing?
+        elsif @current_token.type == :eos
+          puts " - End of arguments reached" if Aua.testing?
+          break
+        else
+          raise Error, "Unexpected token while parsing arguments: #{@current_token.type}"
+        end
+      end
+
+      puts " - Parsed arguments: #{args.inspect}" if Aua.testing?
+      if args.empty?
+        # Not a call, restore state and return nil
+        @current_token = save_token
+        @buffer = save_buffer
+        return nil
+      end
+      puts " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}" if Aua.testing?
+      s(:call, id_token.value, args)
     end
 
     def parse_assignment
@@ -206,9 +251,19 @@ module Aua
     end
 
     def parse_binop(min_prec = 0)
-      left = parse_primary
+      left = parse_unary
       left = consume_binary_op(left) while binary_op?(@current_token.type) && precedent?(@current_token.type, min_prec)
       left
+    end
+
+    def parse_unary
+      if @current_token.type == :minus
+        consume(:minus)
+        operand = parse_unary
+        s(:negate, operand)
+      else
+        parse_primary
+      end
     end
 
     def precedent?(operand, min_prec)

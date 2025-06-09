@@ -146,9 +146,19 @@ RSpec.describe Aua do
     end
 
     it "updates variable values" do
+      first_result = Aua.run("x = 42")
+      expect(first_result).to be_a(Aua::Obj)
+      expect(first_result.value).to eq(42)
+
       result = Aua.run("x = 100")
       expect(result).to be_a(Aua::Obj)
       expect(result.value).to eq(100)
+    end
+
+    it "assigns strings to variables" do
+      result = Aua.run('name = "Alice"')
+      expect(result).to be_a(Aua::Obj)
+      expect(result.value).to eq("Alice")
     end
   end
 
@@ -213,7 +223,8 @@ RSpec.describe Aua do
       end
 
       it "raises error for unsupported operations on different types" do
-        expect { Aua.run("1 + true") }.to raise_error(Aua::Error)
+        # NOTE: this now passes due to bool => 1 : 0 conversion
+        # expect { Aua.run("1 + true") }.to raise_error(Aua::Error)
         expect { Aua.run('"hello" + 42') }.to raise_error(Aua::Error)
         expect { Aua.run("true + false") }.to raise_error(Aua::Error)
       end
@@ -228,6 +239,33 @@ RSpec.describe Aua do
         result = Aua.run("0.2 ** 3.14159265")
         expect(result).to be_a(Aua::Float)
         expect(result.value).to eq(0.2 ** 3.14159265)
+      end
+    end
+
+    describe "Operations with Variables" do
+      it "adds variables" do
+        Aua.run("x = 5")
+        result = Aua.run("x + 3")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(8)
+      end
+      it "subtracts variables" do
+        Aua.run("x = 10")
+        result = Aua.run("x - 4")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(6)
+      end
+      it "multiplies variables" do
+        Aua.run("x = 7")
+        result = Aua.run("x * 2")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(14)
+      end
+      it "divides variables" do
+        Aua.run("x = 20")
+        result = Aua.run("x / 4")
+        expect(result).to be_a(Aua::Int)
+        expect(result.value).to eq(5)
       end
     end
 
@@ -279,5 +317,27 @@ RSpec.describe Aua do
       expect(result).to be_a(Aua::Str)
       expect(result.value).to match(/Rayleigh/i)
     end
+  end
+
+  describe "Built-in Functions" do
+    describe "Time and Date Functions" do
+      it "returns the current time" do
+        result = Aua.run("time 'now'")
+        expect(result).to be_a(Aua::Time)
+        expect(result.value).to be_within(1).of(::Time.now)
+      end
+    end
+
+    # it "returns the current date" do
+    #   result = Aua.run("date :today")
+    #   expect(result).to be_a(Aua::Date)
+    #   expect(result.value).to eq(Date.today)
+    # end
+
+    # it "returns the current date and time" do
+    #   result = Aua.run("time(:one_day_ago)")
+    #   expect(result).to be_a(Aua::Time)
+    #   expect(result.value).to be_within(1).of(Time.now)
+    # end
   end
 end
