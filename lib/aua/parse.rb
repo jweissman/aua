@@ -9,6 +9,12 @@ module Aua
       attr_reader :at
 
       def inspect = "#{type} (#{value.inspect} #{at})"
+
+      def ==(other)
+        return false unless other.is_a?(Node)
+
+        type == other.type && value == other.value
+      end
     end
   end
 
@@ -16,7 +22,6 @@ module Aua
   module Grammar
     PRIMARY_NAMES = {
       lparen: :parens,
-      # minus: :negation,
       id: :id,
       int: :int,
       float: :float,
@@ -26,6 +31,7 @@ module Aua
       gen_lit: :generative_lit,
 
       simple_str: :simple_str
+      # str_part: :str_part,
     }.freeze
 
     # Operator precedence (higher number = higher precedence)
@@ -64,6 +70,7 @@ module Aua
       def parse_float = parse_one(:float)
       def parse_bool = parse_one(:bool)
       def parse_str = parse_one(:str)
+
       def parse_nihil = parse_one(:nihil)
       def parse_simple_str = parse_one(:simple_str)
 
@@ -77,19 +84,6 @@ module Aua
         end
         expr
       end
-
-      # Parses a unary minus expression.
-      # def parse_negation
-      #   @parse.consume(:minus)
-      #   raise Error, "Unexpected end of input after unary minus" if @parse.current_token.type == :eos
-
-      #   unless %i[int float bool str id minus].include?(@parse.current_token.type)
-      #     raise Error, "Unary minus must be followed by a literal or identifier, got #{@parse.current_token.type}"
-      #   end
-
-      #   operand = @parse.send :parse_primary
-      #   s(:negate, operand)
-      # end
 
       def parse_generative_lit
         value = @parse.current_token.value
@@ -152,9 +146,8 @@ module Aua
     def next_token
       @tokens.next
     rescue StopIteration
-      # nil
       Syntax::Token.new(
-        type: :eos, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0)
+        type: :eof, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0)
       )
     end
 
@@ -164,10 +157,38 @@ module Aua
 
     private
 
-    def parse = parse_expression
+    def parse
+      parse_statements
+      # parse_expression
+    end
+
+    def parse_statements
+      statements = []
+      while @current_token.type != :eos && @current_token.type != :eof
+        # Skip any leading :eos tokens (blank lines, etc.)
+        advance while @current_token.type == :eos
+
+        break if %i[eos].include?(@current_token.type)
+
+        statement = parse_expression
+        raise Error, "Unexpected end of input while parsing statements" if statement.nil?
+
+        puts "Parsed statement: #{statement.inspect}" if Aua.testing?
+
+        statements << statement
+
+        # After a statement, consume any :eos tokens (semicolon or newline)
+        while @current_token.type == :eos
+          advance
+        end
+      end
+
+      statements.size == 1 ? statements.first : s(:seq, statements.compact)
+    end
 
     # Parses an expression
     def parse_expression
+      puts "Parsing expression at #{current_token.at}" if Aua.testing?
       maybe_assignment = parse_assignment
       return maybe_assignment if maybe_assignment
 
@@ -200,7 +221,7 @@ module Aua
         if @current_token.type == :comma
           consume(:comma)
           puts " - Consumed comma, expecting more args" if Aua.testing?
-        elsif @current_token.type == :eos
+        elsif [:eos, :eof].include?(@current_token.type)
           puts " - End of arguments reached" if Aua.testing?
           break
         else
@@ -290,14 +311,47 @@ module Aua
       raise Aua::Error, "No current token to parse" if @current_token.nil?
       raise Aua::Error, "Unexpected end of input while parsing primary expression" if @current_token.type == :eos
 
+      # Handle structured/interpolated strings
+      if @current_token.type == :str_part
+        return parse_structured_str # @type var parts: Array[AST::Node]
+      end
+
       primitives = Primitives.new(self)
       return primitives.send "parse_#{PRIMARY_NAMES[@current_token.type]}" if PRIMARY_NAMES.key?(@current_token.type)
 
       raise Error, "Unexpected token type: #{@current_token.type}"
     end
 
-    def unexpected_token
-      raise Error, "Unexpected token in primary expression: #{@current_token.type}"
+    # Parses a structured/interpolated string
+    # @type method parse_structured_str: () -> AST::Node
+    def parse_structured_str
+      parts = [] # Array[AST::Node]
+      while true
+        if @current_token.type == :str_part
+          parts << s(:str, @current_token.value)
+          advance
+        elsif @current_token.type == :interpolation_start
+          advance
+          expr = parse_expression
+          parts << expr
+          if @current_token.type == :interpolation_end
+            advance
+          else
+            raise Error, "Expected interpolation_end, got #{@current_token.type}"
+          end
+        elsif @current_token.type == :str_end
+          advance
+          break
+        else
+          if current_token.type == :eof
+            raise Error, "Unterminated string literal #{current_token.at}"
+          end
+          raise Error, "Unexpected token in structured string: #{current_token.type} #{current_token.at}"
+        end
+      end
+      return s(:str, parts.first.value) if parts.size == 1 && parts.first.type == :str
+
+      s(:structured_str, parts)
     end
   end
 end

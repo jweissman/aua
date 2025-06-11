@@ -21,7 +21,7 @@ module Aua
     def int = IntegerArbitrary.new(0, 1_000_000_000).map(
       ->(v) { v.to_s },
       ->(s) { s.to_i } # Convert to integer and back to string for consistency
-    )    
+    )
 
     def float
       tuple(int, int).map(
@@ -31,7 +31,8 @@ module Aua
     end
 
     def str_lit
-      ascii_string.filter { |s| s.length <= 8 && !s.include?("'") && !s.include?("\"") }
+      ascii_string
+        .filter { |s| s.length <= 8 && !s.include?("'") && !s.include?("\"") }
         .map(
           ->(v) {
             if rand < 0.5
@@ -112,13 +113,13 @@ module Aua
       end
     end
 
-    it "lexes valid string literals as :simple_str or :str" do
+    it "lexes valid string literals as :str kinds" do
       extend Aua::Properties
       with_property(str_lit) do |input|
         lexer = Lex.new(input)
         tokens = lexer.tokens.to_a.reject { |t| t.type == :whitespace }
-        expect(tokens.size).to eq(1)
-        expect([:simple_str, :str]).to include(tokens.first.type)
+        expect(1..2).to include(tokens.size) # .to eq(1..2)
+        expect([:simple_str, :str, :str_part, :str_end]).to include(tokens.first.type)
       end
     end
 

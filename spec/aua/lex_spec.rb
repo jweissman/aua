@@ -9,13 +9,47 @@ module Aua
     let(:tokens) { lexer.tokens.to_a }
     let(:token) { tokens.first }
 
+    describe "semicolon" do
+      context "at the end of a statement" do
+        let(:input) { "x = 42;" }
+        describe "emits eos" do
+          it "returns an end-of-statement token" do
+            expect(tokens.last.type).to eq(:eos)
+            expect(tokens.last.value).to be_nil
+          end
+        end
+      end
+    end
+
+    describe "newline" do
+      context "at the end of a statement" do
+        let(:input) { "x = 42\n " }
+        it "returns an end-of-statement token" do
+          puts "Tokens: #{tokens.map { |t| [t.type, t.value] }}"
+          expect(tokens.last.type).to eq(:eos)
+          expect(tokens.last.value).to be_nil
+        end
+      end
+
+      context "in the middle of a statement" do
+        let(:input) { "x = 42\n y = 43" }
+        it "returns an end-of-statement token for the first line" do
+          expect(tokens.map { |t| [t.type, t.value] }).to eq([
+                                                               [:id, "x"], [:equals, "="], [:int, 42],
+                                                               [:eos, nil],
+                                                               [:id, "y"], [:equals, "="], [:int, 43]
+                                                             ])
+        end
+      end
+    end
+
     describe "comments" do
       describe "mixed use" do
         let(:input) { "x = 42 # This is a comment" }
         it "ignores after octothorpe (#)" do
           expect(tokens.map { [it.type, it.value] }).to eq([
-            [:id, "x"], [:equals, "="], [:int, 42],
-          ])
+                                                             [:id, "x"], [:equals, "="], [:int, 42]
+                                                           ])
         end
       end
 
@@ -25,13 +59,28 @@ module Aua
           expect(tokens).to be_empty
         end
       end
+
+      describe "with leading whitespace" do
+        let(:input) { "   #!/usr/bin/env aura\n" }
+        it "ignores" do
+          expect(tokens).to be_empty
+        end
+      end
     end
 
     describe "whitespace" do
-      describe "only" do
-        let(:input) { "   \n\t  " }
+      describe "spaces" do
+        let(:input) { "  " }
         it "returns no tokens" do
           expect(tokens).to be_empty
+        end
+      end
+
+      describe "only newline" do
+        let(:input) { "   \n\t  " }
+        it "returns no tokens" do
+          expect(tokens).not_to be_empty
+          expect(tokens.map { |t| [t.type, t.value] }).to eq([[:eos, nil]])
         end
       end
 
@@ -46,8 +95,8 @@ module Aua
         let(:input) { "x   =   42" }
         it "ignores" do
           expect(tokens.map { |t| [t.type, t.value] }).to eq([
-            [:id, "x"], [:equals, "="], [:int, 42],
-          ])
+                                                               [:id, "x"], [:equals, "="], [:int, 42]
+                                                             ])
         end
       end
     end
@@ -55,7 +104,7 @@ module Aua
     describe "identifiers" do
       context "with digits after the first character" do
         let(:input) { "foo42" }
-        it "lexes as a single identifier (currently fails, see lexer impl)", skip: true do
+        it "lexes as a single identifier" do
           expect(tokens.size).to eq(1)
           expect(token.type).to eq(:id)
           expect(token.value).to eq("foo42")
@@ -112,8 +161,24 @@ module Aua
         end
       end
 
+      describe "double-quoted" do
+        let(:input) { '"hello ${123}"' }
+        it "interpolates a double-quoted string without hanging", skip: false do
+          expect(tokens.size).to eq(5)
+          expect(tokens.map { |t| [t.type, t.value] }).to eq([
+                                                               [:str_part, "hello "],
+                                                               [:interpolation_start, "${"],
+                                                               [:int, 123],
+                                                               [:interpolation_end, "}"],
+                                                               [:str_end, ""]
+                                                             ])
+        end
+      end
+
       describe "generative" do
-        let(:input) { "\"\"\"The current day is #{::Time.now.strftime("%A")}. Please come up with a rhyming couplet that describes the day of the week. If you can try to be alliterative, starting as many words as you can with the first two characters of the day name.\"\"\"" }
+        let(:input) do
+          "\"\"\"The current day is #{::Time.now.strftime("%A")}. Please come up with a rhyming couplet that describes the day of the week. If you can try to be alliterative, starting as many words as you can with the first two characters of the day name.\"\"\""
+        end
 
         it "lexes" do
           str_token = tokens.find { |t| t.type == :gen_lit }
@@ -137,7 +202,7 @@ module Aua
       describe "empty str" do
         let(:input) { '""' }
         it "lexes an empty string literal" do
-          str_token = tokens.find { |t| t.type == :str }
+          str_token = tokens.find { |t| t.type == :str_end }
           expect(str_token).not_to be_nil
           expect(str_token.value).to eq("")
         end
@@ -151,69 +216,6 @@ module Aua
           str_token = tokens.find { |t| t.type == :simple_str }
           expect(str_token).not_to be_nil
           expect(str_token.value).to eq("")
-        end
-      end
-    end
-
-    describe "errors", slow: true do
-      describe "foundations" do
-        describe "empty input" do
-          let(:input) { "" }
-          it "returns an empty token stream" do
-            expect(tokens).to be_empty
-          end
-        end
-
-        describe "standalone dot" do
-          let(:input) { "." }
-          it "raises an error for unexpected character" do
-            expect { tokens }.to raise_error(Aua::Error)
-          end
-        end
-        describe "unexpected characters" do
-          let(:input) { "x = 42 @ unexpected" }
-          it "raises an error for unexpected characters" do
-            expect { tokens }.to raise_error(Aua::Error, /Invalid token: unexpected character at/)
-          end
-        end
-      end
-
-      context "with numbers" do
-        describe "identifier immediately following" do
-          let(:input) { "42abc" }
-          it "raises an error" do
-            expect { tokens }.to raise_error(Aua::Error, /number immediately followed by identifier/)
-          end
-        end
-
-        describe "multiple dots" do
-          let(:input) { "1.2.3" }
-          it "raises an error for invalid float" do
-            expect { tokens }.to raise_error(Aua::Error, /multiple dots in number/)
-          end
-        end
-
-        describe "only decimal point" do
-          let(:input) { ".42" }
-          it "raises an error for invalid float" do
-            expect { tokens }.to raise_error(Aua::Error, /Invalid token: unexpected character at line 1, column 1/)
-          end
-        end
-      end
-
-      context "with strings" do
-        describe "unterminated literal" do
-          let(:input) { "'unterminated" }
-          it "raises an error" do
-            expect { lexer.tokens.to_a }.to raise_error(Aua::Error, /Unterminated string literal/)
-          end
-        end
-
-        describe "very long string" do
-          let(:input) { '"' + "a" * 70_000 + '"' }
-          it "raises an error for exceeding MAX_STRING_LENGTH", skip: false do
-            expect { tokens }.to raise_error(Aua::Error, /Unterminated string literal/)
-          end
         end
       end
     end

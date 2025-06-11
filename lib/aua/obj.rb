@@ -3,33 +3,23 @@
 module Aua
   # The base object for all Aua values.
   class Obj
-    # Initialize a new Aua object.
-    def initialize
-      # Initialization logic can go here if needed.
-      puts "Creating new Aua object of type #{self.class.name}" if Aua.testing?
-    end
-
     def klass = Klass.klass
     def inspect = "<#{self.class.name} #{introspect}>"
     def introspect = ""
     def pretty = introspect
-
-    def aura_methods
-      self.class.aura_methods
-    end
+    def aura_methods = self.class.aura_methods
 
     def aura_respond_to?(method_name)
       self.class.aura_methods.include?(method_name)
     end
 
-    def aura_send(method_name, *args)
-      puts "Sending #{method_name} with args: #{args.inspect}"
+    def aura_send(method_name, *)
       unless aura_respond_to?(method_name)
         raise NoMethodError, "Method #{method_name} not defined for #{self.class.name}"
       end
 
       meth = self.class.aura_method(method_name)
-      instance_exec(*args, &meth)
+      instance_exec(*, &meth)
     end
 
     def self.aura_methods
@@ -100,10 +90,10 @@ module Aua
 
     attr_reader :value
 
-    define_aura_method(:+) { Int.new(@value + it.aura_send(:to_i)) }
-    define_aura_method(:-) { Int.new(@value - it.aura_send(:to_i)) }
-    define_aura_method(:*) { Int.new(@value * it.aura_send(:to_i)) }
-    define_aura_method(:/) { Int.new(@value / it.aura_send(:to_i)) }
+    define_aura_method(:+) { Int.new(@value + _1.aura_send(:to_i)) }
+    define_aura_method(:-) { Int.new(@value - _1.aura_send(:to_i)) }
+    define_aura_method(:*) { Int.new(@value * _1.aura_send(:to_i)) }
+    define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_i)) }
 
     define_aura_method(:to_i) { @value }
   end

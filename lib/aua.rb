@@ -69,6 +69,12 @@ module Aua
         when :if, :negate, :id, :assign, :binop then translate_basic(ast)
         when :gen_lit then translate_gen_lit(ast)
         when :call then translate_call(ast)
+        when :seq then translate_sequence(ast)
+        when :structured_str then
+          # Handle structured strings by translating each part
+          # parts = ast.value.map { |part| part.is_a?(AST::Node) ? translate(part) : part }
+          puts "Translating structured string: #{ast.value.inspect}" if Aua.testing?
+          [Str.new("structured-str")] # parts.map(&:value).join)] # Join the parts into a single string
         else
           raise Error, "Unknown AST node type: \\#{ast.type}"
         end
@@ -77,6 +83,16 @@ module Aua
       def translate_call(node)
         fn_name, args = node.value
         [Semantics.inst(:call, fn_name, *args.map { |a| translate(a) })]
+      end
+
+      def translate_sequence(node)
+        stmts = node.value
+        puts "Translating sequence: #{stmts.inspect}" if Aua.testing?
+        raise Error, "Empty sequence" if stmts.empty?
+        raise Error, "Sequence must be an array" unless stmts.is_a?(Array)
+        raise Error, "Sequence must contain only AST nodes" unless stmts.all? { |s| s.is_a?(AST::Node) }
+
+        stmts.map { |stmt| translate(stmt) }.flatten
       end
 
       def translate_basic(node)
@@ -178,10 +194,7 @@ module Aua
           end
 
           def raise_binop_type_error(operator, left, right)
-            # we could resolve a single id very easily here
             [SEND[left, operator, right]]
-
-            # raise Error, "Unsupported operand types for #{operator}: #{left.class} and #{right.class}"
           end
 
           def binop_minus(left, right)
@@ -200,7 +213,6 @@ module Aua
             elsif left.is_a?(Float) && right.is_a?(Float)
               Float.new(left.value * right.value)
             else
-              # raise Error, "Unsupported operand types for *: #{left.class} and #{right.class}"
               raise_binop_type_error(:*, left, right)
             end
           end
@@ -251,20 +263,68 @@ module Aua
 
     def builtins
       @builtins ||= {
+        inspect: lambda { |obj|
+          puts "Inspecting object: #{obj.inspect}" if Aua.testing?
+          raise Error, "inspect requires a single argument" unless obj.is_a?(Obj)
+          puts "Object class: #{obj.class}" if Aua.testing?
+          puts "Object value: #{obj.value.inspect}" if Aua.testing?
+
+          Str.new(obj.introspect)
+        },
+        rand: lambda { |max|
+          puts "Generating random number... (max: #{max.inspect})" if Aua.testing?
+          rng = Random.new
+          max = max.is_a?(Int) ? max.value : 100 if max.is_a?(Obj)
+          puts "Using max value: #{max}" if Aua.testing?
+          Aua::Int.new(
+            rng.rand(0..max)
+          )
+        },
         time: lambda { |_args|
           puts "Current time: #{Time.now}"
           Aua::Time.now
         },
-        say: lambda { |args|
-          raise Error, "say requires a single argument" unless args.size == 1
+        say: lambda { |arg|
+          # raise Error, "say requires a single argument" unless args.size == 1
 
-          value = args.first
+          value = arg # s.first
           raise Error, "say only accepts Str arguments, got #{value.class}" unless value.is_a?(Str)
 
           puts value.value
 
           Aua::Nihil.new
+        },
+        ask: lambda { |question| # ie from stdin
+          puts "Asking question: #{question.inspect}" if Aua.testing?
+          raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
+          response = gets
+          puts "Response: #{response}" if Aua.testing?
+          raise Error, "No response received" if response.nil?
+
+          Str.new(response.chomp) # .strip
+        },
+        chat: lambda { |question|
+          puts "Asking question: #{question.inspect}" if Aua.testing?
+          raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
+
+          current_conversation = Aua::LLM.chat
+          response = current_conversation.ask(question.value)
+          puts "Response: #{response}" if Aua.testing?
+          Aua::Str.new(response)
+        },
+        see_url: lambda { |url|
+          puts "Fetching URL: #{url.inspect}" if Aua.testing?
+          raise Error, "see_url requires a single Str argument" unless url.is_a?(Str)
+          uri = URI(url.value)
+          response = Net::HTTP.get_response(uri)
+          if response.is_a?(Net::HTTPSuccess)
+            puts "Response from #{url.value}: #{response.body}" if Aua.testing?
+            Aua::Str.new(response.body)
+          else
+            raise Error, "Failed to fetch URL: #{url.value} - #{response.message}"
+          end
         }
+
       }
     end
 
@@ -285,10 +345,10 @@ module Aua
 
     # Evaluates a single statement in the VM.
     def evaluate_one(stmt)
-      return stmt if stmt.is_a? Obj
-
       # Unwrap arrays of length 1 until we get a Statement
       stmt = stmt.first while stmt.is_a?(Array) && stmt.size == 1
+      return resolve(stmt) if stmt.is_a? Obj
+
 
       raise Error, "Unexpected array in evaluate_one: \\#{stmt.inspect}" if stmt.is_a?(Array)
 
@@ -317,8 +377,31 @@ module Aua
         raise Error, "Unknown statement type: #{stmt.type}" if stmt.is_a?(Statement)
 
         raise Error, "Unknown statement: #{stmt.inspect}"
-
       end
+    end
+
+    def resolve(obj)
+      puts "Resolving object: #{obj.inspect}" if Aua.testing?
+
+      # interpolate strings, collapse complex vals, etc.
+      return interpolated(obj) if obj.is_a?(Str)
+
+      obj
+    end
+
+    def interpolated(obj)
+      puts "Interpolating object: #{obj.inspect}" if Aua.testing?
+      return obj unless obj.is_a?(Str)
+
+      inspects = Aua.vm.builtins[:inspect]
+
+      Str.new(obj.value.gsub(/\$\{(\w+)\}/) do |match|
+        var_name = $1
+        puts "Interpolating variable: #{var_name}" if Aua.testing?
+        value = inspects[eval_id(var_name)].value
+        puts "Interpolated value: #{value.inspect}" if Aua.testing?
+        value.is_a?(Str) ? value.value : value.to_s
+      end)
     end
 
     def eval_call(fn_name, args)
@@ -388,9 +471,10 @@ module Aua
     def run(ctx, code)
       pipeline = [method(:lex), method(:parse), vm.method(:evaluate)]
       pipeline.reduce(code) do |input, step|
-        # $stdout.puts "#{step.name}: #{input.inspect}..."
+        puts "Running step: #{step.name}" if Aua.testing?
+        puts "#{step.name}: #{input.inspect}..."
         out = step.call(ctx, input)
-        $stdout.puts "#{step.name}: #{input.inspect} -> #{out.inspect}" if Aua.testing
+        puts "#{step.name}: #{input.inspect} -> #{out.inspect}" if Aua.testing
         out
       rescue Aua::Error => e
         warn "Error during processing: #{e.message}"

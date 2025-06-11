@@ -7,7 +7,6 @@ AllCops:
   SuggestExtensions: false
   NewCops: enable
   Exclude:
-    - 'spec/**/*'
     - 'vendor/**/*'
     - 'bundle/**/*'
     - 'node_modules/**/*'
@@ -29,3 +28,13 @@ Metrics/ClassLength:
 
 Metrics/MethodLength:
   Max: 10
+
+Style/ItBlockParameter:
+  Enabled: false
+
+# no frozen string literals
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false

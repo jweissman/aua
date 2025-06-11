@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "rainbow/refinement"
 
 module Aua
@@ -23,7 +21,10 @@ module Aua
       "(" => :lparen,
       ")" => :rparen,
       "=" => :equals,
-      "#" => :comment
+      "#" => :comment,
+      ";" => :eos,
+      "\n" => :eos,
+      "}" => :interpolation_end
     }.freeze
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
@@ -34,92 +35,6 @@ module Aua
   # A lexer for the Aua language.
   # Responsible for converting source code into a stream of tokens.
   class Lex
-    # Dispatch manager (lexing entrypoints / first-level handlers).
-    class Handler
-      def initialize(lexer)
-        @lexer = lexer
-      end
-
-      def whitespace(_) = advance
-      def identifier(_) = recognize.identifier
-      def string(quote) = recognize.string(quote)
-      def prompt(_) = recognize.string('"""')
-
-      def minus(_)
-        advance
-        t(:minus)
-      end
-
-      def plus(_)
-        advance
-        t(:plus)
-      end
-
-      def star(_)
-        advance
-        t(:star)
-      end
-
-      def slash(_)
-        advance
-        t(:slash)
-      end
-
-      def lparen(_)
-        advance
-        t(:lparen)
-      end
-
-      def rparen(_)
-        advance
-        t(:rparen)
-      end
-
-      def number(_)
-        recognize.number_lit
-      end
-
-      def equals(eql)
-        advance
-        t(:equals, eql)
-      end
-
-      def pow(_)
-        2.times { advance }
-        t(:pow)
-      end
-
-      def comment(_chars)
-        advance while lens.current_char != "\n" && !lens.eof?
-        advance if lens.current_char == "\n" # skip the newline itself
-        nil
-      end
-
-      def unexpected(_char) = raise(Error, Handler.unexpected_character_message(lens))
-
-      def self.unexpected_character_message(the_lens)
-        hint = "The character #{the_lens.current_char.inspect} is not valid in the current context."
-        msg = the_lens.identify(
-          message: "Invalid token: unexpected character",
-          hint:
-        )
-        puts msg
-        msg
-      end
-
-      protected
-
-      def lens = @lexer.lens
-      def advance(inc = 1) = @lexer.advance(inc)
-      def recognize = @lexer.recognize
-      def t(type, value = nil, at: @lexer.caret) = @lexer.t(type, value, at:)
-      def current_pos = lens.current_pos
-      def current_char = lens.current_char
-      def next_char = lens.peek
-      def next_next_char = lens.peek_n(2).last
-      def eof? = lens.eof?
-    end
-
     # Encapsulates token logic.
     class Recognizer
       include Syntax
@@ -144,7 +59,7 @@ module Aua
       # Lexes an identifier or boolean literal.
       def identifier
         start_pos = current_pos
-        advance while current_char&.match?(/[a-zA-Z_]/)
+        advance while current_char&.match?(/[a-zA-Z0-9_]/)
         value = @lexer.slice_from(start_pos)
         return t(:keyword, value) if KEYWORDS.include?(value.to_sym)
 
@@ -167,16 +82,25 @@ module Aua
         number_token_from_string(number_str, has_dot)
       end
 
-      # Lexes a string literal, accumulating characters between quotes.
-      MAX_STRING_LENGTH = 65_536
+      MAX_STRING_LENGTH = 1024 # Maximum length of a string literal
 
-      def string(quote = "'")
+      # Lexes a string literal, supporting interpolation for double-quoted strings.
+      def string(quote = "'", &)
         quote.length.times { advance }
-        chars = consume_string_chars(quote)
-        quote.length.times { advance }
-        raise Error, "Unterminated string literal (of length #{chars.length})" if chars.length >= MAX_STRING_LENGTH
+        if quote == '"'
+          return string_with_interpolation(&) if block_given?
 
-        encode_string(chars, quote:)
+          raise Error, "Double-quoted/interpolated strings must be lexed with a block."
+        else
+          # Simple or generative string logic
+          chars = consume_string_chars(quote)
+          unless current_char == quote.chars.last
+            raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe
+          end
+
+          quote.length.times { advance }
+          encode_string(chars, quote: quote)
+        end
       end
 
       private
@@ -245,6 +169,171 @@ module Aua
       end
     end
 
+    # Dispatch manager (lexing entrypoints / first-level handlers).
+    class Handler
+      def initialize(lexer)
+        @lexer = lexer
+      end
+
+      def whitespace(chars)
+        # Only skip if not a newline
+        if chars == "\n"
+          advance
+          t(:eos)
+        else
+          advance
+          nil
+        end
+      end
+
+      def identifier(_) = recognize.identifier
+      using Rainbow
+
+      def string(quote)
+        if quote == '"'
+          @string_pending ||= []
+          @string_mode ||= :start
+          @string_buffer ||= ""
+          max_len = 1024
+
+          # Always return from the pending queue if not empty
+          return @string_pending.shift unless @string_pending.empty?
+
+          loop do
+            case @string_mode
+            when :start
+              @string_buffer = ""
+              advance
+              @string_mode = :body
+            when :body
+              if ["", '"'].include?(current_char)
+                token = t(:str_part, @string_buffer) unless @string_buffer.empty?
+                @string_buffer = nil
+                @string_mode = :end
+                return token if token
+
+                next
+              elsif current_char == "\\" && next_char == '"'
+                @string_buffer << '"'
+                advance(2)
+              elsif current_char == "$" && next_char == "{"
+                advance(2)
+                token = t(:str_part, @string_buffer) unless @string_buffer.empty?
+                @string_buffer = ""
+                return [token, t(:interpolation_start, "${")] if token
+
+                return t(:interpolation_start, "${")
+
+              # elsif current_char == "$" && next_char == "{"
+              #   advance(2)
+
+              #   token = t(:str_part, @string_buffer)
+              #   @string_buffer = ""
+              #   return [token, t(:interpolation_start, "${")]
+
+              else
+                @string_buffer << current_char
+                advance
+                if @string_buffer.length >= max_len
+                  raise Error,
+                        "Unterminated string literal (of length #{@string_buffer.length}) at " + lens.describe
+                end
+              end
+            when :end
+              advance
+              @string_mode = nil
+              return t(:str_end, "")
+            end
+          end
+        else
+          recognize.string(quote)
+        end
+      end
+
+      def prompt(_) = recognize.string('"""')
+      def number(_) = recognize.number_lit
+
+      def minus(_)
+        advance
+        t(:minus)
+      end
+
+      def plus(_)
+        advance
+        t(:plus)
+      end
+
+      def star(_)
+        advance
+        t(:star)
+      end
+
+      def slash(_)
+        advance
+        t(:slash)
+      end
+
+      def lparen(_)
+        advance
+        t(:lparen)
+      end
+
+      def rparen(_)
+        advance
+        t(:rparen)
+      end
+
+      def equals(eql)
+        advance
+        t(:equals, eql)
+      end
+
+      def pow(_)
+        2.times { advance }
+        t(:pow)
+      end
+
+      def comment(_chars)
+        advance while lens.current_char != "\n" && !lens.eof?
+        advance if lens.current_char == "\n" # skip the newline itself
+        nil
+      end
+
+      def eos(_)
+        advance
+        t(:eos)
+      end
+
+      def interpolation_end(_)
+        advance
+        t(:interpolation_end, "}")
+      end
+
+      def unexpected(_char) = raise(Error, Handler.unexpected_character_message(lens))
+
+      def self.unexpected_character_message(the_lens)
+        hint = "The character #{the_lens.current_char.inspect} is not valid in the current context."
+        msg = the_lens.identify(
+          message: "Invalid token: unexpected character",
+          hint:
+        )
+        puts msg
+        msg
+      end
+
+      protected
+
+      def lens = @lexer.lens
+      def advance(inc = 1) = @lexer.advance(inc)
+      def recognize = @lexer.recognize
+      def t(type, value = nil, at: @lexer.caret) = @lexer.t(type, value, at:)
+      def current_pos = lens.current_pos
+      def current_char = lens.current_char
+      def next_char = lens.peek
+      def next_next_char = lens.peek_n(2).last
+      def eof? = lens.eof?
+    end
+
     # Provides a lens for inspecting the current position in the source code.
     class Lens
       def initialize(doc)
@@ -310,18 +399,99 @@ module Aua
 
     private
 
-    def tokenize(&) = (yield_lexeme(&) while @lens.more?)
-
-    def yield_lexeme(&)
-      token = consume_until_acceptance
-      if token.is_a?(Token)
-        yield(token)
-        return
-      end
-      return unless @lens.more?
-
-      raise Error, Handler.unexpected_character_message(@lens) if @lens.current_char
+    # Returns true if we should resume string mode after an interpolation_end.
+    # This is true if we are in the middle of a double-quoted string (i.e., @string_mode is not nil)
+    def should_resume_string
+      !!(@string_mode && @string_mode != :end && !@string_mode.nil?)
     end
+
+    def tokenize(&)
+      @inside_string = false
+      @pending_tokens ||= []
+      last_token = nil
+      while @lens.more? || !@pending_tokens.empty?
+        puts "Lens -- #{@lens.describe}" if Aua.testing?
+        puts "Pending tokens: #{@pending_tokens.map(&:type).join(", ")}" if Aua.testing?
+        unless @pending_tokens.empty?
+          tok = @pending_tokens.shift
+          yield(tok)
+          last_token = tok
+          @inside_string = false if tok.type == :interpolation_start
+          @inside_string = true if tok.type == :interpolation_end && should_resume_string
+          next
+        end
+
+        if @inside_string
+          token = handler.string('"')
+          tokens = token.is_a?(Array) ? token : [token]
+          @pending_tokens.concat(tokens[1..]) if tokens.size > 1
+          tok = tokens.first
+          yield(tok)
+          last_token = tok
+          @inside_string = false if tok.type == :interpolation_start
+        else
+          token = consume_until_acceptance
+          tokens = token.is_a?(Array) ? token : [token]
+          @pending_tokens.concat(tokens[1..]) if tokens.size > 1
+          tok = tokens.first
+          if tok
+            yield(tok)
+            last_token = tok
+            @inside_string = true if tok.type == :string
+            @inside_string = true if tok.type == :interpolation_end && should_resume_string
+          else
+            # Only raise if there is still non-ignorable input
+            if @lens.more?
+              raise Error, Handler.unexpected_character_message(@lens)
+            else
+              break
+            end
+          end
+        end
+      end
+    end
+
+    # def tokenize(&)
+    #   @inside_string = false
+    #   last_token = nil
+    #   while @lens.more?
+    #     if @inside_string
+    #       token = handler.string('"')
+    #       # Handle multiple tokens (e.g., [str_part, interpolation_start])
+    #       tokens = token.is_a?(Array) ? token : [token]
+    #       tokens.each do |tok|
+    #         yield(tok)
+    #         last_token = tok
+    #         @inside_string = false if tok.type == :interpolation_start
+    #       end
+    #     else
+    #       # Use yield_lexeme to get the next token
+    #       yield_lexeme do |tok|
+    #         yield(tok)
+    #         last_token = tok
+    #         # If we see a string start, enter string mode
+    #         @inside_string = true if tok.type == :string
+    #         # If we see interpolation_end and should resume string, re-enter string mode
+    #         @inside_string = true if tok.type == :interpolation_end && should_resume_string
+    #       end
+    #     end
+    #   end
+    # end
+
+    # def yield_lexeme(&)
+    #   token = consume_until_acceptance
+
+    #   if token.is_a?(Array)
+    #     token.each(&)
+    #   elsif token.is_a?(Token)
+    #     puts "Token: #{token.type} (#{token.value.inspect}) at #{@lens.describe}" if Aua.testing?
+    #     yield(token)
+    #     return
+    #   end
+    #   return unless @lens.more?
+
+    #   raise Error, Handler.unexpected_character_message(@lens) if @lens.current_char
+    # end
 
     def consume_until_acceptance(attempts = 16_536)
       token = nil # : Syntax::Token | nil
@@ -352,7 +522,11 @@ module Aua
       matched_handler = token_names(chars.count).find do |pattern, _token_name|
         pattern_match?(pattern, chars.join)
       end
-      handle.send(matched_handler.last, chars.join) if matched_handler
+
+      return unless matched_handler
+
+      puts "Matched handler: #{matched_handler.inspect}"
+      handle.send(matched_handler.last, chars.join)
     end
 
     def pattern_match?(pattern, content)
