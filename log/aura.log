@@ -1,0 +1,744 @@
+        aura | Invalid token: unexpected character at line 1, column 8:
+
+x = 42 @ unexpected
+       ^
+The character "@" is not valid in the current context.
+        aura | Invalid token: unexpected character at line 1, column 1:
+
+.42
+^
+The character "." is not valid in the current context.
+  aura:parse | parse-expr | Current token: str_part (hello)
+  aura:parse | Parsed statement: str ("hello" )
+  aura:parse | parse-expr | Current token: str_part (The result is: )
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | Parsing command with ID: y
+  aura:parse | - Consumed command ID: y
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: structured_str ([str ("The result is: " ), id ("y" )] )
+        aura | Initializing Aua interpreter with env: {}
+        aura | Running Aua interpreter with code: "123"
+  aura:parse | parse-expr | Current token: int (123)
+  aura:parse | Parsed statement: int (123 )
+        aura | LET ["_", <Aua::Int 123>]
+        aura | Resolving object: <Aua::Int 123>
+        aura | Setting variable _ to <Aua::Int 123>
+        aura | Running Aua interpreter with code: "-42"
+  aura:parse | parse-expr | Current token: minus ()
+  aura:parse | Parsed statement: negate (int (42 ) )
+        aura | LET ["_", <Aua::Int -42>]
+        aura | Resolving object: <Aua::Int -42>
+        aura | Setting variable _ to <Aua::Int -42>
+        aura | LET ["_", <Aua::Int -42>]
+        aura | Resolving object: <Aua::Int -42>
+        aura | Setting variable _ to <Aua::Int -42>
+        aura | Running Aua interpreter with code: "3.14"
+  aura:parse | parse-expr | Current token: float (3.14)
+  aura:parse | Parsed statement: float (3.14 )
+        aura | LET ["_", <Aua::Float 3.14>]
+        aura | Resolving object: <Aua::Float 3.14>
+        aura | Setting variable _ to <Aua::Float 3.14>
+        aura | Running Aua interpreter with code: "true"
+  aura:parse | parse-expr | Current token: bool (true)
+  aura:parse | Parsed statement: bool (true )
+        aura | LET ["_", <Aua::Bool true>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Setting variable _ to <Aua::Bool true>
+        aura | Running Aua interpreter with code: "false"
+  aura:parse | parse-expr | Current token: bool (false)
+  aura:parse | Parsed statement: bool (false )
+        aura | LET ["_", <Aua::Bool true>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Setting variable _ to <Aua::Bool true>
+        aura | Running Aua interpreter with code: "\"hello\""
+  aura:parse | parse-expr | Current token: str_part (hello)
+  aura:parse | Parsed statement: str ("hello" )
+        aura | Reifying string: str ("hello" )
+        aura | LET ["_", <Aua::Str "hello">]
+        aura | Resolving object: <Aua::Str "hello">
+        aura | Interpolating string: <Aua::Str "hello">
+        aura | Setting variable _ to <Aua::Str "hello">
+        aura | Running Aua interpreter with code: "nihil"
+  aura:parse | parse-expr | Current token: nihil (true)
+  aura:parse | Parsed statement: nihil (true )
+        aura | LET ["_", <Aua::Nihil >]
+        aura | Resolving object: <Aua::Nihil >
+        aura | Setting variable _ to <Aua::Nihil >
+        aura | Running Aua interpreter with code: "true"
+  aura:parse | parse-expr | Current token: bool (true)
+  aura:parse | Parsed statement: bool (true )
+        aura | LET ["_", <Aua::Bool true>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Setting variable _ to <Aua::Bool true>
+        aura | Running Aua interpreter with code: "false"
+  aura:parse | parse-expr | Current token: bool (false)
+  aura:parse | Parsed statement: bool (false )
+        aura | LET ["_", <Aua::Bool true>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Setting variable _ to <Aua::Bool true>
+        aura | Running Aua interpreter with code: "123abc"
+        aura | Running Aua interpreter with code: "(123)"
+  aura:parse | parse-expr | Current token: lparen ()
+  aura:parse | parse-expr | Current token: int (123)
+  aura:parse | Parsed statement: int (123 )
+        aura | LET ["_", <Aua::Int 123>]
+        aura | Resolving object: <Aua::Int 123>
+        aura | Setting variable _ to <Aua::Int 123>
+        aura | Running Aua interpreter with code: "   42   "
+  aura:parse | parse-expr | Current token: int (42)
+  aura:parse | Parsed statement: int (42 )
+        aura | LET ["_", <Aua::Int 42>]
+        aura | Resolving object: <Aua::Int 42>
+        aura | Setting variable _ to <Aua::Int 42>
+        aura | Running Aua interpreter with code: "((123))"
+  aura:parse | parse-expr | Current token: lparen ()
+  aura:parse | parse-expr | Current token: lparen ()
+  aura:parse | parse-expr | Current token: int (123)
+  aura:parse | Parsed statement: int (123 )
+        aura | LET ["_", <Aua::Int 123>]
+        aura | Resolving object: <Aua::Int 123>
+        aura | Setting variable _ to <Aua::Int 123>
+        aura | Running Aua interpreter with code: "-3.14"
+  aura:parse | parse-expr | Current token: minus ()
+  aura:parse | Parsed statement: negate (float (3.14 ) )
+        aura | LET ["_", <Aua::Float -3.14>]
+        aura | Resolving object: <Aua::Float -3.14>
+        aura | Setting variable _ to <Aua::Float -3.14>
+        aura | LET ["_", <Aua::Float -3.14>]
+        aura | Resolving object: <Aua::Float -3.14>
+        aura | Setting variable _ to <Aua::Float -3.14>
+        aura | Running Aua interpreter with code: "-true"
+  aura:parse | parse-expr | Current token: minus ()
+  aura:parse | Parsed statement: negate (bool (true ) )
+        aura | Running Aua interpreter with code: "-\"hello\""
+  aura:parse | parse-expr | Current token: minus ()
+  aura:parse | Parsed statement: negate (str ("hello" ) )
+        aura | Running Aua interpreter with code: "-nihil"
+  aura:parse | parse-expr | Current token: minus ()
+  aura:parse | Parsed statement: negate (nihil (true ) )
+        aura | Running Aua interpreter with code: ""
+        aura | Translating sequence: []
+        aura | Running Aua interpreter with code: "foo"
+  aura:parse | parse-expr | Current token: id (foo)
+  aura:parse | Parsing command with ID: foo
+  aura:parse | - Consumed command ID: foo
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: id ("foo" )
+        aura | ID ["foo"]
+        aura | Getting variable foo
+        aura | Running Aua interpreter with code: "\"hello world\""
+  aura:parse | parse-expr | Current token: str_part (hello world)
+  aura:parse | Parsed statement: str ("hello world" )
+        aura | Reifying string: str ("hello world" )
+        aura | LET ["_", <Aua::Str "hello world">]
+        aura | Resolving object: <Aua::Str "hello world">
+        aura | Interpolating string: <Aua::Str "hello world">
+        aura | Setting variable _ to <Aua::Str "hello world">
+        aura | Running Aua interpreter with code: "(1 + 2"
+  aura:parse | parse-expr | Current token: lparen ()
+  aura:parse | parse-expr | Current token: int (1)
+        aura | Running Aua interpreter with code: "\"unterminated string"
+  aura:parse | parse-expr | Current token: str_part (unterminated string)
+        aura | Running Aua interpreter with code: "x = 42"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (42)
+  aura:parse | Parsed statement: assign (["x", int (42 )] )
+        aura | LET ["x", <Aua::Int 42>]
+        aura | Resolving object: <Aua::Int 42>
+        aura | Setting variable x to <Aua::Int 42>
+        aura | LET ["_", <Aua::Int 42>]
+        aura | Resolving object: <Aua::Int 42>
+        aura | Setting variable _ to <Aua::Int 42>
+        aura | Running Aua interpreter with code: "x = 42"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (42)
+  aura:parse | Parsed statement: assign (["x", int (42 )] )
+        aura | LET ["x", <Aua::Int 42>]
+        aura | Resolving object: <Aua::Int 42>
+        aura | Setting variable x to <Aua::Int 42>
+        aura | LET ["_", <Aua::Int 42>]
+        aura | Resolving object: <Aua::Int 42>
+        aura | Setting variable _ to <Aua::Int 42>
+        aura | Running Aua interpreter with code: "x = 100"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (100)
+  aura:parse | Parsed statement: assign (["x", int (100 )] )
+        aura | LET ["x", <Aua::Int 100>]
+        aura | Resolving object: <Aua::Int 100>
+        aura | Setting variable x to <Aua::Int 100>
+        aura | LET ["_", <Aua::Int 100>]
+        aura | Resolving object: <Aua::Int 100>
+        aura | Setting variable _ to <Aua::Int 100>
+        aura | Running Aua interpreter with code: "name = \"Alice\""
+  aura:parse | parse-expr | Current token: id (name)
+  aura:parse | parse-expr | Current token: str_part (Alice)
+  aura:parse | Parsed statement: assign (["name", str ("Alice" )] )
+        aura | Reifying string: str ("Alice" )
+        aura | LET ["name", <Aua::Str "Alice">]
+        aura | Resolving object: <Aua::Str "Alice">
+        aura | Interpolating string: <Aua::Str "Alice">
+        aura | Setting variable name to <Aua::Str "Alice">
+        aura | LET ["_", <Aua::Str "Alice">]
+        aura | Resolving object: <Aua::Str "Alice">
+        aura | Interpolating string: <Aua::Str "Alice">
+        aura | Setting variable _ to <Aua::Str "Alice">
+        aura | Running Aua interpreter with code: "1 + 2"
+  aura:parse | parse-expr | Current token: int (1)
+  aura:parse | Parsed statement: binop ([:plus, int (1 ), int (2 )] )
+        aura | Translating binop: binop ([:plus, int (1 ), int (2 )] )
+        aura | LET ["_", <Aua::Int 3>]
+        aura | Resolving object: <Aua::Int 3>
+        aura | Setting variable _ to <Aua::Int 3>
+        aura | Running Aua interpreter with code: "5 - 3"
+  aura:parse | parse-expr | Current token: int (5)
+  aura:parse | Parsed statement: binop ([:minus, int (5 ), int (3 )] )
+        aura | Translating binop: binop ([:minus, int (5 ), int (3 )] )
+        aura | LET ["_", <Aua::Int 2>]
+        aura | Resolving object: <Aua::Int 2>
+        aura | Setting variable _ to <Aua::Int 2>
+        aura | Running Aua interpreter with code: "4 * 2"
+  aura:parse | parse-expr | Current token: int (4)
+  aura:parse | Parsed statement: binop ([:star, int (4 ), int (2 )] )
+        aura | Translating binop: binop ([:star, int (4 ), int (2 )] )
+        aura | LET ["_", <Aua::Int 8>]
+        aura | Resolving object: <Aua::Int 8>
+        aura | Setting variable _ to <Aua::Int 8>
+        aura | Running Aua interpreter with code: "8 / 2"
+  aura:parse | parse-expr | Current token: int (8)
+  aura:parse | Parsed statement: binop ([:slash, int (8 ), int (2 )] )
+        aura | Translating binop: binop ([:slash, int (8 ), int (2 )] )
+        aura | LET ["_", <Aua::Int 4>]
+        aura | Resolving object: <Aua::Int 4>
+        aura | Setting variable _ to <Aua::Int 4>
+        aura | Running Aua interpreter with code: "1 / 0"
+  aura:parse | parse-expr | Current token: int (1)
+  aura:parse | Parsed statement: binop ([:slash, int (1 ), int (0 )] )
+        aura | Translating binop: binop ([:slash, int (1 ), int (0 )] )
+        aura | Running Aua interpreter with code: "1.5 + 2.5"
+  aura:parse | parse-expr | Current token: float (1.5)
+  aura:parse | Parsed statement: binop ([:plus, float (1.5 ), float (2.5 )] )
+        aura | Translating binop: binop ([:plus, float (1.5 ), float (2.5 )] )
+        aura | LET ["_", <Aua::Float 4.0>]
+        aura | Resolving object: <Aua::Float 4.0>
+        aura | Setting variable _ to <Aua::Float 4.0>
+        aura | Running Aua interpreter with code: "5.5 - 3.5"
+  aura:parse | parse-expr | Current token: float (5.5)
+  aura:parse | Parsed statement: binop ([:minus, float (5.5 ), float (3.5 )] )
+        aura | Translating binop: binop ([:minus, float (5.5 ), float (3.5 )] )
+        aura | LET ["_", <Aua::Float 2.0>]
+        aura | Resolving object: <Aua::Float 2.0>
+        aura | Setting variable _ to <Aua::Float 2.0>
+        aura | Running Aua interpreter with code: "4.0 * 2.0"
+  aura:parse | parse-expr | Current token: float (4.0)
+  aura:parse | Parsed statement: binop ([:star, float (4.0 ), float (2.0 )] )
+        aura | Translating binop: binop ([:star, float (4.0 ), float (2.0 )] )
+        aura | LET ["_", <Aua::Float 8.0>]
+        aura | Resolving object: <Aua::Float 8.0>
+        aura | Setting variable _ to <Aua::Float 8.0>
+        aura | Running Aua interpreter with code: "8.0 / 2.0"
+  aura:parse | parse-expr | Current token: float (8.0)
+  aura:parse | Parsed statement: binop ([:slash, float (8.0 ), float (2.0 )] )
+        aura | Translating binop: binop ([:slash, float (8.0 ), float (2.0 )] )
+        aura | LET ["_", <Aua::Float 4.0>]
+        aura | Resolving object: <Aua::Float 4.0>
+        aura | Setting variable _ to <Aua::Float 4.0>
+        aura | Running Aua interpreter with code: "\"hello\" + \" world\""
+  aura:parse | parse-expr | Current token: str_part (hello)
+  aura:parse | Parsed statement: binop ([:plus, str ("hello" ), str (" world" )] )
+        aura | Translating binop: binop ([:plus, str ("hello" ), str (" world" )] )
+        aura | Reifying string: str ("hello" )
+        aura | Reifying string: str (" world" )
+        aura | LET ["_", <Aua::Str "hello world">]
+        aura | Resolving object: <Aua::Str "hello world">
+        aura | Interpolating string: <Aua::Str "hello world">
+        aura | Setting variable _ to <Aua::Str "hello world">
+        aura | Running Aua interpreter with code: "\"hello\" + 42"
+  aura:parse | parse-expr | Current token: str_part (hello)
+  aura:parse | Parsed statement: binop ([:plus, str ("hello" ), int (42 )] )
+        aura | Translating binop: binop ([:plus, str ("hello" ), int (42 )] )
+        aura | Reifying string: str ("hello" )
+        aura | SEND [<Aua::Str "hello">, :+, <Aua::Int 42>]
+        aura | Resolving object: <Aua::Str "hello">
+        aura | Interpolating string: <Aua::Str "hello">
+        aura | Resolving object: <Aua::Int 42>
+        aura | Running Aua interpreter with code: "true + false"
+  aura:parse | parse-expr | Current token: bool (true)
+  aura:parse | Parsed statement: binop ([:plus, bool (true ), bool (false )] )
+        aura | Translating binop: binop ([:plus, bool (true ), bool (false )] )
+        aura | SEND [<Aua::Bool true>, :+, <Aua::Bool true>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Resolving object: <Aua::Bool true>
+        aura | Running Aua interpreter with code: "2 ** 3"
+  aura:parse | parse-expr | Current token: int (2)
+  aura:parse | Parsed statement: binop ([:pow, int (2 ), int (3 )] )
+        aura | Translating binop: binop ([:pow, int (2 ), int (3 )] )
+        aura | LET ["_", <Aua::Int 8>]
+        aura | Resolving object: <Aua::Int 8>
+        aura | Setting variable _ to <Aua::Int 8>
+        aura | Running Aua interpreter with code: "0.2 ** 3.14159265"
+  aura:parse | parse-expr | Current token: float (0.2)
+  aura:parse | Parsed statement: binop ([:pow, float (0.2 ), float (3.14159265 )] )
+        aura | Translating binop: binop ([:pow, float (0.2 ), float (3.14159265 )] )
+        aura | LET ["_", <Aua::Float 0.0063697292365708005>]
+        aura | Resolving object: <Aua::Float 0.0063697292365708005>
+        aura | Setting variable _ to <Aua::Float 0.0063697292365708005>
+        aura | Running Aua interpreter with code: "x = 5"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (5)
+  aura:parse | Parsed statement: assign (["x", int (5 )] )
+        aura | LET ["x", <Aua::Int 5>]
+        aura | Resolving object: <Aua::Int 5>
+        aura | Setting variable x to <Aua::Int 5>
+        aura | LET ["_", <Aua::Int 5>]
+        aura | Resolving object: <Aua::Int 5>
+        aura | Setting variable _ to <Aua::Int 5>
+        aura | Running Aua interpreter with code: "x + 3"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:plus, id ("x" ), int (3 )] )
+        aura | Translating binop: binop ([:plus, id ("x" ), int (3 )] )
+        aura | SEND [[ID ["x"]], :+, <Aua::Int 3>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 3>
+        aura | LET ["_", <Aua::Int 8>]
+        aura | Resolving object: <Aua::Int 8>
+        aura | Setting variable _ to <Aua::Int 8>
+        aura | Running Aua interpreter with code: "x = 10"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (10)
+  aura:parse | Parsed statement: assign (["x", int (10 )] )
+        aura | LET ["x", <Aua::Int 10>]
+        aura | Resolving object: <Aua::Int 10>
+        aura | Setting variable x to <Aua::Int 10>
+        aura | LET ["_", <Aua::Int 10>]
+        aura | Resolving object: <Aua::Int 10>
+        aura | Setting variable _ to <Aua::Int 10>
+        aura | Running Aua interpreter with code: "x - 4"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:minus, id ("x" ), int (4 )] )
+        aura | Translating binop: binop ([:minus, id ("x" ), int (4 )] )
+        aura | SEND [[ID ["x"]], :-, <Aua::Int 4>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 4>
+        aura | LET ["_", <Aua::Int 6>]
+        aura | Resolving object: <Aua::Int 6>
+        aura | Setting variable _ to <Aua::Int 6>
+        aura | Running Aua interpreter with code: "x = 7"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (7)
+  aura:parse | Parsed statement: assign (["x", int (7 )] )
+        aura | LET ["x", <Aua::Int 7>]
+        aura | Resolving object: <Aua::Int 7>
+        aura | Setting variable x to <Aua::Int 7>
+        aura | LET ["_", <Aua::Int 7>]
+        aura | Resolving object: <Aua::Int 7>
+        aura | Setting variable _ to <Aua::Int 7>
+        aura | Running Aua interpreter with code: "x * 2"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:star, id ("x" ), int (2 )] )
+        aura | Translating binop: binop ([:star, id ("x" ), int (2 )] )
+        aura | SEND [[ID ["x"]], :*, <Aua::Int 2>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 2>
+        aura | LET ["_", <Aua::Int 14>]
+        aura | Resolving object: <Aua::Int 14>
+        aura | Setting variable _ to <Aua::Int 14>
+        aura | Running Aua interpreter with code: "x = 20"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (20)
+  aura:parse | Parsed statement: assign (["x", int (20 )] )
+        aura | LET ["x", <Aua::Int 20>]
+        aura | Resolving object: <Aua::Int 20>
+        aura | Setting variable x to <Aua::Int 20>
+        aura | LET ["_", <Aua::Int 20>]
+        aura | Resolving object: <Aua::Int 20>
+        aura | Setting variable _ to <Aua::Int 20>
+        aura | Running Aua interpreter with code: "x / 4"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:slash, id ("x" ), int (4 )] )
+        aura | Translating binop: binop ([:slash, id ("x" ), int (4 )] )
+        aura | SEND [[ID ["x"]], :/, <Aua::Int 4>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 4>
+        aura | LET ["_", <Aua::Int 5>]
+        aura | Resolving object: <Aua::Int 5>
+        aura | Setting variable _ to <Aua::Int 5>
+        aura | Running Aua interpreter with code: "2 ** 3 ** 2"
+  aura:parse | parse-expr | Current token: int (2)
+  aura:parse | Parsed statement: binop ([:pow, int (2 ), binop ([:pow, int (3 ), int (2 )] )] )
+        aura | Translating binop: binop ([:pow, int (2 ), binop ([:pow, int (3 ), int (2 )] )] )
+        aura | Translating binop: binop ([:pow, int (3 ), int (2 )] )
+        aura | LET ["_", <Aua::Int 512>]
+        aura | Resolving object: <Aua::Int 512>
+        aura | Setting variable _ to <Aua::Int 512>
+        aura | Running Aua interpreter with code: "2 + 3 * 4 - 5 / 5"
+  aura:parse | parse-expr | Current token: int (2)
+  aura:parse | Parsed statement: binop ([:minus, binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] ), binop ([:slash, int (5 ), int (5 )] )] )
+        aura | Translating binop: binop ([:minus, binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] ), binop ([:slash, int (5 ), int (5 )] )] )
+        aura | Translating binop: binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] )
+        aura | Translating binop: binop ([:star, int (3 ), int (4 )] )
+        aura | Translating binop: binop ([:slash, int (5 ), int (5 )] )
+        aura | LET ["_", <Aua::Int 13>]
+        aura | Resolving object: <Aua::Int 13>
+        aura | Setting variable _ to <Aua::Int 13>
+        aura | Running Aua interpreter with code: "10 - 2 ** 3 + 1"
+  aura:parse | parse-expr | Current token: int (10)
+  aura:parse | Parsed statement: binop ([:plus, binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] ), int (1 )] )
+        aura | Translating binop: binop ([:plus, binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] ), int (1 )] )
+        aura | Translating binop: binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] )
+        aura | Translating binop: binop ([:pow, int (2 ), int (3 )] )
+        aura | LET ["_", <Aua::Int 3>]
+        aura | Resolving object: <Aua::Int 3>
+        aura | Setting variable _ to <Aua::Int 3>
+        aura | Running Aua interpreter with code: "(1 + 2) * 3"
+  aura:parse | parse-expr | Current token: lparen ()
+  aura:parse | parse-expr | Current token: int (1)
+  aura:parse | Parsed statement: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
+        aura | Translating binop: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
+        aura | Translating binop: binop ([:plus, int (1 ), int (2 )] )
+        aura | LET ["_", <Aua::Int 9>]
+        aura | Resolving object: <Aua::Int 9>
+        aura | Setting variable _ to <Aua::Int 9>
+        aura | Running Aua interpreter with code: "2 * (3 + 4)"
+  aura:parse | parse-expr | Current token: int (2)
+  aura:parse | parse-expr | Current token: int (3)
+  aura:parse | Parsed statement: binop ([:star, int (2 ), binop ([:plus, int (3 ), int (4 )] )] )
+        aura | Translating binop: binop ([:star, int (2 ), binop ([:plus, int (3 ), int (4 )] )] )
+        aura | Translating binop: binop ([:plus, int (3 ), int (4 )] )
+        aura | LET ["_", <Aua::Int 14>]
+        aura | Resolving object: <Aua::Int 14>
+        aura | Setting variable _ to <Aua::Int 14>
+        aura | Running Aua interpreter with code: "if true then 1 else 2"
+  aura:parse | parse-expr | Current token: keyword (if)
+  aura:parse | parse-expr | Current token: bool (true)
+  aura:parse | parse-expr | Current token: int (1)
+  aura:parse | parse-expr | Current token: int (2)
+  aura:parse | Parsed statement: if ([bool (true ), int (1 ), int (2 )] )
+        aura | IF [<Aua::Bool true>, <Aua::Int 1>, <Aua::Int 2>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Resolving object: <Aua::Int 1>
+        aura | LET ["_", <Aua::Int 1>]
+        aura | Resolving object: <Aua::Int 1>
+        aura | Setting variable _ to <Aua::Int 1>
+        aura | Running Aua interpreter with code: "if false then 1 else 2"
+  aura:parse | parse-expr | Current token: keyword (if)
+  aura:parse | parse-expr | Current token: bool (false)
+  aura:parse | parse-expr | Current token: int (1)
+  aura:parse | parse-expr | Current token: int (2)
+  aura:parse | Parsed statement: if ([bool (false ), int (1 ), int (2 )] )
+        aura | IF [<Aua::Bool true>, <Aua::Int 1>, <Aua::Int 2>]
+        aura | Resolving object: <Aua::Bool true>
+        aura | Resolving object: <Aua::Int 2>
+        aura | LET ["_", <Aua::Int 2>]
+        aura | Resolving object: <Aua::Int 2>
+        aura | Setting variable _ to <Aua::Int 2>
+        aura | Running Aua interpreter with code: "\"\"\"What is the name of the physical phenomena responsible for the sky being blue?\"\"\""
+  aura:parse | parse-expr | Current token: gen_lit (What is the name of the physical phenomena responsible for the sky being blue?)
+  aura:parse | Parsed statement: gen_lit ("What is the name of the physical phenomena responsible for the sky being blue?" )
+        aura | Configuration initialized: #<data Aua::Configuration testing=false, model="qwen-2.5-1.5b-chat", base_uri="http://10.0.0.158:1234/v1", temperature=0.7, top_p=0.9, max_tokens=1024>
+        aura | Cache already contains key: 1d0f0fd14759bf77ea4b2ed014b929268e87f4e2b0cccf38961ecd632147c0a0
+        aura | Cache already contains key: c9b11ba558a7302658314d171cf52146a73b3bba84dd6406548ed0dec5c3c3af
+        aura | [36m>>> What is the name of the physical phenomena responsible for the sky being blue?[0m
+[34m<<< The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.
+
+When sunlight enters our atmosphere, different wavelengths are scattered in various ways:
+
+1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** 
+
+2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.
+
+3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.
+
+This scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.[..80][0m [30m(2.0 seconds)[0m
+[35mMODEL[0m [30mqwen-2.5-1.5b-chat[0m | [35mREQUESTED_AT[0m [30m2025-06-09 00:03:10[0m
+        aura | The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.
+
+When sunlight enters our atmosphere, different wavelengths are scattered in various ways:
+
+1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** 
+
+2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.
+
+3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.
+
+This scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.
+        aura | LET ["_", <Aua::Str "The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.\n\nWhen sunlight enters our atmosphere, different wavelengths are scattered in various ways:\n\n1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** \n\n2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.\n\n3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.\n\nThis scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.">]
+        aura | Resolving object: <Aua::Str "The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.\n\nWhen sunlight enters our atmosphere, different wavelengths are scattered in various ways:\n\n1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** \n\n2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.\n\n3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.\n\nThis scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.">
+        aura | Interpolating string: <Aua::Str "The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.\n\nWhen sunlight enters our atmosphere, different wavelengths are scattered in various ways:\n\n1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** \n\n2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.\n\n3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.\n\nThis scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.">
+        aura | Setting variable _ to <Aua::Str "The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.\n\nWhen sunlight enters our atmosphere, different wavelengths are scattered in various ways:\n\n1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** \n\n2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.\n\n3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.\n\nThis scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.">
+        aura | Running Aua interpreter with code: "time 'now'"
+  aura:parse | parse-expr | Current token: id (time)
+  aura:parse | Parsing command with ID: time
+  aura:parse | - Consumed command ID: time
+  aura:parse | - End of arguments reached
+  aura:parse | - Parsed arguments: [simple_str ("now" )]
+  aura:parse | - Call recognized with ID: time and args: [simple_str ("now" )]
+  aura:parse | Parsed statement: call (["time", [simple_str ("now" )]] )
+        aura | Reifying string: simple_str ("now" )
+        aura | CALL ["time", <Aua::Str "now">]
+        aura | Resolving object: <Aua::Str "now">
+        aura | Interpolating string: <Aua::Str "now">
+        aura | Resolving object: <Aua::Str "now">
+        aura | Interpolating string: <Aua::Str "now">
+        aura | Current time: 2025-06-10 22:51:38
+        aura | LET ["_", <Aua::Time 2025-06-10 22:51:38>]
+        aura | Resolving object: <Aua::Time 2025-06-10 22:51:38>
+        aura | Setting variable _ to <Aua::Time 2025-06-10 22:51:38>
+        aura | Running Aua interpreter with code: "rand(10)"
+  aura:parse | parse-expr | Current token: id (rand)
+  aura:parse | Parsing command with ID: rand
+  aura:parse | - Consumed command ID: rand
+  aura:parse | parse-expr | Current token: int (10)
+  aura:parse | - End of arguments reached
+  aura:parse | - Parsed arguments: [int (10 )]
+  aura:parse | - Call recognized with ID: rand and args: [int (10 )]
+  aura:parse | Parsed statement: call (["rand", [int (10 )]] )
+        aura | CALL ["rand", <Aua::Int 10>]
+        aura | Resolving object: <Aua::Int 10>
+        aura | Resolving object: <Aua::Int 10>
+        aura | Generating random number... (max: <Aua::Int 10>)
+        aura | Using max value: 10
+        aura | LET ["_", <Aua::Int 2>]
+        aura | Resolving object: <Aua::Int 2>
+        aura | Setting variable _ to <Aua::Int 2>
+        aura | Running Aua interpreter with code: "say 'hi'"
+  aura:parse | parse-expr | Current token: id (say)
+  aura:parse | Parsing command with ID: say
+  aura:parse | - Consumed command ID: say
+  aura:parse | - End of arguments reached
+  aura:parse | - Parsed arguments: [simple_str ("hi" )]
+  aura:parse | - Call recognized with ID: say and args: [simple_str ("hi" )]
+  aura:parse | Parsed statement: call (["say", [simple_str ("hi" )]] )
+        aura | Reifying string: simple_str ("hi" )
+        aura | CALL ["say", <Aua::Str "hi">]
+        aura | Resolving object: <Aua::Str "hi">
+        aura | Interpolating string: <Aua::Str "hi">
+        aura | Resolving object: <Aua::Str "hi">
+        aura | Interpolating string: <Aua::Str "hi">
+        aura | LET ["_", <Aua::Nihil >]
+        aura | Resolving object: <Aua::Nihil >
+        aura | Setting variable _ to <Aua::Nihil >
+        aura | Running Aua interpreter with code: "say \"hello world\""
+  aura:parse | parse-expr | Current token: id (say)
+  aura:parse | Parsing command with ID: say
+  aura:parse | - Consumed command ID: say
+  aura:parse | - End of arguments reached
+  aura:parse | - Parsed arguments: [str ("hello world" )]
+  aura:parse | - Call recognized with ID: say and args: [str ("hello world" )]
+  aura:parse | Parsed statement: call (["say", [str ("hello world" )]] )
+        aura | Reifying string: str ("hello world" )
+        aura | CALL ["say", <Aua::Str "hello world">]
+        aura | Resolving object: <Aua::Str "hello world">
+        aura | Interpolating string: <Aua::Str "hello world">
+        aura | Resolving object: <Aua::Str "hello world">
+        aura | Interpolating string: <Aua::Str "hello world">
+        aura | LET ["_", <Aua::Nihil >]
+        aura | Resolving object: <Aua::Nihil >
+        aura | Setting variable _ to <Aua::Nihil >
+        aura | Running Aua interpreter with code: "say \"\"\"hello world\"\"\""
+  aura:parse | parse-expr | Current token: id (say)
+  aura:parse | Parsing command with ID: say
+  aura:parse | - Consumed command ID: say
+  aura:parse | - End of arguments reached
+  aura:parse | - Parsed arguments: [gen_lit ("hello world" )]
+  aura:parse | - Call recognized with ID: say and args: [gen_lit ("hello world" )]
+  aura:parse | Parsed statement: call (["say", [gen_lit ("hello world" )]] )
+        aura | [36m>>> hello world[0m
+[34m<<< Hello! How can I help you today?[..80][0m [30m(0.0 seconds)[0m
+[35mMODEL[0m [30mqwen-2.5-1.5b-chat[0m | [35mREQUESTED_AT[0m [30m2025-06-09 22:44:20[0m
+        aura | Hello! How can I help you today?
+        aura | CALL ["say", [<Aua::Str "Hello! How can I help you today?">]]
+        aura | Resolving object: <Aua::Str "Hello! How can I help you today?">
+        aura | Interpolating string: <Aua::Str "Hello! How can I help you today?">
+        aura | Resolving object: <Aua::Str "Hello! How can I help you today?">
+        aura | Interpolating string: <Aua::Str "Hello! How can I help you today?">
+        aura | LET ["_", <Aua::Nihil >]
+        aura | Resolving object: <Aua::Nihil >
+        aura | Setting variable _ to <Aua::Nihil >
+        aura | Running Aua interpreter with code: "x = 5; y = x + 2\ny * 3"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (5)
+  aura:parse | Parsed statement: assign (["x", int (5 )] )
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: assign (["y", binop ([:plus, id ("x" ), int (2 )] )] )
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | Parsing command with ID: y
+  aura:parse | - Consumed command ID: y
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:star, id ("y" ), int (3 )] )
+        aura | Translating sequence: [assign (["x", int (5 )] ), assign (["y", binop ([:plus, id ("x" ), int (2 )] )] ), binop ([:star, id ("y" ), int (3 )] )]
+        aura | Translating binop: binop ([:plus, id ("x" ), int (2 )] )
+        aura | Translating binop: binop ([:star, id ("y" ), int (3 )] )
+        aura | LET ["x", <Aua::Int 5>]
+        aura | Resolving object: <Aua::Int 5>
+        aura | Setting variable x to <Aua::Int 5>
+        aura | LET ["y", [SEND [[ID ["x"]], :+, <Aua::Int 2>]]]
+        aura | SEND [[ID ["x"]], :+, <Aua::Int 2>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 2>
+        aura | Setting variable y to <Aua::Int 7>
+        aura | SEND [[ID ["y"]], :*, <Aua::Int 3>]
+        aura | ID ["y"]
+        aura | Getting variable y
+        aura | Resolving object: <Aua::Int 3>
+        aura | LET ["_", <Aua::Int 21>]
+        aura | Resolving object: <Aua::Int 21>
+        aura | Setting variable _ to <Aua::Int 21>
+        aura | Running Aua interpreter with code: "x = (1 + 2) * 3; y = x - 4; z = y * 2; x + y + z"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: lparen ()
+  aura:parse | parse-expr | Current token: int (1)
+  aura:parse | Parsed statement: assign (["x", binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )] )
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: assign (["y", binop ([:minus, id ("x" ), int (4 )] )] )
+  aura:parse | parse-expr | Current token: id (z)
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | Parsing command with ID: y
+  aura:parse | - Consumed command ID: y
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: assign (["z", binop ([:star, id ("y" ), int (2 )] )] )
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )
+        aura | Translating sequence: [assign (["x", binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )] ), assign (["y", binop ([:minus, id ("x" ), int (4 )] )] ), assign (["z", binop ([:star, id ("y" ), int (2 )] )] ), binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )]
+        aura | Translating binop: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
+        aura | Translating binop: binop ([:plus, int (1 ), int (2 )] )
+        aura | Translating binop: binop ([:minus, id ("x" ), int (4 )] )
+        aura | Translating binop: binop ([:star, id ("y" ), int (2 )] )
+        aura | Translating binop: binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )
+        aura | Translating binop: binop ([:plus, id ("x" ), id ("y" )] )
+        aura | LET ["x", <Aua::Int 9>]
+        aura | Resolving object: <Aua::Int 9>
+        aura | Setting variable x to <Aua::Int 9>
+        aura | LET ["y", [SEND [[ID ["x"]], :-, <Aua::Int 4>]]]
+        aura | SEND [[ID ["x"]], :-, <Aua::Int 4>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 4>
+        aura | Setting variable y to <Aua::Int 5>
+        aura | LET ["z", [SEND [[ID ["y"]], :*, <Aua::Int 2>]]]
+        aura | SEND [[ID ["y"]], :*, <Aua::Int 2>]
+        aura | ID ["y"]
+        aura | Getting variable y
+        aura | Resolving object: <Aua::Int 2>
+        aura | Setting variable z to <Aua::Int 10>
+        aura | SEND [[SEND [[ID ["x"]], :+, [ID ["y"]]]], :+, [ID ["z"]]]
+        aura | SEND [[ID ["x"]], :+, [ID ["y"]]]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | ID ["y"]
+        aura | Getting variable y
+        aura | ID ["z"]
+        aura | Getting variable z
+        aura | LET ["_", <Aua::Int 24>]
+        aura | Resolving object: <Aua::Int 24>
+        aura | Setting variable _ to <Aua::Int 24>
+        aura | Running Aua interpreter with code: "x = 5\ny = x + 2\nsay \"The result is: ${y}\"\n"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (5)
+  aura:parse | Parsed statement: assign (["x", int (5 )] )
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: assign (["y", binop ([:plus, id ("x" ), int (2 )] )] )
+  aura:parse | parse-expr | Current token: id (say)
+  aura:parse | Parsing command with ID: say
+  aura:parse | - Consumed command ID: say
+  aura:parse | parse-expr | Current token: id (y)
+  aura:parse | Parsing command with ID: y
+  aura:parse | - Consumed command ID: y
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | - End of arguments reached
+  aura:parse | - Parsed arguments: [structured_str ([str ("The result is: " ), id ("y" )] )]
+  aura:parse | - Call recognized with ID: say and args: [structured_str ([str ("The result is: " ), id ("y" )] )]
+  aura:parse | Parsed statement: call (["say", [structured_str ([str ("The result is: " ), id ("y" )] )]] )
+        aura | Translating sequence: [assign (["x", int (5 )] ), assign (["y", binop ([:plus, id ("x" ), int (2 )] )] ), call (["say", [structured_str ([str ("The result is: " ), id ("y" )] )]] )]
+        aura | Translating binop: binop ([:plus, id ("x" ), int (2 )] )
+        aura | Translating structured string: structured_str ([str ("The result is: " ), id ("y" )] )
+        aura | Translating part: str ("The result is: " )
+        aura | Reifying string: str ("The result is: " )
+        aura | Translating part: id ("y" )
+        aura | Structured string parts: ["The result is: ", ID ["y"]]
+        aura | LET ["x", <Aua::Int 5>]
+        aura | Resolving object: <Aua::Int 5>
+        aura | Setting variable x to <Aua::Int 5>
+        aura | LET ["y", [SEND [[ID ["x"]], :+, <Aua::Int 2>]]]
+        aura | SEND [[ID ["x"]], :+, <Aua::Int 2>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 2>
+        aura | Setting variable y to <Aua::Int 7>
+        aura | CALL ["say", [CAT ["The result is: ", ID ["y"]]]]
+        aura | CAT ["The result is: ", ID ["y"]]
+        aura | Concatenating parts: ["The result is: ", ID ["y"]]
+        aura | ID ["y"]
+        aura | Getting variable y
+        aura | Converting object to string: <Aua::Int 7>
+        aura | Resolving object: <Aua::Str "The result is: 7">
+        aura | Interpolating string: <Aua::Str "The result is: 7">
+        aura | LET ["_", <Aua::Nihil >]
+        aura | Resolving object: <Aua::Nihil >
+        aura | Setting variable _ to <Aua::Nihil >
+        aura | Running Aua interpreter with code: "#!/usr/bin/env aura\nx = 42\nx + 1"
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | parse-expr | Current token: int (42)
+  aura:parse | Parsed statement: assign (["x", int (42 )] )
+  aura:parse | parse-expr | Current token: id (x)
+  aura:parse | Parsing command with ID: x
+  aura:parse | - Consumed command ID: x
+  aura:parse | - Parsed arguments: []
+  aura:parse | - No arguments found, restoring state and returning nil..
+  aura:parse | Parsed statement: binop ([:plus, id ("x" ), int (1 )] )
+        aura | Translating sequence: [assign (["x", int (42 )] ), binop ([:plus, id ("x" ), int (1 )] )]
+        aura | Translating binop: binop ([:plus, id ("x" ), int (1 )] )
+        aura | LET ["x", <Aua::Int 42>]
+        aura | Resolving object: <Aua::Int 42>
+        aura | Setting variable x to <Aua::Int 42>
+        aura | SEND [[ID ["x"]], :+, <Aua::Int 1>]
+        aura | ID ["x"]
+        aura | Getting variable x
+        aura | Resolving object: <Aua::Int 1>
+        aura | LET ["_", <Aua::Int 43>]
+        aura | Resolving object: <Aua::Int 43>
+        aura | Setting variable _ to <Aua::Int 43>

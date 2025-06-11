@@ -317,7 +317,7 @@ module Aua
           message: "Invalid token: unexpected character",
           hint:
         )
-        puts msg
+        Aua.logger.warn msg
         msg
       end
 
@@ -410,8 +410,14 @@ module Aua
       @pending_tokens ||= []
       last_token = nil
       while @lens.more? || !@pending_tokens.empty?
-        puts "Lens -- #{@lens.describe}" if Aua.testing?
-        puts "Pending tokens: #{@pending_tokens.map(&:type).join(", ")}" if Aua.testing?
+        if Aua.testing?
+          Aua.logger.debug "Lens -- #{@lens.describe}"
+          if @pending_tokens.empty?
+            Aua.logger.debug "No pending tokens, consuming next character."
+          else
+            Aua.logger.debug "Pending tokens: #{@pending_tokens.map(&:type).join(", ")}"
+          end
+        end
         unless @pending_tokens.empty?
           tok = @pending_tokens.shift
           yield(tok)
@@ -441,57 +447,14 @@ module Aua
             @inside_string = true if tok.type == :interpolation_end && should_resume_string
           else
             # Only raise if there is still non-ignorable input
-            if @lens.more?
-              raise Error, Handler.unexpected_character_message(@lens)
-            else
-              break
-            end
+            raise Error, Handler.unexpected_character_message(@lens) if @lens.more?
+
+            break
+
           end
         end
       end
     end
-
-    # def tokenize(&)
-    #   @inside_string = false
-    #   last_token = nil
-    #   while @lens.more?
-    #     if @inside_string
-    #       token = handler.string('"')
-    #       # Handle multiple tokens (e.g., [str_part, interpolation_start])
-    #       tokens = token.is_a?(Array) ? token : [token]
-    #       tokens.each do |tok|
-    #         yield(tok)
-    #         last_token = tok
-    #         @inside_string = false if tok.type == :interpolation_start
-    #       end
-    #     else
-    #       # Use yield_lexeme to get the next token
-    #       yield_lexeme do |tok|
-    #         yield(tok)
-    #         last_token = tok
-    #         # If we see a string start, enter string mode
-    #         @inside_string = true if tok.type == :string
-    #         # If we see interpolation_end and should resume string, re-enter string mode
-    #         @inside_string = true if tok.type == :interpolation_end && should_resume_string
-    #       end
-    #     end
-    #   end
-    # end
-
-    # def yield_lexeme(&)
-    #   token = consume_until_acceptance
-
-    #   if token.is_a?(Array)
-    #     token.each(&)
-    #   elsif token.is_a?(Token)
-    #     puts "Token: #{token.type} (#{token.value.inspect}) at #{@lens.describe}" if Aua.testing?
-    #     yield(token)
-    #     return
-    #   end
-    #   return unless @lens.more?
-
-    #   raise Error, Handler.unexpected_character_message(@lens) if @lens.current_char
-    # end
 
     def consume_until_acceptance(attempts = 16_536)
       token = nil # : Syntax::Token | nil
@@ -525,7 +488,7 @@ module Aua
 
       return unless matched_handler
 
-      puts "Matched handler: #{matched_handler.inspect}"
+      Aua.logger.debug "Matched handler: #{matched_handler.inspect}"
       handle.send(matched_handler.last, chars.join)
     end
 

@@ -43,7 +43,7 @@ module Aua
     # @param block [Proc] The block that implements the method.
     #
     # @example
-    #   Aua::Obj.define_aura_method(:my_method) { |arg| puts arg }
+    #   Aua::Obj.define_aura_method(:my_method) { |arg| Aua.logger.info arg }
     #
     def self.define_aura_method(name, &block)
       aura_methods[name] = block # Store as Proc, not UnboundMethod
@@ -96,6 +96,7 @@ module Aua
     define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_i)) }
 
     define_aura_method(:to_i) { @value }
+    define_aura_method(:to_s) { @value.to_s }
   end
 
   # Floating-point value in Aua.

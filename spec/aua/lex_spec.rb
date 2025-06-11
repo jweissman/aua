@@ -162,6 +162,17 @@ module Aua
       end
 
       describe "double-quoted" do
+        let(:input) { '"hello"' }
+        it "lexes a double-quoted string without hanging", skip: false do
+          expect(tokens.size).to eq(2)
+          expect(tokens.map { |t| [t.type, t.value] }).to eq([
+                                                               [:str_part, "hello"],
+                                                               [:str_end, ""]
+                                                             ])
+        end
+      end
+
+      describe "double-quoted with interpolation" do
         let(:input) { '"hello ${123}"' }
         it "interpolates a double-quoted string without hanging", skip: false do
           expect(tokens.size).to eq(5)

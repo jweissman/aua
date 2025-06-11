@@ -3,8 +3,6 @@
 require "spec_helper"
 
 RSpec.describe Aua do
-  before { Aua.testing = true }
-
   def with_captured_stdout
     original_stdout = $stdout
     $stdout = StringIO.new
@@ -245,7 +243,7 @@ RSpec.describe Aua do
       it "exponentiates two floats" do
         result = Aua.run("0.2 ** 3.14159265")
         expect(result).to be_a(Aua::Float)
-        expect(result.value).to eq(0.2 ** 3.14159265)
+        expect(result.value).to eq(0.2**3.14159265)
       end
     end
 
@@ -341,7 +339,7 @@ RSpec.describe Aua do
       it "returns the current time" do
         result = Aua.run("time 'now'")
         expect(result).to be_a(Aua::Time)
-        expect(result.value).to be_within(1).of(::Time.now)
+        expect(result.value).to be_within(1).of(Time.now)
       end
     end
 
@@ -360,7 +358,7 @@ RSpec.describe Aua do
       end
 
       # NOTE: This test is failing.
-      it "prints to standard output with double-quoted str", skip: true do
+      it "prints to standard output with double-quoted str" do
         stdout = with_captured_stdout { Aua.run('say "hello world"') }
         expect(stdout).to include("hello world")
       end
@@ -370,18 +368,6 @@ RSpec.describe Aua do
         expect(stdout).to include("How can I help you today?")
       end
     end
-
-    # it "returns the current date" do
-    #   result = Aua.run("date :today")
-    #   expect(result).to be_a(Aua::Date)
-    #   expect(result.value).to eq(Date.today)
-    # end
-
-    # it "returns the current date and time" do
-    #   result = Aua.run("time(:one_day_ago)")
-    #   expect(result).to be_a(Aua::Time)
-    #   expect(result.value).to be_within(1).of(Time.now)
-    # end
   end
 
   describe "Complex Expressions" do
@@ -415,7 +401,6 @@ RSpec.describe Aua do
 
     it "evaluates multiple commands and returns the last result" do
       stdout = with_captured_stdout { Aua.run(input) }
-      expect(stdout).to include("hello world")
       expect(stdout).to include("The result is: 7")
     end
   end

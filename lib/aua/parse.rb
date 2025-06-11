@@ -29,9 +29,9 @@ module Aua
       str: :str,
       nihil: :nihil,
       gen_lit: :generative_lit,
-
-      simple_str: :simple_str
-      # str_part: :str_part,
+      simple_str: :simple_str,
+      str_part: :str_part,
+      str_end: :str_end
     }.freeze
 
     # Operator precedence (higher number = higher precedence)
@@ -73,6 +73,28 @@ module Aua
 
       def parse_nihil = parse_one(:nihil)
       def parse_simple_str = parse_one(:simple_str)
+
+      def parse_str_part
+        @str_parts ||= []
+        value = @parse.current_token.value
+        @parse.consume(:str_part)
+        part = s(:str_part, value)
+        @str_parts << part
+        # NOTE: do we need to return the part so it can be used in structured strings somehow?
+        # part
+
+        nil
+      end
+
+      def parse_str_end
+        @str_parts ||= []
+        @parse.consume(:str_end)
+        # raise Error, "Unterminated string literal (#{@parse.current_token.at})" if @str_parts.empty?
+        # If we have str_parts, we can return a structured string node
+        return s(:str, @str_parts.first.value) if @str_parts.size == 1
+
+        s(:structured_str, @str_parts)
+      end
 
       def parse_parens
         @parse.consume(:lparen)
@@ -155,6 +177,10 @@ module Aua
       @length != @current_token_index && @current_token.type != :eos
     end
 
+    protected
+
+    def info(message) = Aua.logger.info("aura:parse") { message }
+
     private
 
     def parse
@@ -167,20 +193,14 @@ module Aua
       while @current_token.type != :eos && @current_token.type != :eof
         # Skip any leading :eos tokens (blank lines, etc.)
         advance while @current_token.type == :eos
-
         break if %i[eos].include?(@current_token.type)
 
         statement = parse_expression
         raise Error, "Unexpected end of input while parsing statements" if statement.nil?
 
-        puts "Parsed statement: #{statement.inspect}" if Aua.testing?
-
+        info "Parsed statement: #{statement.inspect}" if Aua.testing?
         statements << statement
-
-        # After a statement, consume any :eos tokens (semicolon or newline)
-        while @current_token.type == :eos
-          advance
-        end
+        advance while @current_token.type == :eos
       end
 
       statements.size == 1 ? statements.first : s(:seq, statements.compact)
@@ -188,7 +208,7 @@ module Aua
 
     # Parses an expression
     def parse_expression
-      puts "Parsing expression at #{current_token.at}" if Aua.testing?
+      info "parse-expr | Current token: #{@current_token.type} (#{@current_token.value})" if Aua.testing?
       maybe_assignment = parse_assignment
       return maybe_assignment if maybe_assignment
 
@@ -206,37 +226,56 @@ module Aua
       return unless @current_token.type == :id
 
       id_token = @current_token
-      puts "Parsing command with ID: #{id_token.value}" if Aua.testing?
+      info "Parsing command with ID: #{id_token.value}" if Aua.testing?
       args = [] # : Array[AST::Node]
       save_token = @current_token
       save_buffer = @buffer.dup
       consume(:id)
-      puts " - Consumed ID: #{id_token.value}" if Aua.testing?
-
-      # debugger if Aua.testing?
+      info " - Consumed command ID: #{id_token.value}" if Aua.testing?
 
       # Accept one or more primary expressions as arguments (space-separated)
       while PRIMARY_NAMES.key?(@current_token.type)
-        args << Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+        # Special case: if the token is :str_part, parse the whole structured string
+        args << if @current_token.type == :str_part
+                  parse_structured_str
+                else
+                  Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+                end
         if @current_token.type == :comma
           consume(:comma)
-          puts " - Consumed comma, expecting more args" if Aua.testing?
-        elsif [:eos, :eof].include?(@current_token.type)
-          puts " - End of arguments reached" if Aua.testing?
+          info " - Consumed comma, expecting more args" if Aua.testing?
+        elsif %i[eos eof].include?(@current_token.type)
+          info " - End of arguments reached" if Aua.testing?
           break
         else
           raise Error, "Unexpected token while parsing arguments: #{@current_token.type}"
         end
       end
+      # while PRIMARY_NAMES.key?(@current_token.type)
+      #   args << Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+      #   if @current_token.type == :comma
+      #     consume(:comma)
+      #     info " - Consumed comma, expecting more args" if Aua.testing?
+      #   elsif %i[str_end].include?(@current_token.type)
+      #     args << Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+      #   elsif %i[eos eof].include?(@current_token.type)
+      #     info " - End of arguments reached" if Aua.testing?
+      #     break
+      #   else
+      #     raise Error, "Unexpected token while parsing arguments: #{@current_token.type}"
+      #   end
+      # end
+      args.compact!
 
-      puts " - Parsed arguments: #{args.inspect}" if Aua.testing?
+      info " - Parsed arguments: #{args.inspect}" if Aua.testing?
       if args.empty?
         # Not a call, restore state and return nil
         @current_token = save_token
         @buffer = save_buffer
+        info " - No arguments found, restoring state and returning nil.." if Aua.testing?
         return nil
       end
-      puts " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}" if Aua.testing?
+      info " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}" if Aua.testing?
       s(:call, id_token.value, args)
     end
 
@@ -334,18 +373,18 @@ module Aua
           advance
           expr = parse_expression
           parts << expr
-          if @current_token.type == :interpolation_end
-            advance
-          else
+          unless @current_token.type == :interpolation_end
             raise Error, "Expected interpolation_end, got #{@current_token.type}"
           end
+
+          advance
+
         elsif @current_token.type == :str_end
           advance
           break
         else
-          if current_token.type == :eof
-            raise Error, "Unterminated string literal #{current_token.at}"
-          end
+          raise Error, "Unterminated string literal #{current_token.at}" if current_token.type == :eof
+
           raise Error, "Unexpected token in structured string: #{current_token.type} #{current_token.at}"
         end
       end

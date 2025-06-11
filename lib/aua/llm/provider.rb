@@ -22,7 +22,7 @@ module Aua
     # @example
     #   provider = Aua::LLM::Provider.new(base_uri: "http://localhost:1234/v1")
     #   response = provider.request(prompt: "Hello, world!")
-    #   puts response.message
+    #   Aua.logger.info response.message
     class Provider
       class Error < StandardError; end
 
@@ -106,7 +106,7 @@ module Aua
         def hydrate_line(line)
           entry = JSON.parse(line, symbolize_names: true)
           if @cache.key?(entry[:key])
-            puts "Cache already contains key: #{entry[:key]}" if Aua.testing?
+            Aua.logger.info "Cache already contains key: #{entry[:key]}" if Aua.testing?
             return
           end
           @cache[entry[:key]] = entry[:value]
@@ -119,7 +119,7 @@ module Aua
           File.open(file_path, "w") do |file|
             @cache.each do |key, val|
               entry = { key:, value: val }
-              file.puts(entry.to_json)
+              file.Aua.logger.info(entry.to_json)
             end
           end
         end
@@ -130,13 +130,13 @@ module Aua
           FileUtils.mkdir_p(File.dirname(file_path))
           File.open(file_path, "a") do |file|
             entry = { key:, value: val }
-            puts "Appending to cache file: #{file_path} [#{key} => #{val}]" if Aua.testing?
-            file.puts(entry.to_json)
+            Aua.logger.info "Appending to cache file: #{file_path} [#{key} => #{val}]" if Aua.testing?
+            file.Aua.logger.info(entry.to_json)
           end
-          puts "Appended to cache file at #{file_path} [#{key} => #{val}]" if Aua.testing?
+          Aua.logger.info "Appended to cache file at #{file_path} [#{key} => #{val}]" if Aua.testing?
           val
         rescue StandardError => e
-          puts "Failed to append to cache file: #{e.message}"
+          Aua.logger.info "Failed to append to cache file: #{e.message}"
         end
 
         def self.file_path
@@ -196,8 +196,8 @@ module Aua
           end
 
           def to_s
-            info = { model:, parameters:, requested_at: requested_at.strftime("%Y-%m-%d %H:%M:%S") }
-            info.except(:parameters).map { |k, v| "#{k.to_s.upcase.magenta} #{v.to_s.black}" }.join(" | ")
+            details = { model:, parameters:, requested_at: requested_at.strftime("%Y-%m-%d %H:%M:%S") }
+            details.except(:parameters).map { |k, v| "#{k.to_s.upcase.magenta} #{v.to_s.black}" }.join(" | ")
           end
         end
 
@@ -255,10 +255,10 @@ module Aua
         def call
           request(prompt:, model:, generation:)
         rescue Error => e
-          puts "Error during LLM request: #{e.message}" if Aua.testing?
+          Aua.logger.info "Error during LLM request: #{e.message}" if Aua.testing?
           raise e
         rescue StandardError => e
-          puts "Unexpected error during LLM request: #{e.message}" if Aua.testing?
+          Aua.logger.info "Unexpected error during LLM request: #{e.message}" if Aua.testing?
           raise Error, "Failed to get response from LLM provider: #{e.message}"
         end
 
@@ -344,8 +344,8 @@ module Aua
 
       def ask(prompt)
         resp = @provider.chat_completion(prompt:)
-        puts resp.inspect if Aua.testing?
-        puts resp
+        Aua.logger.info resp.inspect if Aua.testing?
+        Aua.logger.info resp
 
         resp.message
       end
