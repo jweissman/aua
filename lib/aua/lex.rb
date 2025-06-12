@@ -195,6 +195,7 @@ module Aua
           return @string_pending.shift unless @string_pending.empty?
 
           loop do
+            Aua.logger.debug "[Handler#string] mode=\\#{@string_mode.inspect}, current_char=\\#{current_char.inspect}, buffer=\\#{@string_buffer.inspect}"
             case @string_mode
             when :start
               @string_buffer = ""
@@ -212,20 +213,14 @@ module Aua
                 @string_buffer << '"'
                 advance(2)
               elsif current_char == "$" && next_char == "{"
+                Aua.logger.debug "[Handler#string] Found interpolation start at pos=\\#{current_pos}, buffer=\\#{@string_buffer.inspect}"
                 advance(2)
                 token = t(:str_part, @string_buffer) unless @string_buffer.empty?
                 @string_buffer = ""
+                # Do NOT set @string_mode = :end here! Remain in :body mode so string lexing resumes after interpolation.
                 return [token, t(:interpolation_start, "${")] if token
 
                 return t(:interpolation_start, "${")
-
-              # elsif current_char == "$" && next_char == "{"
-              #   advance(2)
-
-              #   token = t(:str_part, @string_buffer)
-              #   @string_buffer = ""
-              #   return [token, t(:interpolation_start, "${")]
-
               else
                 @string_buffer << current_char
                 advance
@@ -235,8 +230,11 @@ module Aua
                 end
               end
             when :end
+              Aua.logger.info "[Handler#string] mode=end, returning :str_end"
               advance
               @string_mode = nil
+              # @inside_string = false
+              @string_pending&.clear
               return t(:str_end, "")
             end
           end
@@ -400,7 +398,17 @@ module Aua
       !!(@string_mode && @string_mode != :end && !@string_mode.nil?)
     end
 
+    def observe(token)
+      Aua.logger.debug "Observed token: \\#{token.type} (value: \\#{token.value.inspect}), at: \\#{token.at.inspect}"
+
+      return unless token.type == :str_end
+
+      @inside_string = false
+      @string_mode = nil
+    end
+
     def tokenize(&)
+      Aua.logger.debug "Starting lexing #{caret} (reading #{@doc.size} characters)"
       @inside_string = false
       @pending_tokens ||= [] # : Array[token]
       while @lens.more? || !@pending_tokens.empty?
@@ -414,28 +422,36 @@ module Aua
         unless @pending_tokens.empty?
           tok = @pending_tokens.shift
           if tok
+            Aua.logger.debug "Yielding token: \\#{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{@inside_string.inspect}, string_mode=\\#{@string_mode.inspect}"
+            observe(tok)
             yield(tok)
-            # After interpolation_start, we want to parse the interpolation (not string)
             @inside_string = false if tok.type == :interpolation_start
-            # After interpolation_end, always resume string mode for double-quoted strings
-            @inside_string = true if tok.type == :interpolation_end
+            if tok.type == :interpolation_end
+              @inside_string = true
+              @string_mode = :body
+            end
           end
           next
         end
 
         if @inside_string && !@string_mode.nil?
+          Aua.logger.debug "Resuming string lexing: inside_string=\\#{@inside_string.inspect}, string_mode=\\#{@string_mode.inspect}, current_char=\\#{@lens.current_char.inspect}"
           token = handle.string('"')
           tokens = token.is_a?(Array) ? token : [token]
           @pending_tokens.concat(tokens[1..]) if tokens.size > 1
           tok = tokens.first
           if tok
+            Aua.logger.debug "Yielding token (string mode): \\#{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{@inside_string.inspect}, string_mode=\\#{@string_mode.inspect}"
+            observe(tok)
             yield(tok)
-            # After interpolation_start, we want to parse the interpolation (not string)
             @inside_string = false if tok.type == :interpolation_start
-            # After interpolation_end, always resume string mode for double-quoted strings
-            @inside_string = true if tok.type == :interpolation_end
+            if tok.type == :interpolation_end
+              @inside_string = true
+              @string_mode = :body
+            end
           end
         else
+          Aua.logger.debug "Not inside string, consuming next tokens..."
           token = consume_until_acceptance
           tokens = token.is_a?(Array) ? token : [token]
           @pending_tokens.concat(tokens[1..]) if tokens.size > 1
@@ -443,13 +459,16 @@ module Aua
           if tok
             yield(tok)
             @inside_string = true if tok.type == :string
-            @inside_string = true if tok.type == :interpolation_end
+            if tok.type == :interpolation_end
+              @inside_string = true
+              @string_mode = :body
+            end
           else
+            Aua.logger.debug "No token accepted, checking for pending tokens."
             # Only raise if there is still non-ignorable input
             raise Error, Handler.unexpected_character_message(@lens) if @lens.more?
 
             break
-
           end
         end
       end

@@ -18,13 +18,16 @@ RSpec.configure do |config|
   config.before do
     Aua.testing = true
 
-    Aua.logger = Thread.current[:logger] ||= begin
+    outlet = Thread.current[:logger] ||= begin
       FileUtils.mkdir_p("log")
-      outlet = File.open("log/aura.log", "w")
-      Aua::Logger.default("spec", outlet:)
+      File.open("log/aura.log", "w")
     rescue StandardError => e
       warn "Failed to open log file: #{e.message}"
       $stderr
     end
+
+    Aua.logger = Aua::Logger.default("spec", outlet:)
+
+    # Aua.logger.info "Starting tests at #{Time.now.utc.iso8601}"
   end
 end

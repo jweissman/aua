@@ -15,12 +15,13 @@ module Aua
           end
         end
 
-        xdescribe "standalone dot" do
+        describe "standalone dot" do
           let(:input) { "." }
           it "raises an error for unexpected character" do
             expect { tokens }.to raise_error(Aua::Error)
           end
         end
+
         describe "unexpected characters" do
           let(:input) { "x = 42 @ unexpected" }
           it "raises an error for unexpected characters" do

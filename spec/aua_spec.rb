@@ -303,6 +303,28 @@ RSpec.describe Aua do
     end
   end
 
+  describe "Strings" do
+    it "concatenates strings with +" do
+      result = Aua.run('"Hello, " + "world!"')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to eq("Hello, world!")
+    end
+
+    it "interpolates variables in strings" do
+      Aua.run('name = "Alice"')
+      result = Aua.run('"Hello, ${name}!"')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to eq("Hello, Alice!")
+    end
+
+    it "interpolates multiple variables in strings" do
+      Aua.run("x = 5; y = 10")
+      result = Aua.run('"The values are ${x} and ${y}"')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to eq("The values are 5 and 10")
+    end
+  end
+
   describe "Control Flow" do
     it "conditional execution with if-else" do
       result = Aua.run("if true then 1 else 2")

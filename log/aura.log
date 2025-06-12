@@ -1,3 +1,8 @@
+[30m        spec[0m | Invalid token: unexpected character at line 1, column 1:
+
+.
+^
+The character "." is not valid in the current context.
 [30m        spec[0m | Invalid token: unexpected character at line 1, column 8:
 
 x = 42 @ unexpected
@@ -8,12 +13,124 @@ The character "@" is not valid in the current context.
 .42
 ^
 The character "." is not valid in the current context.
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | parse-expr | Current token: str_part (hello)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: str ("hello" )
+[30m  aura:parse[0m | parse-expr | Current token: str_part (The result is: )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: structured_str ([str ("The result is: " ), id ("y" )] )
+[30m  aura:parse[0m | parse-expr | Current token: str_part (The results are )
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: structured_str ([str ("The results are " ), id ("x" ), str (" and " ), id ("y" )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [simple_str ("hello" )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [simple_str ("hello" )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [simple_str ("hello" )]] )
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m  aura:parse[0m | parse-expr | Current token: simple_str (hello)
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [simple_str ("hello" )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [simple_str ("hello" )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [simple_str ("hello" )]] )
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (5)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (5 )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: assign (["y", binop ([:plus, id ("x" ), int (2 )] )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [structured_str ([str ("The result is: " ), id ("y" )] )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [structured_str ([str ("The result is: " ), id ("y" )] )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [structured_str ([str ("The result is: " ), id ("y" )] )]] )
 [30m        spec[0m | Initializing Aua interpreter with env: {}
 [30m        spec[0m | Running Aua interpreter with code: "123"
+[30m  aura:parse[0m | parse-expr | Current token: int (123)
+[30m  aura:parse[0m | Parsed statement: int (123 )
 [30m        spec[0m | LET ["_", <Aua::Int 123>]
 [30m        spec[0m | Resolving object: <Aua::Int 123>
 [30m        spec[0m | Setting variable _ to <Aua::Int 123>
 [30m        spec[0m | Running Aua interpreter with code: "-42"
+[30m  aura:parse[0m | parse-expr | Current token: minus ()
+[30m  aura:parse[0m | Parsed statement: negate (int (42 ) )
 [30m        spec[0m | LET ["_", <Aua::Int -42>]
 [30m        spec[0m | Resolving object: <Aua::Int -42>
 [30m        spec[0m | Setting variable _ to <Aua::Int -42>
@@ -21,49 +138,75 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int -42>
 [30m        spec[0m | Setting variable _ to <Aua::Int -42>
 [30m        spec[0m | Running Aua interpreter with code: "3.14"
+[30m  aura:parse[0m | parse-expr | Current token: float (3.14)
+[30m  aura:parse[0m | Parsed statement: float (3.14 )
 [30m        spec[0m | LET ["_", <Aua::Float 3.14>]
 [30m        spec[0m | Resolving object: <Aua::Float 3.14>
 [30m        spec[0m | Setting variable _ to <Aua::Float 3.14>
 [30m        spec[0m | Running Aua interpreter with code: "true"
+[30m  aura:parse[0m | parse-expr | Current token: bool (true)
+[30m  aura:parse[0m | Parsed statement: bool (true )
 [30m        spec[0m | LET ["_", <Aua::Bool true>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Setting variable _ to <Aua::Bool true>
 [30m        spec[0m | Running Aua interpreter with code: "false"
+[30m  aura:parse[0m | parse-expr | Current token: bool (false)
+[30m  aura:parse[0m | Parsed statement: bool (false )
 [30m        spec[0m | LET ["_", <Aua::Bool true>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Setting variable _ to <Aua::Bool true>
 [30m        spec[0m | Running Aua interpreter with code: "\"hello\""
+[30m  aura:parse[0m | parse-expr | Current token: str_part (hello)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: str ("hello" )
 [30m        spec[0m | Reifying string: str ("hello" )
 [30m        spec[0m | LET ["_", <Aua::Str "hello">]
 [30m        spec[0m | Resolving object: <Aua::Str "hello">
 [30m        spec[0m | Interpolating string: <Aua::Str "hello">
 [30m        spec[0m | Setting variable _ to <Aua::Str "hello">
 [30m        spec[0m | Running Aua interpreter with code: "nihil"
+[30m  aura:parse[0m | parse-expr | Current token: nihil (true)
+[30m  aura:parse[0m | Parsed statement: nihil (true )
 [30m        spec[0m | LET ["_", <Aua::Nihil >]
 [30m        spec[0m | Resolving object: <Aua::Nihil >
 [30m        spec[0m | Setting variable _ to <Aua::Nihil >
 [30m        spec[0m | Running Aua interpreter with code: "true"
+[30m  aura:parse[0m | parse-expr | Current token: bool (true)
+[30m  aura:parse[0m | Parsed statement: bool (true )
 [30m        spec[0m | LET ["_", <Aua::Bool true>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Setting variable _ to <Aua::Bool true>
 [30m        spec[0m | Running Aua interpreter with code: "false"
+[30m  aura:parse[0m | parse-expr | Current token: bool (false)
+[30m  aura:parse[0m | Parsed statement: bool (false )
 [30m        spec[0m | LET ["_", <Aua::Bool true>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Setting variable _ to <Aua::Bool true>
 [30m        spec[0m | Running Aua interpreter with code: "123abc"
 [30m        spec[0m | Running Aua interpreter with code: "(123)"
+[30m  aura:parse[0m | parse-expr | Current token: lparen ()
+[30m  aura:parse[0m | parse-expr | Current token: int (123)
+[30m  aura:parse[0m | Parsed statement: int (123 )
 [30m        spec[0m | LET ["_", <Aua::Int 123>]
 [30m        spec[0m | Resolving object: <Aua::Int 123>
 [30m        spec[0m | Setting variable _ to <Aua::Int 123>
 [30m        spec[0m | Running Aua interpreter with code: "   42   "
+[30m  aura:parse[0m | parse-expr | Current token: int (42)
+[30m  aura:parse[0m | Parsed statement: int (42 )
 [30m        spec[0m | LET ["_", <Aua::Int 42>]
 [30m        spec[0m | Resolving object: <Aua::Int 42>
 [30m        spec[0m | Setting variable _ to <Aua::Int 42>
 [30m        spec[0m | Running Aua interpreter with code: "((123))"
+[30m  aura:parse[0m | parse-expr | Current token: lparen ()
+[30m  aura:parse[0m | parse-expr | Current token: lparen ()
+[30m  aura:parse[0m | parse-expr | Current token: int (123)
+[30m  aura:parse[0m | Parsed statement: int (123 )
 [30m        spec[0m | LET ["_", <Aua::Int 123>]
 [30m        spec[0m | Resolving object: <Aua::Int 123>
 [30m        spec[0m | Setting variable _ to <Aua::Int 123>
 [30m        spec[0m | Running Aua interpreter with code: "-3.14"
+[30m  aura:parse[0m | parse-expr | Current token: minus ()
+[30m  aura:parse[0m | Parsed statement: negate (float (3.14 ) )
 [30m        spec[0m | LET ["_", <Aua::Float -3.14>]
 [30m        spec[0m | Resolving object: <Aua::Float -3.14>
 [30m        spec[0m | Setting variable _ to <Aua::Float -3.14>
@@ -71,22 +214,44 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Float -3.14>
 [30m        spec[0m | Setting variable _ to <Aua::Float -3.14>
 [30m        spec[0m | Running Aua interpreter with code: "-true"
+[30m  aura:parse[0m | parse-expr | Current token: minus ()
+[30m  aura:parse[0m | Parsed statement: negate (bool (true ) )
 [30m        spec[0m | Running Aua interpreter with code: "-\"hello\""
+[30m  aura:parse[0m | parse-expr | Current token: minus ()
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: negate (str ("hello" ) )
 [30m        spec[0m | Running Aua interpreter with code: "-nihil"
+[30m  aura:parse[0m | parse-expr | Current token: minus ()
+[30m  aura:parse[0m | Parsed statement: negate (nihil (true ) )
 [30m        spec[0m | Running Aua interpreter with code: ""
 [30m        spec[0m | Translating sequence: []
 [30m        spec[0m | Running Aua interpreter with code: "foo"
+[30m  aura:parse[0m | parse-expr | Current token: id (foo)
+[30m  aura:parse[0m | Parsing command with ID: foo
+[30m  aura:parse[0m | - Consumed command ID: foo
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: id ("foo" )
 [30m        spec[0m | ID ["foo"]
 [30m        spec[0m | Getting variable foo
 [30m        spec[0m | Running Aua interpreter with code: "\"hello world\""
+[30m  aura:parse[0m | parse-expr | Current token: str_part (hello world)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: str ("hello world" )
 [30m        spec[0m | Reifying string: str ("hello world" )
 [30m        spec[0m | LET ["_", <Aua::Str "hello world">]
 [30m        spec[0m | Resolving object: <Aua::Str "hello world">
 [30m        spec[0m | Interpolating string: <Aua::Str "hello world">
 [30m        spec[0m | Setting variable _ to <Aua::Str "hello world">
 [30m        spec[0m | Running Aua interpreter with code: "(1 + 2"
+[30m  aura:parse[0m | parse-expr | Current token: lparen ()
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
 [30m        spec[0m | Running Aua interpreter with code: "\"unterminated string"
+[30m  aura:parse[0m | parse-expr | Current token: str_part (unterminated string)
 [30m        spec[0m | Running Aua interpreter with code: "x = 42"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (42)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (42 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 42>]
 [30m        spec[0m | Resolving object: <Aua::Int 42>
 [30m        spec[0m | Setting variable x to <Aua::Int 42>
@@ -94,6 +259,9 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 42>
 [30m        spec[0m | Setting variable _ to <Aua::Int 42>
 [30m        spec[0m | Running Aua interpreter with code: "x = 42"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (42)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (42 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 42>]
 [30m        spec[0m | Resolving object: <Aua::Int 42>
 [30m        spec[0m | Setting variable x to <Aua::Int 42>
@@ -101,6 +269,9 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 42>
 [30m        spec[0m | Setting variable _ to <Aua::Int 42>
 [30m        spec[0m | Running Aua interpreter with code: "x = 100"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (100)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (100 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 100>]
 [30m        spec[0m | Resolving object: <Aua::Int 100>
 [30m        spec[0m | Setting variable x to <Aua::Int 100>
@@ -108,6 +279,10 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 100>
 [30m        spec[0m | Setting variable _ to <Aua::Int 100>
 [30m        spec[0m | Running Aua interpreter with code: "name = \"Alice\""
+[30m  aura:parse[0m | parse-expr | Current token: id (name)
+[30m  aura:parse[0m | parse-expr | Current token: str_part (Alice)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: assign (["name", str ("Alice" )] )
 [30m        spec[0m | Reifying string: str ("Alice" )
 [30m        spec[0m | LET ["name", <Aua::Str "Alice">]
 [30m        spec[0m | Resolving object: <Aua::Str "Alice">
@@ -118,48 +293,70 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Interpolating string: <Aua::Str "Alice">
 [30m        spec[0m | Setting variable _ to <Aua::Str "Alice">
 [30m        spec[0m | Running Aua interpreter with code: "1 + 2"
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, int (1 ), int (2 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, int (1 ), int (2 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 3>]
 [30m        spec[0m | Resolving object: <Aua::Int 3>
 [30m        spec[0m | Setting variable _ to <Aua::Int 3>
 [30m        spec[0m | Running Aua interpreter with code: "5 - 3"
+[30m  aura:parse[0m | parse-expr | Current token: int (5)
+[30m  aura:parse[0m | Parsed statement: binop ([:minus, int (5 ), int (3 )] )
 [30m        spec[0m | Translating binop: binop ([:minus, int (5 ), int (3 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 2>]
 [30m        spec[0m | Resolving object: <Aua::Int 2>
 [30m        spec[0m | Setting variable _ to <Aua::Int 2>
 [30m        spec[0m | Running Aua interpreter with code: "4 * 2"
+[30m  aura:parse[0m | parse-expr | Current token: int (4)
+[30m  aura:parse[0m | Parsed statement: binop ([:star, int (4 ), int (2 )] )
 [30m        spec[0m | Translating binop: binop ([:star, int (4 ), int (2 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 8>]
 [30m        spec[0m | Resolving object: <Aua::Int 8>
 [30m        spec[0m | Setting variable _ to <Aua::Int 8>
 [30m        spec[0m | Running Aua interpreter with code: "8 / 2"
+[30m  aura:parse[0m | parse-expr | Current token: int (8)
+[30m  aura:parse[0m | Parsed statement: binop ([:slash, int (8 ), int (2 )] )
 [30m        spec[0m | Translating binop: binop ([:slash, int (8 ), int (2 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 4>]
 [30m        spec[0m | Resolving object: <Aua::Int 4>
 [30m        spec[0m | Setting variable _ to <Aua::Int 4>
 [30m        spec[0m | Running Aua interpreter with code: "1 / 0"
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
+[30m  aura:parse[0m | Parsed statement: binop ([:slash, int (1 ), int (0 )] )
 [30m        spec[0m | Translating binop: binop ([:slash, int (1 ), int (0 )] )
 [30m        spec[0m | Running Aua interpreter with code: "1.5 + 2.5"
+[30m  aura:parse[0m | parse-expr | Current token: float (1.5)
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, float (1.5 ), float (2.5 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, float (1.5 ), float (2.5 )] )
 [30m        spec[0m | LET ["_", <Aua::Float 4.0>]
 [30m        spec[0m | Resolving object: <Aua::Float 4.0>
 [30m        spec[0m | Setting variable _ to <Aua::Float 4.0>
 [30m        spec[0m | Running Aua interpreter with code: "5.5 - 3.5"
+[30m  aura:parse[0m | parse-expr | Current token: float (5.5)
+[30m  aura:parse[0m | Parsed statement: binop ([:minus, float (5.5 ), float (3.5 )] )
 [30m        spec[0m | Translating binop: binop ([:minus, float (5.5 ), float (3.5 )] )
 [30m        spec[0m | LET ["_", <Aua::Float 2.0>]
 [30m        spec[0m | Resolving object: <Aua::Float 2.0>
 [30m        spec[0m | Setting variable _ to <Aua::Float 2.0>
 [30m        spec[0m | Running Aua interpreter with code: "4.0 * 2.0"
+[30m  aura:parse[0m | parse-expr | Current token: float (4.0)
+[30m  aura:parse[0m | Parsed statement: binop ([:star, float (4.0 ), float (2.0 )] )
 [30m        spec[0m | Translating binop: binop ([:star, float (4.0 ), float (2.0 )] )
 [30m        spec[0m | LET ["_", <Aua::Float 8.0>]
 [30m        spec[0m | Resolving object: <Aua::Float 8.0>
 [30m        spec[0m | Setting variable _ to <Aua::Float 8.0>
 [30m        spec[0m | Running Aua interpreter with code: "8.0 / 2.0"
+[30m  aura:parse[0m | parse-expr | Current token: float (8.0)
+[30m  aura:parse[0m | Parsed statement: binop ([:slash, float (8.0 ), float (2.0 )] )
 [30m        spec[0m | Translating binop: binop ([:slash, float (8.0 ), float (2.0 )] )
 [30m        spec[0m | LET ["_", <Aua::Float 4.0>]
 [30m        spec[0m | Resolving object: <Aua::Float 4.0>
 [30m        spec[0m | Setting variable _ to <Aua::Float 4.0>
 [30m        spec[0m | Running Aua interpreter with code: "\"hello\" + \" world\""
+[30m  aura:parse[0m | parse-expr | Current token: str_part (hello)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, str ("hello" ), str (" world" )] )
 [30m        spec[0m | Translating binop: binop ([:plus, str ("hello" ), str (" world" )] )
 [30m        spec[0m | Reifying string: str ("hello" )
 [30m        spec[0m | Reifying string: str (" world" )
@@ -168,6 +365,9 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Interpolating string: <Aua::Str "hello world">
 [30m        spec[0m | Setting variable _ to <Aua::Str "hello world">
 [30m        spec[0m | Running Aua interpreter with code: "\"hello\" + 42"
+[30m  aura:parse[0m | parse-expr | Current token: str_part (hello)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, str ("hello" ), int (42 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, str ("hello" ), int (42 )] )
 [30m        spec[0m | Reifying string: str ("hello" )
 [30m        spec[0m | SEND [<Aua::Str "hello">, :+, <Aua::Int 42>]
@@ -175,21 +375,30 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Interpolating string: <Aua::Str "hello">
 [30m        spec[0m | Resolving object: <Aua::Int 42>
 [30m        spec[0m | Running Aua interpreter with code: "true + false"
+[30m  aura:parse[0m | parse-expr | Current token: bool (true)
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, bool (true ), bool (false )] )
 [30m        spec[0m | Translating binop: binop ([:plus, bool (true ), bool (false )] )
 [30m        spec[0m | SEND [<Aua::Bool true>, :+, <Aua::Bool true>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Running Aua interpreter with code: "2 ** 3"
+[30m  aura:parse[0m | parse-expr | Current token: int (2)
+[30m  aura:parse[0m | Parsed statement: binop ([:pow, int (2 ), int (3 )] )
 [30m        spec[0m | Translating binop: binop ([:pow, int (2 ), int (3 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 8>]
 [30m        spec[0m | Resolving object: <Aua::Int 8>
 [30m        spec[0m | Setting variable _ to <Aua::Int 8>
 [30m        spec[0m | Running Aua interpreter with code: "0.2 ** 3.14159265"
+[30m  aura:parse[0m | parse-expr | Current token: float (0.2)
+[30m  aura:parse[0m | Parsed statement: binop ([:pow, float (0.2 ), float (3.14159265 )] )
 [30m        spec[0m | Translating binop: binop ([:pow, float (0.2 ), float (3.14159265 )] )
 [30m        spec[0m | LET ["_", <Aua::Float 0.0063697292365708005>]
 [30m        spec[0m | Resolving object: <Aua::Float 0.0063697292365708005>
 [30m        spec[0m | Setting variable _ to <Aua::Float 0.0063697292365708005>
 [30m        spec[0m | Running Aua interpreter with code: "x = 5"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (5)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (5 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 5>]
 [30m        spec[0m | Resolving object: <Aua::Int 5>
 [30m        spec[0m | Setting variable x to <Aua::Int 5>
@@ -197,6 +406,12 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 5>
 [30m        spec[0m | Setting variable _ to <Aua::Int 5>
 [30m        spec[0m | Running Aua interpreter with code: "x + 3"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, id ("x" ), int (3 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (3 )] )
 [30m        spec[0m | SEND [[ID ["x"]], :+, <Aua::Int 3>]
 [30m        spec[0m | ID ["x"]
@@ -206,6 +421,9 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 8>
 [30m        spec[0m | Setting variable _ to <Aua::Int 8>
 [30m        spec[0m | Running Aua interpreter with code: "x = 10"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (10)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (10 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 10>]
 [30m        spec[0m | Resolving object: <Aua::Int 10>
 [30m        spec[0m | Setting variable x to <Aua::Int 10>
@@ -213,6 +431,12 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 10>
 [30m        spec[0m | Setting variable _ to <Aua::Int 10>
 [30m        spec[0m | Running Aua interpreter with code: "x - 4"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:minus, id ("x" ), int (4 )] )
 [30m        spec[0m | Translating binop: binop ([:minus, id ("x" ), int (4 )] )
 [30m        spec[0m | SEND [[ID ["x"]], :-, <Aua::Int 4>]
 [30m        spec[0m | ID ["x"]
@@ -222,6 +446,9 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 6>
 [30m        spec[0m | Setting variable _ to <Aua::Int 6>
 [30m        spec[0m | Running Aua interpreter with code: "x = 7"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (7)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (7 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 7>]
 [30m        spec[0m | Resolving object: <Aua::Int 7>
 [30m        spec[0m | Setting variable x to <Aua::Int 7>
@@ -229,6 +456,12 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 7>
 [30m        spec[0m | Setting variable _ to <Aua::Int 7>
 [30m        spec[0m | Running Aua interpreter with code: "x * 2"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:star, id ("x" ), int (2 )] )
 [30m        spec[0m | Translating binop: binop ([:star, id ("x" ), int (2 )] )
 [30m        spec[0m | SEND [[ID ["x"]], :*, <Aua::Int 2>]
 [30m        spec[0m | ID ["x"]
@@ -238,6 +471,9 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 14>
 [30m        spec[0m | Setting variable _ to <Aua::Int 14>
 [30m        spec[0m | Running Aua interpreter with code: "x = 20"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (20)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (20 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 20>]
 [30m        spec[0m | Resolving object: <Aua::Int 20>
 [30m        spec[0m | Setting variable x to <Aua::Int 20>
@@ -245,6 +481,12 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 20>
 [30m        spec[0m | Setting variable _ to <Aua::Int 20>
 [30m        spec[0m | Running Aua interpreter with code: "x / 4"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:slash, id ("x" ), int (4 )] )
 [30m        spec[0m | Translating binop: binop ([:slash, id ("x" ), int (4 )] )
 [30m        spec[0m | SEND [[ID ["x"]], :/, <Aua::Int 4>]
 [30m        spec[0m | ID ["x"]
@@ -254,12 +496,16 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 5>
 [30m        spec[0m | Setting variable _ to <Aua::Int 5>
 [30m        spec[0m | Running Aua interpreter with code: "2 ** 3 ** 2"
+[30m  aura:parse[0m | parse-expr | Current token: int (2)
+[30m  aura:parse[0m | Parsed statement: binop ([:pow, int (2 ), binop ([:pow, int (3 ), int (2 )] )] )
 [30m        spec[0m | Translating binop: binop ([:pow, int (2 ), binop ([:pow, int (3 ), int (2 )] )] )
 [30m        spec[0m | Translating binop: binop ([:pow, int (3 ), int (2 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 512>]
 [30m        spec[0m | Resolving object: <Aua::Int 512>
 [30m        spec[0m | Setting variable _ to <Aua::Int 512>
 [30m        spec[0m | Running Aua interpreter with code: "2 + 3 * 4 - 5 / 5"
+[30m  aura:parse[0m | parse-expr | Current token: int (2)
+[30m  aura:parse[0m | Parsed statement: binop ([:minus, binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] ), binop ([:slash, int (5 ), int (5 )] )] )
 [30m        spec[0m | Translating binop: binop ([:minus, binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] ), binop ([:slash, int (5 ), int (5 )] )] )
 [30m        spec[0m | Translating binop: binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] )
 [30m        spec[0m | Translating binop: binop ([:star, int (3 ), int (4 )] )
@@ -268,6 +514,8 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 13>
 [30m        spec[0m | Setting variable _ to <Aua::Int 13>
 [30m        spec[0m | Running Aua interpreter with code: "10 - 2 ** 3 + 1"
+[30m  aura:parse[0m | parse-expr | Current token: int (10)
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] ), int (1 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] ), int (1 )] )
 [30m        spec[0m | Translating binop: binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] )
 [30m        spec[0m | Translating binop: binop ([:pow, int (2 ), int (3 )] )
@@ -275,18 +523,130 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 3>
 [30m        spec[0m | Setting variable _ to <Aua::Int 3>
 [30m        spec[0m | Running Aua interpreter with code: "(1 + 2) * 3"
+[30m  aura:parse[0m | parse-expr | Current token: lparen ()
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
+[30m  aura:parse[0m | Parsed statement: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
 [30m        spec[0m | Translating binop: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, int (1 ), int (2 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 9>]
 [30m        spec[0m | Resolving object: <Aua::Int 9>
 [30m        spec[0m | Setting variable _ to <Aua::Int 9>
 [30m        spec[0m | Running Aua interpreter with code: "2 * (3 + 4)"
+[30m  aura:parse[0m | parse-expr | Current token: int (2)
+[30m  aura:parse[0m | parse-expr | Current token: int (3)
+[30m  aura:parse[0m | Parsed statement: binop ([:star, int (2 ), binop ([:plus, int (3 ), int (4 )] )] )
 [30m        spec[0m | Translating binop: binop ([:star, int (2 ), binop ([:plus, int (3 ), int (4 )] )] )
 [30m        spec[0m | Translating binop: binop ([:plus, int (3 ), int (4 )] )
 [30m        spec[0m | LET ["_", <Aua::Int 14>]
 [30m        spec[0m | Resolving object: <Aua::Int 14>
 [30m        spec[0m | Setting variable _ to <Aua::Int 14>
+[30m        spec[0m | Running Aua interpreter with code: "\"Hello, \" + \"world!\""
+[30m  aura:parse[0m | parse-expr | Current token: str_part (Hello, )
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, str ("Hello, " ), str ("world!" )] )
+[30m        spec[0m | Translating binop: binop ([:plus, str ("Hello, " ), str ("world!" )] )
+[30m        spec[0m | Reifying string: str ("Hello, " )
+[30m        spec[0m | Reifying string: str ("world!" )
+[30m        spec[0m | LET ["_", <Aua::Str "Hello, world!">]
+[30m        spec[0m | Resolving object: <Aua::Str "Hello, world!">
+[30m        spec[0m | Interpolating string: <Aua::Str "Hello, world!">
+[30m        spec[0m | Setting variable _ to <Aua::Str "Hello, world!">
+[30m        spec[0m | Running Aua interpreter with code: "name = \"Alice\""
+[30m  aura:parse[0m | parse-expr | Current token: id (name)
+[30m  aura:parse[0m | parse-expr | Current token: str_part (Alice)
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: assign (["name", str ("Alice" )] )
+[30m        spec[0m | Reifying string: str ("Alice" )
+[30m        spec[0m | LET ["name", <Aua::Str "Alice">]
+[30m        spec[0m | Resolving object: <Aua::Str "Alice">
+[30m        spec[0m | Interpolating string: <Aua::Str "Alice">
+[30m        spec[0m | Setting variable name to <Aua::Str "Alice">
+[30m        spec[0m | LET ["_", <Aua::Str "Alice">]
+[30m        spec[0m | Resolving object: <Aua::Str "Alice">
+[30m        spec[0m | Interpolating string: <Aua::Str "Alice">
+[30m        spec[0m | Setting variable _ to <Aua::Str "Alice">
+[30m        spec[0m | Running Aua interpreter with code: "\"Hello, ${name}!\""
+[30m  aura:parse[0m | parse-expr | Current token: str_part (Hello, )
+[30m  aura:parse[0m | parse-expr | Current token: id (name)
+[30m  aura:parse[0m | Parsing command with ID: name
+[30m  aura:parse[0m | - Consumed command ID: name
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: structured_str ([str ("Hello, " ), id ("name" ), str ("!" )] )
+[30m        spec[0m | Translating structured string: structured_str ([str ("Hello, " ), id ("name" ), str ("!" )] )
+[30m        spec[0m | Translating part: str ("Hello, " )
+[30m        spec[0m | Reifying string: str ("Hello, " )
+[30m        spec[0m | Translating part: id ("name" )
+[30m        spec[0m | Translating part: str ("!" )
+[30m        spec[0m | Reifying string: str ("!" )
+[30m        spec[0m | Structured string parts: ["Hello, ", ID ["name"], "!"]
+[30m        spec[0m | CAT ["Hello, ", ID ["name"], "!"]
+[30m        spec[0m | Concatenating parts: ["Hello, ", ID ["name"], "!"]
+[30m        spec[0m | ID ["name"]
+[30m        spec[0m | Getting variable name
+[30m        spec[0m | LET ["_", <Aua::Str "Hello, Alice!">]
+[30m        spec[0m | Resolving object: <Aua::Str "Hello, Alice!">
+[30m        spec[0m | Interpolating string: <Aua::Str "Hello, Alice!">
+[30m        spec[0m | Setting variable _ to <Aua::Str "Hello, Alice!">
+[30m        spec[0m | Running Aua interpreter with code: "x = 5; y = 10"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (5)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (5 )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | parse-expr | Current token: int (10)
+[30m  aura:parse[0m | Parsed statement: assign (["y", int (10 )] )
+[30m        spec[0m | Translating sequence: [assign (["x", int (5 )] ), assign (["y", int (10 )] )]
+[30m        spec[0m | LET ["x", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable x to <Aua::Int 5>
+[30m        spec[0m | LET ["y", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Setting variable y to <Aua::Int 10>
+[30m        spec[0m | LET ["_", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Setting variable _ to <Aua::Int 10>
+[30m        spec[0m | Running Aua interpreter with code: "\"The values are ${x} and ${y}\""
+[30m  aura:parse[0m | parse-expr | Current token: str_part (The values are )
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | Parsed statement: structured_str ([str ("The values are " ), id ("x" ), str (" and " ), id ("y" )] )
+[30m        spec[0m | Translating structured string: structured_str ([str ("The values are " ), id ("x" ), str (" and " ), id ("y" )] )
+[30m        spec[0m | Translating part: str ("The values are " )
+[30m        spec[0m | Reifying string: str ("The values are " )
+[30m        spec[0m | Translating part: id ("x" )
+[30m        spec[0m | Translating part: str (" and " )
+[30m        spec[0m | Reifying string: str (" and " )
+[30m        spec[0m | Translating part: id ("y" )
+[30m        spec[0m | Structured string parts: ["The values are ", ID ["x"], " and ", ID ["y"]]
+[30m        spec[0m | CAT ["The values are ", ID ["x"], " and ", ID ["y"]]
+[30m        spec[0m | Concatenating parts: ["The values are ", ID ["x"], " and ", ID ["y"]]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Converting object to string: <Aua::Int 5>
+[30m        spec[0m | ID ["y"]
+[30m        spec[0m | Getting variable y
+[30m        spec[0m | Converting object to string: <Aua::Int 10>
+[30m        spec[0m | LET ["_", <Aua::Str "The values are 5 and 10">]
+[30m        spec[0m | Resolving object: <Aua::Str "The values are 5 and 10">
+[30m        spec[0m | Interpolating string: <Aua::Str "The values are 5 and 10">
+[30m        spec[0m | Setting variable _ to <Aua::Str "The values are 5 and 10">
 [30m        spec[0m | Running Aua interpreter with code: "if true then 1 else 2"
+[30m  aura:parse[0m | parse-expr | Current token: keyword (if)
+[30m  aura:parse[0m | parse-expr | Current token: bool (true)
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
+[30m  aura:parse[0m | parse-expr | Current token: int (2)
+[30m  aura:parse[0m | Parsed statement: if ([bool (true ), int (1 ), int (2 )] )
 [30m        spec[0m | IF [<Aua::Bool true>, <Aua::Int 1>, <Aua::Int 2>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Resolving object: <Aua::Int 1>
@@ -294,6 +654,11 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 1>
 [30m        spec[0m | Setting variable _ to <Aua::Int 1>
 [30m        spec[0m | Running Aua interpreter with code: "if false then 1 else 2"
+[30m  aura:parse[0m | parse-expr | Current token: keyword (if)
+[30m  aura:parse[0m | parse-expr | Current token: bool (false)
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
+[30m  aura:parse[0m | parse-expr | Current token: int (2)
+[30m  aura:parse[0m | Parsed statement: if ([bool (false ), int (1 ), int (2 )] )
 [30m        spec[0m | IF [<Aua::Bool true>, <Aua::Int 1>, <Aua::Int 2>]
 [30m        spec[0m | Resolving object: <Aua::Bool true>
 [30m        spec[0m | Resolving object: <Aua::Int 2>
@@ -301,6 +666,8 @@ The character "." is not valid in the current context.
 [30m        spec[0m | Resolving object: <Aua::Int 2>
 [30m        spec[0m | Setting variable _ to <Aua::Int 2>
 [30m        spec[0m | Running Aua interpreter with code: "\"\"\"What is the name of the physical phenomena responsible for the sky being blue?\"\"\""
+[30m  aura:parse[0m | parse-expr | Current token: gen_lit (What is the name of the physical phenomena responsible for the sky being blue?)
+[30m  aura:parse[0m | Parsed statement: gen_lit ("What is the name of the physical phenomena responsible for the sky being blue?" )
 [30m        spec[0m | Cache already contains key: 1d0f0fd14759bf77ea4b2ed014b929268e87f4e2b0cccf38961ecd632147c0a0
 [30m        spec[0m | Cache already contains key: c9b11ba558a7302658314d171cf52146a73b3bba84dd6406548ed0dec5c3c3af
 [30m        spec[0m | [36m>>> What is the name of the physical phenomena responsible for the sky being blue?[0m
@@ -332,26 +699,48 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Interpolating string: <Aua::Str "The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.\n\nWhen sunlight enters our atmosphere, different wavelengths are scattered in various ways:\n\n1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** \n\n2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.\n\n3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.\n\nThis scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.">
 [30m        spec[0m | Setting variable _ to <Aua::Str "The phenomenon that gives the sky its characteristic blue color is called Rayleigh scattering. This process occurs due to the absorption and reflection properties of the Earth's atmosphere, which contains many molecules of nitrogen and oxygen.\n\nWhen sunlight enters our atmosphere, different wavelengths are scattered in various ways:\n\n1. **Shorter wavelengths (blue light) are scattered more than longer wavelengths (red light).** \n\n2. As a result, blue light is preferentially absorbed by the gases higher up in the atmosphere because they have shorter wavelengths compared to oxygen and nitrogen molecules.\n\n3. This absorption leads to an overall effect where blue light doesn't reach our eyes as much, making the sky appear blue from the ground perspective.\n\nThis scattering of blue light gives the sky its characteristic appearance during clear days when we are not directly under a large amount of sun or moonlight (which would lead to white or red skies). It's also why the sea appears relatively calm and tranquil; it reflects more blue light back towards us.">
 [30m        spec[0m | Running Aua interpreter with code: "time 'now'"
+[30m  aura:parse[0m | parse-expr | Current token: id (time)
+[30m  aura:parse[0m | Parsing command with ID: time
+[30m  aura:parse[0m | - Consumed command ID: time
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [simple_str ("now" )]
+[30m  aura:parse[0m | - Call recognized with ID: time and args: [simple_str ("now" )]
+[30m  aura:parse[0m | Parsed statement: call (["time", [simple_str ("now" )]] )
 [30m        spec[0m | Reifying string: simple_str ("now" )
 [30m        spec[0m | CALL ["time", <Aua::Str "now">]
 [30m        spec[0m | Resolving object: <Aua::Str "now">
 [30m        spec[0m | Interpolating string: <Aua::Str "now">
 [30m        spec[0m | Resolving object: <Aua::Str "now">
 [30m        spec[0m | Interpolating string: <Aua::Str "now">
-[30m        spec[0m | Current time: 2025-06-11 20:55:21
-[30m        spec[0m | LET ["_", <Aua::Time 2025-06-11 20:55:21>]
-[30m        spec[0m | Resolving object: <Aua::Time 2025-06-11 20:55:21>
-[30m        spec[0m | Setting variable _ to <Aua::Time 2025-06-11 20:55:21>
+[30m        spec[0m | Current time: 2025-06-11 22:20:03
+[30m        spec[0m | LET ["_", <Aua::Time 2025-06-11 22:20:03>]
+[30m        spec[0m | Resolving object: <Aua::Time 2025-06-11 22:20:03>
+[30m        spec[0m | Setting variable _ to <Aua::Time 2025-06-11 22:20:03>
 [30m        spec[0m | Running Aua interpreter with code: "rand(10)"
+[30m  aura:parse[0m | parse-expr | Current token: id (rand)
+[30m  aura:parse[0m | Parsing command with ID: rand
+[30m  aura:parse[0m | - Consumed command ID: rand
+[30m  aura:parse[0m | parse-expr | Current token: int (10)
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [int (10 )]
+[30m  aura:parse[0m | - Call recognized with ID: rand and args: [int (10 )]
+[30m  aura:parse[0m | Parsed statement: call (["rand", [int (10 )]] )
 [30m        spec[0m | CALL ["rand", <Aua::Int 10>]
 [30m        spec[0m | Resolving object: <Aua::Int 10>
 [30m        spec[0m | Resolving object: <Aua::Int 10>
 [30m        spec[0m | Generating random number... (max: <Aua::Int 10>)
 [30m        spec[0m | Using max value: 10
-[30m        spec[0m | LET ["_", <Aua::Int 9>]
-[30m        spec[0m | Resolving object: <Aua::Int 9>
-[30m        spec[0m | Setting variable _ to <Aua::Int 9>
+[30m        spec[0m | LET ["_", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable _ to <Aua::Int 5>
 [30m        spec[0m | Running Aua interpreter with code: "say 'hi'"
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [simple_str ("hi" )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [simple_str ("hi" )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [simple_str ("hi" )]] )
 [30m        spec[0m | Reifying string: simple_str ("hi" )
 [30m        spec[0m | CALL ["say", <Aua::Str "hi">]
 [30m        spec[0m | Resolving object: <Aua::Str "hi">
@@ -362,6 +751,14 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Resolving object: <Aua::Nihil >
 [30m        spec[0m | Setting variable _ to <Aua::Nihil >
 [30m        spec[0m | Running Aua interpreter with code: "say \"hello world\""
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [str ("hello world" )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [str ("hello world" )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [str ("hello world" )]] )
 [30m        spec[0m | Reifying string: str ("hello world" )
 [30m        spec[0m | CALL ["say", <Aua::Str "hello world">]
 [30m        spec[0m | Resolving object: <Aua::Str "hello world">
@@ -372,6 +769,13 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Resolving object: <Aua::Nihil >
 [30m        spec[0m | Setting variable _ to <Aua::Nihil >
 [30m        spec[0m | Running Aua interpreter with code: "say \"\"\"hello world\"\"\""
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [gen_lit ("hello world" )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [gen_lit ("hello world" )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [gen_lit ("hello world" )]] )
 [30m        spec[0m | [36m>>> hello world[0m
 [34m<<< Hello! How can I help you today?[..80][0m [30m(0.0 seconds)[0m
 [35mMODEL[0m [30mqwen-2.5-1.5b-chat[0m | [35mREQUESTED_AT[0m [30m2025-06-09 22:44:20[0m
@@ -385,6 +789,22 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Resolving object: <Aua::Nihil >
 [30m        spec[0m | Setting variable _ to <Aua::Nihil >
 [30m        spec[0m | Running Aua interpreter with code: "x = 5; y = x + 2\ny * 3"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (5)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (5 )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: assign (["y", binop ([:plus, id ("x" ), int (2 )] )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:star, id ("y" ), int (3 )] )
 [30m        spec[0m | Translating sequence: [assign (["x", int (5 )] ), assign (["y", binop ([:plus, id ("x" ), int (2 )] )] ), binop ([:star, id ("y" ), int (3 )] )]
 [30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (2 )] )
 [30m        spec[0m | Translating binop: binop ([:star, id ("y" ), int (3 )] )
@@ -405,6 +825,30 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Resolving object: <Aua::Int 21>
 [30m        spec[0m | Setting variable _ to <Aua::Int 21>
 [30m        spec[0m | Running Aua interpreter with code: "x = (1 + 2) * 3; y = x - 4; z = y * 2; x + y + z"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: lparen ()
+[30m  aura:parse[0m | parse-expr | Current token: int (1)
+[30m  aura:parse[0m | Parsed statement: assign (["x", binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: assign (["y", binop ([:minus, id ("x" ), int (4 )] )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (z)
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: assign (["z", binop ([:star, id ("y" ), int (2 )] )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )
 [30m        spec[0m | Translating sequence: [assign (["x", binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )] ), assign (["y", binop ([:minus, id ("x" ), int (4 )] )] ), assign (["z", binop ([:star, id ("y" ), int (2 )] )] ), binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )]
 [30m        spec[0m | Translating binop: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
 [30m        spec[0m | Translating binop: binop ([:plus, int (1 ), int (2 )] )
@@ -439,6 +883,29 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Resolving object: <Aua::Int 24>
 [30m        spec[0m | Setting variable _ to <Aua::Int 24>
 [30m        spec[0m | Running Aua interpreter with code: "x = 5\ny = x + 2\nsay \"The result is: ${y}\"\n"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (5)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (5 )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: assign (["y", binop ([:plus, id ("x" ), int (2 )] )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (say)
+[30m  aura:parse[0m | Parsing command with ID: say
+[30m  aura:parse[0m | - Consumed command ID: say
+[30m  aura:parse[0m | parse-expr | Current token: id (y)
+[30m  aura:parse[0m | Parsing command with ID: y
+[30m  aura:parse[0m | - Consumed command ID: y
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m        spec[0m | [Handler#string] mode=end, returning :str_end
+[30m  aura:parse[0m | - End of arguments reached
+[30m  aura:parse[0m | - Parsed arguments: [structured_str ([str ("The result is: " ), id ("y" )] )]
+[30m  aura:parse[0m | - Call recognized with ID: say and args: [structured_str ([str ("The result is: " ), id ("y" )] )]
+[30m  aura:parse[0m | Parsed statement: call (["say", [structured_str ([str ("The result is: " ), id ("y" )] )]] )
 [30m        spec[0m | Translating sequence: [assign (["x", int (5 )] ), assign (["y", binop ([:plus, id ("x" ), int (2 )] )] ), call (["say", [structured_str ([str ("The result is: " ), id ("y" )] )]] )]
 [30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (2 )] )
 [30m        spec[0m | Translating structured string: structured_str ([str ("The result is: " ), id ("y" )] )
@@ -467,6 +934,15 @@ This scattering of blue light gives the sky its characteristic appearance during
 [30m        spec[0m | Resolving object: <Aua::Nihil >
 [30m        spec[0m | Setting variable _ to <Aua::Nihil >
 [30m        spec[0m | Running Aua interpreter with code: "#!/usr/bin/env aura\nx = 42\nx + 1"
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | parse-expr | Current token: int (42)
+[30m  aura:parse[0m | Parsed statement: assign (["x", int (42 )] )
+[30m  aura:parse[0m | parse-expr | Current token: id (x)
+[30m  aura:parse[0m | Parsing command with ID: x
+[30m  aura:parse[0m | - Consumed command ID: x
+[30m  aura:parse[0m | - Parsed arguments: []
+[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
+[30m  aura:parse[0m | Parsed statement: binop ([:plus, id ("x" ), int (1 )] )
 [30m        spec[0m | Translating sequence: [assign (["x", int (42 )] ), binop ([:plus, id ("x" ), int (1 )] )]
 [30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (1 )] )
 [30m        spec[0m | LET ["x", <Aua::Int 42>]

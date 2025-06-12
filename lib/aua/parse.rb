@@ -176,7 +176,7 @@ module Aua
 
     protected
 
-    def info(message) = Aua.logger.debug("aura:parse") { message }
+    def info(message) = Aua.logger.info("aura:parse") { message }
 
     private
 

@@ -22,12 +22,13 @@ RSpec.describe Aua::Parse do
       let(:input) { '"The result is: ${y}"' }
       it "parses interpolated strings into an AST" do
         extend Aua::Grammar
+        # Aua.logger.info "ast: #{ast.inspect}"
         expect(ast.type).to eq(:structured_str)
         expect(ast.value).to eq([s(:str, "The result is: "), s(:id, "y")])
       end
     end
 
-    xdescribe "strings with multiple interpolations" do
+    describe "strings with multiple interpolations" do
       let(:input) { '"The results are ${x} and ${y}"' }
       it "parses a string with multiple interpolations as a :structured_str node" do
         extend Aua::Grammar
@@ -89,6 +90,10 @@ RSpec.describe Aua::Parse do
     end
 
     it "parses commands with string interpolation" do
+      # tokens.to_a.each do |token|
+      #   puts "#{token.type} => #{token.value.inspect}"
+      #   # expect(token.value).not_to be_nil
+      # end
       expect(ast.type).to eq(:seq)
       expect(ast.value.size).to eq(3)
 

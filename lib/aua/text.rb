@@ -33,10 +33,9 @@ module Aua
       def current = @chars.fetch(@position, nil)
       def peek_at(index) = @chars.fetch(@position + index, nil)
       def peek = peek_at(1)
-
       def caret = @cursor.dup.freeze
-
       def content = @text.dup.freeze
+      def size = @len ||= content.length
 
       # Returns an array of the next n characters from the current position.
       # If there are fewer than n characters left, it returns as many as possible.

@@ -18,7 +18,7 @@ module Aua
       end
     end
 
-    def self.default(progname = "aura", outlet: self.outlet) = @default ||= new(outlet, level:, progname:)
+    def self.default(progname = "aura", outlet: self.outlet) = new(outlet, level:, progname:)
     def self.level = ENV.fetch("AUA_LOG_LEVEL", "info").to_sym
 
     # Returns the appropriate output stream for logging.
