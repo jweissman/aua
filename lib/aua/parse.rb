@@ -203,6 +203,8 @@ module Aua
         advance while @current_token.type == :eos
       end
 
+      # return s(:nihil) if statements.empty?
+
       statements.size == 1 ? statements.first : s(:seq, statements.compact)
     end
 
@@ -365,11 +367,12 @@ module Aua
     # @type method parse_structured_str: () -> AST::Node
     def parse_structured_str
       parts = [] # Array[AST::Node]
-      while true
-        if @current_token.type == :str_part
+      loop do
+        case @current_token.type
+        when :str_part
           parts << s(:str, @current_token.value)
           advance
-        elsif @current_token.type == :interpolation_start
+        when :interpolation_start
           advance
           expr = parse_expression
           parts << expr
@@ -379,7 +382,7 @@ module Aua
 
           advance
 
-        elsif @current_token.type == :str_end
+        when :str_end
           advance
           break
         else

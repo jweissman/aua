@@ -6,6 +6,17 @@ module Aua
 
   type char = String
 
+  class Logger
+    def info: (String) -> void
+    def warn: (String) -> void
+    def error: (String) -> void
+    def debug: (String) -> void
+    def fatal: (String) -> void
+    def self.default: () -> Logger
+  end
+
+  def self.logger: () -> Logger
+
   module Text
     class Cursor
       attr_reader line: Integer
@@ -69,7 +80,7 @@ module Aua
       def number: (String) -> token?
       def equals: (String) -> token?
       def identifier: (String) -> token?
-      def string: (String) -> token?
+      def string: (String) -> (token | Array[token])?
       def minus: (String) -> token?
       def whitespace: (String) -> void
       def unexpected: (String) -> void
@@ -313,21 +324,6 @@ module Aua
     attr_reader value: ::Time
   end
 
-  # class Box[T] < Obj
-  #   def initialize: (T) -> void
-  #   def klass: () -> Klass
-  #   def name: () -> String
-  #   def introspect: () -> String
-  #   attr_reader value: T
-  # end
-
-  # class Rec < Box[Hash[String, Obj]]
-  #   def initialize: (String, Hash[String, Obj]) -> void
-  #   def klass: () -> Klass
-  #   def name: () -> String
-  #   def introspect: () -> String
-  # end
-
   class Statement
     attr_reader type: Symbol
     attr_reader value: untyped
@@ -350,7 +346,16 @@ module Aua
   type statement = Array[Statement] | Statement | Array[primary] | primary
 
   class VM
+    module Commands
+      LET: untyped
+      RECALL: untyped
+      LOCAL_VARIABLE_GET: untyped
+      SEND: untyped
+      CONCATENATE: untyped
+    end
+
     class Translator
+      include Commands
       def initialize: (VM) -> void
       def environment: () -> environment
       def reify_primary: (AST::Node) -> primary
@@ -362,7 +367,9 @@ module Aua
       def translate_if: (AST::Node) -> statement
       def translate_gen_lit: (untyped) -> Array[Aua::Str]
       def translate_call: (AST::Node) -> Array[Statement]
+      def translate_sequence: (AST::Node) -> Array[Statement]
       module Binop
+        include Commands
         def self.binary_operation: (Symbol, statement, statement) -> statement
         def self.binop_plus: (statement, statement) -> statement
         def self.binop_minus: (statement, statement) -> statement
@@ -386,13 +393,15 @@ module Aua
 
     private
 
-    def reduce: (AST::Node) -> Array[Statement]
     def evaluate: (Context, AST::Node) -> untyped
     def evaluate_one: (Statement) -> untyped
     def eval_call: (String, Array[untyped]) -> untyped
     def eval_id: (untyped) -> untyped
     def eval_let: (untyped, untyped) -> untyped
     def eval_if: (untyped, untyped, untyped?) -> untyped
+    def interpolated: (Aua::Obj) -> Aua::Obj
+    def resolve: (Aua::Obj) -> Aua::Obj
+    def reduce: (AST::Node) -> Array[Statement]
   end
 
   class PrettyPrinter
@@ -518,10 +527,6 @@ module Aua
   # Constants and helpers
   EOS: token
   NOTHING: AST::Node
-  LET: untyped
-  RECALL: untyped
-  LOCAL_VARIABLE_GET: untyped
-  SEND: untyped
 
   def self.run: (String) -> untyped
   def self.vm: (?environment) -> VM

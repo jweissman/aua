@@ -2,12 +2,13 @@
 
 # require "json"
 # require "net/http"
-require "logger"
+# require "logger"
 require "ostruct"
 require "rainbow"
 require "rainbow/refinement"
 
 require "aua/version"
+require "aua/logger"
 require "aua/text"
 require "aua/lex"
 require "aua/parse"
@@ -24,55 +25,6 @@ require "aua/llm/provider"
 #   Aua.run("let x = 42")
 module Aua
   class Error < StandardError; end
-
-  class Logger < ::Logger
-    using Rainbow
-
-    LHS_WIDTH = 12
-
-    def format_message(severity, timestamp, progname, msg)
-      lhs = [
-        progname.to_s.rjust(LHS_WIDTH - 8)
-      ].join(" ")
-      [lhs.rjust(LHS_WIDTH), msg.to_s.strip]
-        .join(" | ")
-        .tap do |formatted|
-        formatted << "\n"
-      end
-    end
-
-    def self.default(progname = "aura") = @default ||= new(outlet, level:, progname:)
-    def self.level = ENV.fetch("AUA_LOG_LEVEL", "info").to_sym
-
-    # Returns the appropriate output stream for logging.
-    # If testing, it uses a file; otherwise, it uses $stdout.
-    #
-    # @return [IO] The output stream for logging.
-    def self.outlet
-      # puts "Setup outlet for #{Aua.testing? ? 'testing' : 'production'}"
-      return $stderr unless Aua.testing?
-
-      warn "Creating log file at log/aura.log" if Aua.testing?
-      FileUtils.mkdir_p("log") unless Dir.exist?("log")
-      begin
-        File.open("log/aura.log", "w") # do |file|
-        # file.sync = true # Ensure writes are immediate
-        # file
-        # end
-      rescue StandardError => e
-        warn "Failed to open log file: #{e.message}"
-        warn "Failed to open log file: #{e.message}"
-        $stderr
-      end
-    end
-  end
-
-  def self.logger = @logger ||= Logger.default
-
-  # def self.logger_for(progname)
-  #   @loggers ||= {}
-  #   @loggers[progname] ||= Logger.for(progname)
-  # end
 
   # Represents a statement in Aua, which can be an assignment, expression, or control flow.
   class Statement < Data.define(:type, :value)
@@ -91,28 +43,33 @@ module Aua
 
   include Semantics
 
-  RECALL = lambda do |item|
-    Semantics.inst(:let, "_", item)
-  end
-
-  LOCAL_VARIABLE_GET = lambda do |name|
-    Semantics.inst(:id, name)
-  end
-
-  SEND = lambda do |receiver, method, *args|
-    Semantics.inst(:send, receiver, method, *args)
-  end
-
-  CONCATENATE = lambda do |parts|
-    # Concatenate an array of parts into a single string.
-    # This is used for structured strings.
-    Semantics.inst(:cat, *parts)
-  end
-
   # The virtual machine for executing Aua ASTs.
   class VM
+    module Commands
+      include Semantics
+      RECALL = lambda do |item|
+        Semantics.inst(:let, MEMO, item)
+      end
+
+      LOCAL_VARIABLE_GET = lambda do |name|
+        Semantics.inst(:id, name)
+      end
+
+      SEND = lambda do |receiver, method, *args|
+        Semantics.inst(:send, receiver, method, *args)
+      end
+
+      CONCATENATE = lambda do |parts|
+        # Concatenate an array of parts into a single string.
+        # This is used for structured strings.
+        Semantics.inst(:cat, *parts)
+      end
+    end
+
     # The translator class that converts Aua AST nodes into VM instructions.
     class Translator
+      include Commands
+
       def initialize(virtual_machine)
         @vm = virtual_machine
       end
@@ -233,6 +190,7 @@ module Aua
       # Support translating binary operations.
       module Binop
         class << self
+          include Commands
           def binary_operation(operator, left, right)
             case operator
             when :plus then Binop.binop_plus(left, right)
@@ -340,7 +298,7 @@ module Aua
           raise Error, "inspect requires a single argument" unless obj.is_a?(Obj)
 
           Aua.logger.info "Object class: #{obj.class}" if Aua.testing?
-          Aua.logger.info "Object value: #{obj.value.inspect}" if Aua.testing?
+          # Aua.logger.info "Object value: #{obj.value.inspect}" if Aua.testing?
 
           Str.new(obj.introspect)
         },
@@ -368,11 +326,12 @@ module Aua
           Aua::Nihil.new
         },
         ask: lambda { |question| # ie from stdin
-          Aua.logger.info "Asking question: #{question.inspect}" if Aua.testing?
+          Aua.logger.info "Asking question: #{question.inspect}"
           raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
 
-          response = gets
-          Aua.logger.info "Response: #{response}" if Aua.testing?
+          Aua.logger.info "Asking question: #{question.value}"
+          response = $stdin.gets
+          Aua.logger.info "Response: #{response}"
           raise Error, "No response received" if response.nil?
 
           Str.new(response.chomp) # .strip
@@ -412,7 +371,7 @@ module Aua
       stmts.each do |stmt|
         ret = stmt.is_a?(Obj) ? stmt : evaluate_one(stmt)
       end
-      evaluate_one RECALL[ret]
+      evaluate_one Commands::RECALL[ret]
       ret
     end
 
@@ -448,11 +407,12 @@ module Aua
       when :cat
         Aua.logger.info "Concatenating parts: #{stmt.value.inspect}" if Aua.testing?
         to_ruby_str = lambda { |maybe_str|
-          if maybe_str.is_a?(String)
+          case maybe_str
+          when String
             maybe_str
-          elsif maybe_str.is_a?(Str)
+          when Str
             maybe_str.value
-          elsif maybe_str.is_a?(Obj)
+          when Obj
             Aua.logger.info "Converting object to string: #{maybe_str.inspect}" if Aua.testing?
             maybe_str.aura_send(:to_s)
           else
@@ -487,7 +447,7 @@ module Aua
       Aua.logger.info "Interpolating string: #{obj.inspect}"
       # debugger
 
-      inspects = Aua.vm.builtins[:inspect]
+      Aua.vm.builtins[:inspect]
 
       # Str.new(obj.value.gsub(/\$\{(\w+)\}/) do |match|
       #   var_name = ::Regexp.last_match(1)
@@ -624,9 +584,7 @@ module Aua
         temperature:,
         top_p: 0.9,
         max_tokens:
-      ).tap do |config|
-        Aua.logger.warn "Configuration initialized: #{config.inspect}" if Aua.testing?
-      end
+      )
     end
   end
 

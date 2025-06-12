@@ -23,11 +23,19 @@ Style/StringLiteralsInInterpolation:
 Style/DataInheritance:
   Enabled: false
 
+Metrics/ModuleLength:
+  Max: 220
+
 Metrics/ClassLength:
-  Max: 100
+  Max: 160
 
 Metrics/MethodLength:
-  Max: 10
+  Max: 14
+
+Metrics/BlockLength:
+  Max: 32
+  Exclude:
+    - 'spec/**/*'
 
 Style/ItBlockParameter:
   Enabled: false

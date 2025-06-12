@@ -61,7 +61,7 @@ module Aua
         end
 
         describe "very long string" do
-          let(:input) { '"' + ("a" * 70_000) + '"' }
+          let(:input) { "\"#{"a" * 70_000}\"" }
           it "raises an error for exceeding MAX_STRING_LENGTH", skip: false do
             expect { tokens }.to raise_error(Aua::Error, /Unterminated string literal/)
           end

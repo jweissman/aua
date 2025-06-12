@@ -13,15 +13,17 @@ module Aua
     def ident
       tuple(ident_start, array(ident_rest, min: 0, max: 11))
         .map(
-          ->(v) { v.join },
-          ->(s) { s.to_s } # Convert to string for consistency
+          lambda(&:join),
+          lambda(&:to_s) # Convert to string for consistency
         )
     end
 
-    def int = IntegerArbitrary.new(0, 1_000_000_000).map(
-      ->(v) { v.to_s },
-      ->(s) { s.to_i } # Convert to integer and back to string for consistency
-    )
+    def int
+      IntegerArbitrary.new(0, 1_000_000_000).map(
+        lambda(&:to_s),
+        lambda(&:to_i) # Convert to integer and back to string for consistency
+      )
+    end
 
     def float
       tuple(int, int).map(
@@ -34,11 +36,11 @@ module Aua
       ascii_string
         .filter { |s| s.length <= 8 && !s.include?("'") && !s.include?("\"") }
         .map(
-          ->(v) {
+          lambda { |v|
             if rand < 0.5
               "'#{v}'"
             else
-              '"' + v + '"'
+              "\"#{v}\""
             end
           },
           ->(s) { s[1..-2] }
@@ -119,13 +121,14 @@ module Aua
         lexer = Lex.new(input)
         tokens = lexer.tokens.to_a.reject { |t| t.type == :whitespace }
         expect(1..2).to include(tokens.size) # .to eq(1..2)
-        expect([:simple_str, :str, :str_part, :str_end]).to include(tokens.first.type)
+        expect(%i[simple_str str str_part str_end]).to include(tokens.first.type)
       end
     end
 
     it "lexes random shallow binary expressions to valid token sequences" do
       extend Aua::Properties
-      valid_types = Set[:id, :int, :float, :plus, :minus, :star, :slash, :equals, :lparen, :rparen, :identifier, :simple_str, :str, :whitespace]
+      valid_types = Set[:id, :int, :float, :plus, :minus, :star, :slash, :equals, :lparen, :rparen, :identifier,
+                        :simple_str, :str, :whitespace]
       with_property(binop) do |input|
         lexer = Lex.new(input)
         tokens = lexer.tokens.to_a

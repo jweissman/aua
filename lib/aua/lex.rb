@@ -1,4 +1,6 @@
 require "rainbow/refinement"
+require "aua/text"
+require "aua/logger"
 
 module Aua
   # Provides utility methods for syntax-related tasks.
@@ -177,13 +179,10 @@ module Aua
 
       def whitespace(chars)
         # Only skip if not a newline
-        if chars == "\n"
-          advance
-          t(:eos)
-        else
-          advance
-          nil
-        end
+        advance
+        return unless chars == "\n"
+
+        t(:eos)
       end
 
       def identifier(_) = recognize.identifier
@@ -408,33 +407,39 @@ module Aua
     def tokenize(&)
       @inside_string = false
       @pending_tokens ||= []
-      last_token = nil
       while @lens.more? || !@pending_tokens.empty?
-        if Aua.testing?
-          Aua.logger.debug "Lens -- #{@lens.describe}"
-          if @pending_tokens.empty?
-            Aua.logger.debug "No pending tokens, consuming next character."
-          else
-            Aua.logger.debug "Pending tokens: #{@pending_tokens.map(&:type).join(", ")}"
-          end
+        # if Aua.testing?
+        Aua.logger.debug "Lens -- #{@lens.describe}"
+        if @pending_tokens.empty?
+          Aua.logger.debug "No pending tokens, consuming next character."
+        else
+          Aua.logger.debug "Pending tokens: #{@pending_tokens.map(&:type).join(", ")}"
         end
+        # end
         unless @pending_tokens.empty?
           tok = @pending_tokens.shift
-          yield(tok)
-          last_token = tok
-          @inside_string = false if tok.type == :interpolation_start
-          @inside_string = true if tok.type == :interpolation_end && should_resume_string
+          if tok
+            yield(tok)
+            # After interpolation_start, we want to parse the interpolation (not string)
+            @inside_string = false if tok.type == :interpolation_start
+            # After interpolation_end, always resume string mode for double-quoted strings
+            @inside_string = true if tok.type == :interpolation_end
+          end
           next
         end
 
-        if @inside_string
-          token = handler.string('"')
+        if @inside_string && !@string_mode.nil?
+          token = handle.string('"')
           tokens = token.is_a?(Array) ? token : [token]
           @pending_tokens.concat(tokens[1..]) if tokens.size > 1
           tok = tokens.first
-          yield(tok)
-          last_token = tok
-          @inside_string = false if tok.type == :interpolation_start
+          if tok
+            yield(tok)
+            # After interpolation_start, we want to parse the interpolation (not string)
+            @inside_string = false if tok.type == :interpolation_start
+            # After interpolation_end, always resume string mode for double-quoted strings
+            @inside_string = true if tok.type == :interpolation_end
+          end
         else
           token = consume_until_acceptance
           tokens = token.is_a?(Array) ? token : [token]
@@ -442,9 +447,8 @@ module Aua
           tok = tokens.first
           if tok
             yield(tok)
-            last_token = tok
             @inside_string = true if tok.type == :string
-            @inside_string = true if tok.type == :interpolation_end && should_resume_string
+            @inside_string = true if tok.type == :interpolation_end
           else
             # Only raise if there is still non-ignorable input
             raise Error, Handler.unexpected_character_message(@lens) if @lens.more?

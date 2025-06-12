@@ -1,10 +1,12 @@
+require "logger"
+
 module Aua
   class Logger < ::Logger
     using Rainbow
 
     LHS_WIDTH = 12
 
-    def format_message(severity, timestamp, progname, msg)
+    def format_message(_severity, _timestamp, progname, msg)
       lhs = [
         progname.to_s.rjust(LHS_WIDTH - 8)
       ].join(" ")
@@ -15,7 +17,7 @@ module Aua
       end
     end
 
-    def self.default(progname = "aura") = @default ||= new(outlet, level:, progname:)
+    def self.default(progname = "aura", outlet: self.outlet) = @default ||= new(outlet, level:, progname:)
     def self.level = ENV.fetch("AUA_LOG_LEVEL", "info").to_sym
 
     # Returns the appropriate output stream for logging.
@@ -23,22 +25,14 @@ module Aua
     #
     # @return [IO] The output stream for logging.
     def self.outlet
-      return $stderr unless Aua.testing?
-
-      warn "Creating log file at log/aura.log" if Aua.testing?
-      FileUtils.mkdir_p("log") unless Dir.exist?("log")
-      begin
-        File.open("log/aura.log", "w") do |file|
-          file.sync = true # Ensure writes are immediate
-          file
-        end
-      rescue StandardError => e
-        warn "Failed to open log file: #{e.message}"
-        warn "Failed to open log file: #{e.message}"
-        $stderr
-      end
+      # puts "Setup outlet for #{Aua.testing? ? 'testing' : 'production'}"
+      $stderr # unless Aua.testing?
     end
   end
 
   def self.logger = @logger ||= Logger.default
+
+  def self.logger=(logger)
+    @logger = logger
+  end
 end

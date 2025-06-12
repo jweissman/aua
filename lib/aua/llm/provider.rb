@@ -265,6 +265,7 @@ module Aua
         private
 
         def request(prompt:, model: Aua.configuration.model, generation: nil)
+          Aua.logger.info "Requesting LLM completion for prompt: '#{prompt}' with model: '#{model}'" if Aua.testing?
           uri = URI("#{@base_uri}/chat/completions")
           t0 = ::Time.now # ::Time
           response = post(uri, request_body(prompt, model:, generation:).to_json)
