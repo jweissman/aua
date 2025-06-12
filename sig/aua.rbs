@@ -7,15 +7,24 @@ module Aua
   type char = String
 
   class Logger
+    LHS_WIDTH: Integer
+    def initialize: (?String, ?untyped) -> void
     def info: (String) -> void
     def warn: (String) -> void
     def error: (String) -> void
     def debug: (String) -> void
+             | (String) { (untyped) -> void } -> void
+    def trace: (String) -> void
     def fatal: (String) -> void
     def self.default: () -> Logger
+    def self.level: () -> untyped
+    def self.outlet: () -> untyped
+    def self.logger=: (untyped) -> void
+    def format_message: (untyped, untyped, untyped, untyped) -> untyped
   end
 
   def self.logger: () -> Logger
+  def self.logger=: (Logger) -> void
 
   module Text
     class Cursor
@@ -86,6 +95,9 @@ module Aua
       def unexpected: (String) -> void
       def prompt: (String) -> token?
 
+      def interpolation_end: (String) -> token?
+      def eos: (String) -> token?
+
       private
 
       def lens: () -> Lex::Lens
@@ -110,6 +122,7 @@ module Aua
       def identifier: () -> token
       def number_lit: () -> token
       def string: (?String) -> token
+      def string_with_interpolation: (?String) -> token
       def number_token_from_string: (String, bool) -> token
       def current_char: () -> char
       def advance: (?Integer) -> void
@@ -183,6 +196,8 @@ module Aua
     def token_names: (Integer) -> untyped
     def unexpected_character_message: () -> String
     def yield_lexeme: () { (token) -> void } -> void
+
+    def should_resume_string: () -> bool
   end
 
   module AST
@@ -211,6 +226,8 @@ module Aua
       def parse_float: () -> AST::Node
       def parse_bool: () -> AST::Node
       def parse_str: () -> AST::Node
+      def parse_str_part: () -> nil
+      def parse_str_end: () -> AST::Node
       def parse_simple_str: () -> AST::Node
       def parse_parens: () -> AST::Node
       def parse_generative_lit: () -> AST::Node
@@ -245,6 +262,8 @@ module Aua
     def parse_unary: () -> AST::Node?
     def parse_conditional: () -> AST::Node?
     def parse_condition_body: () -> [AST::Node, AST::Node?]
+    def parse_structured_str: () -> AST::Node
+    def parse_statements: () -> AST::Node
     def unexpected_tokens?: () -> bool
     def unexpected_token: () -> untyped
     def self.ast: (Array[token]) -> AST::Node
@@ -254,6 +273,8 @@ module Aua
     def precedent?: (Symbol, Integer) -> bool
     def consume_binary_op: (AST::Node) -> AST::Node
     def parse_call: () -> AST::Node?
+
+    def info: (String) -> void
   end
 
   class Obj

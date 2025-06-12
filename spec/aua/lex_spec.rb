@@ -188,7 +188,8 @@ module Aua
 
       describe "generative" do
         let(:input) do
-          "\"\"\"The current day is #{::Time.now.strftime("%A")}. Please come up with a rhyming couplet that describes the day of the week. If you can try to be alliterative, starting as many words as you can with the first two characters of the day name.\"\"\""
+          # NOTE: this is a manual ruby interpolation not a 'real' generative string interpolation!
+          "\"\"\"The current day is #{::Time.now.strftime("%A")}.\"\"\""
         end
 
         it "lexes" do
@@ -196,7 +197,7 @@ module Aua
           expect(str_token).not_to be_nil
           expect(str_token.value).to start_with("The current day is ")
           expect(str_token.value).to match ::Time.now.strftime("%A")
-          expect(str_token.value).to end_with("day name.")
+          expect(str_token.value).to end_with("day.")
           expect(str_token.value.length).to be >= 2
         end
 

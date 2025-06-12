@@ -13,19 +13,24 @@ module Aua
       self.class.aura_methods.include?(method_name)
     end
 
-    def aura_send(method_name, *)
+    def aura_send(method_name, *args)
       unless aura_respond_to?(method_name)
-        raise NoMethodError, "Method #{method_name} not defined for #{self.class.name}"
+        raise NoMethodError, "Method \\#{method_name} not defined for \\#{self.class.name}"
       end
 
       meth = self.class.aura_method(method_name)
-      instance_exec(*, &meth)
+
+      # Call the method with the current instance as the receiver
+      instance_exec(
+        *args,
+        &meth # : () { () -> Aua::Obj } -> Aua::Obj
+      )
     end
 
     def self.aura_methods
-      @@method_store ||= {}
-      @@method_store[name] ||= {}
-      @@method_store[name] # Hash[Symbol, Proc]
+      @method_store ||= {} # : Hash[String, Hash[Symbol, Proc]]
+      @method_store[name] ||= {} # : untyped
+      @method_store[name]
     end
 
     def self.aura_method(name)

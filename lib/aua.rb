@@ -48,7 +48,7 @@ module Aua
     module Commands
       include Semantics
       RECALL = lambda do |item|
-        Semantics.inst(:let, MEMO, item)
+        Semantics.inst(:let, Semantics::MEMO, item)
       end
 
       LOCAL_VARIABLE_GET = lambda do |name|
@@ -85,10 +85,10 @@ module Aua
         when :seq then translate_sequence(ast)
         when :structured_str
           # Join all parts, recursively translating expressions
-          Aua.logger.info "Translating structured string: #{ast.inspect}" if Aua.testing?
+          Aua.logger.info "Translating structured string: #{ast.inspect}"
 
           parts = ast.value.map do |part|
-            Aua.logger.info "Translating part: #{part.inspect}" if Aua.testing?
+            Aua.logger.info "Translating part: #{part.inspect}"
             if part.is_a?(AST::Node)
               val = translate(part)
               val = val.first if val.is_a?(Array) && val.size == 1
@@ -98,7 +98,7 @@ module Aua
             end
           end
 
-          Aua.logger.info "Structured string parts: #{parts.inspect}" if Aua.testing?
+          Aua.logger.info "Structured string parts: #{parts.inspect}"
 
           # [Str.new(*parts)]
           [CONCATENATE[parts]] # Concatenate all parts into a single string
@@ -114,7 +114,7 @@ module Aua
 
       def translate_sequence(node)
         stmts = node.value
-        Aua.logger.info "Translating sequence: #{stmts.inspect}" if Aua.testing?
+        Aua.logger.info "Translating sequence: #{stmts.inspect}"
         raise Error, "Empty sequence" if stmts.empty?
         raise Error, "Sequence must be an array" unless stmts.is_a?(Array)
         raise Error, "Sequence must contain only AST nodes" unless stmts.all? { |s| s.is_a?(AST::Node) }
@@ -140,7 +140,7 @@ module Aua
         when :float then Float.new(node.value)
         when :bool then Bool.new(node.value)
         when :str, :simple_str
-          Aua.logger.info "Reifying string: #{node.inspect}" if Aua.testing?
+          Aua.logger.info "Reifying string: #{node.inspect}"
           Str.new(node.value)
         else
           warn "Unknown primary node type: #{node.type.inspect}"
@@ -180,7 +180,7 @@ module Aua
       end
 
       def translate_binop(node)
-        Aua.logger.info "Translating binop: #{node.inspect}" if Aua.testing?
+        Aua.logger.info "Translating binop: #{node.inspect}"
         op, left_node, right_node = node.value
         left = translate(left_node)
         right = translate(right_node)
@@ -294,19 +294,19 @@ module Aua
     def builtins
       @builtins ||= {
         inspect: lambda { |obj|
-          Aua.logger.info "Inspecting object: #{obj.inspect}" if Aua.testing?
+          Aua.logger.info "Inspecting object: #{obj.inspect}"
           raise Error, "inspect requires a single argument" unless obj.is_a?(Obj)
 
-          Aua.logger.info "Object class: #{obj.class}" if Aua.testing?
-          # Aua.logger.info "Object value: #{obj.value.inspect}" if Aua.testing?
+          Aua.logger.info "Object class: #{obj.class}"
+          # Aua.logger.info "Object value: #{obj.value.inspect}"
 
           Str.new(obj.introspect)
         },
         rand: lambda { |max|
-          Aua.logger.info "Generating random number... (max: #{max.inspect})" if Aua.testing?
+          Aua.logger.info "Generating random number... (max: #{max.inspect})"
           rng = Random.new
           max = max.is_a?(Int) ? max.value : 100 if max.is_a?(Obj)
-          Aua.logger.info "Using max value: #{max}" if Aua.testing?
+          Aua.logger.info "Using max value: #{max}"
           Aua::Int.new(
             rng.rand(0..max)
           )
@@ -337,23 +337,23 @@ module Aua
           Str.new(response.chomp) # .strip
         },
         chat: lambda { |question|
-          Aua.logger.info "Asking question: #{question.inspect}" if Aua.testing?
+          Aua.logger.info "Asking question: #{question.inspect}"
           raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
 
           current_conversation = Aua::LLM.chat
           response = current_conversation.ask(question.value)
-          Aua.logger.info "Response: #{response}" if Aua.testing?
+          Aua.logger.info "Response: #{response}"
           Aua::Str.new(response)
         },
         see_url: lambda { |url|
-          Aua.logger.info "Fetching URL: #{url.inspect}" if Aua.testing?
+          Aua.logger.info "Fetching URL: #{url.inspect}"
           raise Error, "see_url requires a single Str argument" unless url.is_a?(Str)
 
           uri = URI(url.value)
           response = Net::HTTP.get_response(uri)
           raise Error, "Failed to fetch URL: #{url.value} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
-          Aua.logger.info "Response from #{url.value}: #{response.body}" if Aua.testing?
+          Aua.logger.info "Response from #{url.value}: #{response.body}"
           Aua::Str.new(response.body)
         }
 
@@ -405,7 +405,7 @@ module Aua
 
         receiver.aura_send(method, *args)
       when :cat
-        Aua.logger.info "Concatenating parts: #{stmt.value.inspect}" if Aua.testing?
+        Aua.logger.info "Concatenating parts: #{stmt.value.inspect}"
         to_ruby_str = lambda { |maybe_str|
           case maybe_str
           when String
@@ -413,7 +413,7 @@ module Aua
           when Str
             maybe_str.value
           when Obj
-            Aua.logger.info "Converting object to string: #{maybe_str.inspect}" if Aua.testing?
+            Aua.logger.info "Converting object to string: #{maybe_str.inspect}"
             maybe_str.aura_send(:to_s)
           else
             raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
@@ -432,7 +432,7 @@ module Aua
     end
 
     def resolve(obj)
-      Aua.logger.info "Resolving object: #{obj.inspect}" if Aua.testing?
+      Aua.logger.info "Resolving object: #{obj.inspect}"
 
       # interpolate strings, collapse complex vals, etc.
       return interpolated(obj) if obj.is_a?(Str)
@@ -441,7 +441,7 @@ module Aua
     end
 
     def interpolated(obj)
-      # Aua.logger.info "Interpolating object: #{obj.inspect}" if Aua.testing?
+      # Aua.logger.info "Interpolating object: #{obj.inspect}"
       return obj unless obj.is_a?(Str)
 
       Aua.logger.info "Interpolating string: #{obj.inspect}"
@@ -451,9 +451,9 @@ module Aua
 
       # Str.new(obj.value.gsub(/\$\{(\w+)\}/) do |match|
       #   var_name = ::Regexp.last_match(1)
-      #   Aua.logger.info "Interpolating variable: #{var_name}" if Aua.testing?
+      #   Aua.logger.info "Interpolating variable: #{var_name}"
       #   value = inspects[eval_id(var_name)].value
-      #   Aua.logger.info "Interpolated value: #{value.inspect}" if Aua.testing?
+      #   Aua.logger.info "Interpolated value: #{value.inspect}"
       #   value.is_a?(Str) ? value.value : value.to_s
       # end)
       obj
@@ -469,14 +469,14 @@ module Aua
 
     def eval_id(identifier)
       identifier = identifier.first if identifier.is_a?(Array)
-      Aua.logger.info "Getting variable #{identifier}" if Aua.testing?
+      Aua.logger.info "Getting variable #{identifier}"
       raise Error, "Undefined variable: #{identifier}" unless @env.key?(identifier)
 
       @env[identifier]
     end
 
     def eval_let(name, value)
-      Aua.logger.info "Setting variable #{name} to #{value.inspect}" if Aua.testing?
+      Aua.logger.info "Setting variable #{name} to #{value.inspect}"
       @env[name] = value
       value
     end
@@ -506,7 +506,7 @@ module Aua
     attr_reader :env
 
     def initialize(env = {})
-      Aua.logger.info "Initializing Aua interpreter with env: #{env.inspect}" if Aua.testing?
+      Aua.logger.info "Initializing Aua interpreter with env: #{env.inspect}"
       @env = env
     end
 

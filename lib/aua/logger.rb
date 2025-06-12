@@ -10,7 +10,8 @@ module Aua
       lhs = [
         progname.to_s.rjust(LHS_WIDTH - 8)
       ].join(" ")
-      [lhs.rjust(LHS_WIDTH), msg.to_s.strip]
+
+      [lhs.rjust(LHS_WIDTH).black, msg.to_s.strip]
         .join(" | ")
         .tap do |formatted|
         formatted << "\n"
@@ -24,10 +25,7 @@ module Aua
     # If testing, it uses a file; otherwise, it uses $stdout.
     #
     # @return [IO] The output stream for logging.
-    def self.outlet
-      # puts "Setup outlet for #{Aua.testing? ? 'testing' : 'production'}"
-      $stderr # unless Aua.testing?
-    end
+    def self.outlet = $stderr
   end
 
   def self.logger = @logger ||= Logger.default

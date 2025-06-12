@@ -89,20 +89,16 @@ module Aua
       # Lexes a string literal, supporting interpolation for double-quoted strings.
       def string(quote = "'", &)
         quote.length.times { advance }
-        if quote == '"'
-          return string_with_interpolation(&) if block_given?
+        raise Error, "Double-quoted/interpolated strings must be lexed with a block." if quote == '"'
 
-          raise Error, "Double-quoted/interpolated strings must be lexed with a block."
-        else
-          # Simple or generative string logic
-          chars = consume_string_chars(quote)
-          unless current_char == quote.chars.last
-            raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe
-          end
-
-          quote.length.times { advance }
-          encode_string(chars, quote: quote)
+        # Simple or generative string logic
+        chars = consume_string_chars(quote)
+        unless current_char == quote.chars.last
+          raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe
         end
+
+        quote.length.times { advance }
+        encode_string(chars, quote: quote)
       end
 
       private
@@ -190,7 +186,7 @@ module Aua
 
       def string(quote)
         if quote == '"'
-          @string_pending ||= []
+          @string_pending ||= [] # : Array[token]
           @string_mode ||= :start
           @string_buffer ||= ""
           max_len = 1024
@@ -406,9 +402,8 @@ module Aua
 
     def tokenize(&)
       @inside_string = false
-      @pending_tokens ||= []
+      @pending_tokens ||= [] # : Array[token]
       while @lens.more? || !@pending_tokens.empty?
-        # if Aua.testing?
         Aua.logger.debug "Lens -- #{@lens.describe}"
         if @pending_tokens.empty?
           Aua.logger.debug "No pending tokens, consuming next character."

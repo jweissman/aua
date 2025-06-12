@@ -49,7 +49,7 @@ module Aua
 
           hydrate(file_path)
           miss do |key, val|
-            warn "Cache miss for key: #{key}" if Aua.testing?
+            warn "Cache miss for key: #{key}"
             append_to_cache_file(key, val, file_path)
             val
           end
@@ -106,7 +106,7 @@ module Aua
         def hydrate_line(line)
           entry = JSON.parse(line, symbolize_names: true)
           if @cache.key?(entry[:key])
-            Aua.logger.info "Cache already contains key: #{entry[:key]}" if Aua.testing?
+            Aua.logger.info "Cache already contains key: #{entry[:key]}"
             return
           end
           @cache[entry[:key]] = entry[:value]
@@ -116,10 +116,10 @@ module Aua
 
         def dump(file_path)
           FileUtils.mkdir_p(File.dirname(file_path))
-          File.open(file_path, "w") do |file|
+          File.open(file_path, "w") do |_file|
             @cache.each do |key, val|
               entry = { key:, value: val }
-              file.Aua.logger.info(entry.to_json)
+              Aua.logger.info(entry.to_json)
             end
           end
         end
@@ -128,12 +128,12 @@ module Aua
 
         def append_to_cache_file(key, val, file_path)
           FileUtils.mkdir_p(File.dirname(file_path))
-          File.open(file_path, "a") do |file|
+          File.open(file_path, "a") do |_file|
             entry = { key:, value: val }
-            Aua.logger.info "Appending to cache file: #{file_path} [#{key} => #{val}]" if Aua.testing?
-            file.Aua.logger.info(entry.to_json)
+            Aua.logger.info "Appending to cache file: #{file_path} [#{key} => #{val}]"
+            Aua.logger.info(entry.to_json)
           end
-          Aua.logger.info "Appended to cache file at #{file_path} [#{key} => #{val}]" if Aua.testing?
+          Aua.logger.info "Appended to cache file at #{file_path} [#{key} => #{val}]"
           val
         rescue StandardError => e
           Aua.logger.info "Failed to append to cache file: #{e.message}"
@@ -255,17 +255,17 @@ module Aua
         def call
           request(prompt:, model:, generation:)
         rescue Error => e
-          Aua.logger.info "Error during LLM request: #{e.message}" if Aua.testing?
+          Aua.logger.info "Error during LLM request: #{e.message}"
           raise e
         rescue StandardError => e
-          Aua.logger.info "Unexpected error during LLM request: #{e.message}" if Aua.testing?
+          Aua.logger.info "Unexpected error during LLM request: #{e.message}"
           raise Error, "Failed to get response from LLM provider: #{e.message}"
         end
 
         private
 
         def request(prompt:, model: Aua.configuration.model, generation: nil)
-          Aua.logger.info "Requesting LLM completion for prompt: '#{prompt}' with model: '#{model}'" if Aua.testing?
+          Aua.logger.info "Requesting LLM completion for prompt: '#{prompt}' with model: '#{model}'"
           uri = URI("#{@base_uri}/chat/completions")
           t0 = ::Time.now # ::Time
           response = post(uri, request_body(prompt, model:, generation:).to_json)
@@ -345,7 +345,7 @@ module Aua
 
       def ask(prompt)
         resp = @provider.chat_completion(prompt:)
-        Aua.logger.info resp.inspect if Aua.testing?
+        Aua.logger.info resp.inspect
         Aua.logger.info resp
 
         resp.message
