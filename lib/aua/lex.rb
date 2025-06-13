@@ -92,6 +92,7 @@ module Aua
         raise Error, "Double-quoted/interpolated strings must be lexed with a block." if quote == '"'
 
         # Simple or generative string logic
+
         chars = consume_string_chars(quote)
         unless current_char == quote.chars.last
           raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe
@@ -136,6 +137,7 @@ module Aua
       end
 
       def encode_string(val, quote:)
+        Aua.logger.info "[Recognizer#encode_string] Encoding string with quote: #{quote.inspect}, value: #{val.inspect}"
         case quote
         when "'" then t :simple_str, val
         when "`" then t :raw_str, val
@@ -169,6 +171,20 @@ module Aua
 
     # Dispatch manager (lexing entrypoints / first-level handlers).
     class Handler
+      class StringMachine
+        def initialize(lexer)
+          @lexer = lexer
+        end
+
+        def advance(inc = 1) = @lexer.advance(inc)
+        def current_char = @lexer.lens.current_char
+        def next_char = @lexer.lens.peek
+        def next_next_char = @lexer.lens.peek_n(2).last
+        def current_pos = @lexer.lens.current_pos
+      end
+
+      # Initializes the handler with the lexer instance.
+
       def initialize(lexer)
         @lexer = lexer
       end
@@ -185,35 +201,71 @@ module Aua
       using Rainbow
 
       def string(quote)
-        if quote == '"'
+        Aua.logger.info "[Handler#string] Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
+        Aua.logger.info "[Handler#string] Current character: #{current_char.inspect}, next character: #{next_char.inspect}"
+
+        if quote == '"""'
+          # Track if we see any interpolation
+          @saw_interpolation = false
+        end
+
+        if ['"', '"""'].include?(quote)
           @string_pending ||= [] # : Array[token]
           @string_mode ||= :start
           @string_buffer ||= ""
+          @string_quote = quote
           max_len = 1024
 
           # Always return from the pending queue if not empty
           return @string_pending.shift unless @string_pending.empty?
 
           loop do
-            Aua.logger.debug "[Handler#string] mode=\\#{@string_mode.inspect}, current_char=\\#{current_char.inspect}, buffer=\\#{@string_buffer.inspect}"
+            Aua.logger.info "#{quote} [#{@string_mode}] curr/next/skip=[ #{current_char} #{next_char} #{next_next_char} ]"
+            Aua.logger.debug "[Handler#string] mode=\#{@string_mode.inspect}, current_char=\#{current_char.inspect}, buffer=\#{@string_buffer.inspect}"
             case @string_mode
             when :start
               @string_buffer = ""
-              advance
+              if quote == '"""'
+                advance(3)
+              else
+                advance
+              end
               @string_mode = :body
             when :body
-              if ["", '"'].include?(current_char)
+              if quote == '"""'
+                # End only if we see three consecutive quotes
+                if current_char == '"' && next_char == '"' && next_next_char == '"'
+                  Aua.logger.info "close str -- mode=body, gen=#{quote == '"""'}"
+                  Aua.logger.info "saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@string_buffer.inspect}"
+                  token = if @saw_interpolation
+                            t(:str_part, @string_buffer) unless @string_buffer.empty?
+                          else
+                            # Plain generative string, emit :gen_lit and reset state
+                            @string_mode = nil
+                            t(:gen_lit, @string_buffer)
+                          end
+                  @string_buffer = nil
+                  @string_mode = :end
+                  advance(3)
+                  Aua.logger.info "[Handler#string] ending with token type=#{token&.type}"
+                  return token if token
+
+                  next
+                end
+              elsif ["", '"'].include?(current_char)
                 token = t(:str_part, @string_buffer) unless @string_buffer.empty?
                 @string_buffer = nil
                 @string_mode = :end
                 return token if token
 
                 next
-              elsif current_char == "\\" && next_char == '"'
+              end
+              if current_char == "\\" && next_char == '"'
                 @string_buffer << '"'
                 advance(2)
               elsif current_char == "$" && next_char == "{"
-                Aua.logger.debug "[Handler#string] Found interpolation start at pos=\\#{current_pos}, buffer=\\#{@string_buffer.inspect}"
+                @saw_interpolation = true if quote == '"""'
+                Aua.logger.debug "[Handler#string] Found interpolation start at pos=\#{current_pos}, buffer=\#{@string_buffer.inspect}"
                 advance(2)
                 token = t(:str_part, @string_buffer) unless @string_buffer.empty?
                 @string_buffer = ""
@@ -230,10 +282,14 @@ module Aua
                 end
               end
             when :end
+              # For triple-quoted strings, if we never saw interpolation, emit :gen_lit
+              if quote == '"""' && !@saw_interpolation
+                @string_mode = nil
+                return recognize.string('"""')
+              end
               Aua.logger.info "[Handler#string] mode=end, returning :str_end"
               advance
               @string_mode = nil
-              # @inside_string = false
               @string_pending&.clear
               return t(:str_end, "")
             end
@@ -243,7 +299,7 @@ module Aua
         end
       end
 
-      def prompt(_) = recognize.string('"""')
+      def prompt(_) = string('"""') # recognize.string('"""')
       def number(_) = recognize.number_lit
 
       def minus(_)

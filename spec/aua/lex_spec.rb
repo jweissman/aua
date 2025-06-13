@@ -214,6 +214,7 @@ module Aua
         end
 
         it "lexes" do
+          puts "Tokens: #{tokens.map { |t| [t.type, t.value] }}"
           str_token = tokens.find { |t| t.type == :gen_lit }
           expect(str_token).not_to be_nil
           expect(str_token.value).to start_with("The current day is ")

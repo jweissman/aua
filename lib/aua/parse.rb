@@ -190,14 +190,18 @@ module Aua
       while @current_token.type != :eos && @current_token.type != :eof
         # Skip any leading :eos tokens (blank lines, etc.)
         advance while @current_token.type == :eos
-        break if %i[eos].include?(@current_token.type)
+        # Skip stray :str_end tokens at the top level (from string lexing)
+        advance while @current_token.type == :str_end
+        break if %i[eos eof].include?(@current_token.type)
 
         statement = parse_expression
         raise Error, "Unexpected end of input while parsing statements" if statement.nil?
 
-        info "Parsed statement: #{statement.inspect}"
+        info "Parsed statement: \\#{statement.inspect}"
         statements << statement
         advance while @current_token.type == :eos
+        # Also skip any stray :str_end tokens after a statement
+        advance while @current_token.type == :str_end
       end
 
       # return s(:nihil) if statements.empty?
@@ -243,7 +247,7 @@ module Aua
         if @current_token.type == :comma
           consume(:comma)
           info " - Consumed comma, expecting more args"
-        elsif %i[eos eof].include?(@current_token.type)
+        elsif %i[eos eof interpolation_end].include?(@current_token.type)
           info " - End of arguments reached"
           break
         else
@@ -338,7 +342,22 @@ module Aua
 
       # Handle structured/interpolated strings
       if @current_token.type == :str_part
-        return parse_structured_str # @type var parts: Array[AST::Node]
+        # Heuristic: if the previous token was a prompt (triple-quoted), treat as structured_gen_lit
+        # Since the lexer now emits str_part/interpolation_start for triple-quoted with interpolation,
+        # we can always wrap structured/interpolated strings in :structured_gen_lit if the input was triple-quoted.
+        parts = parse_structured_str
+        return parts unless @last_string_was_triple_quoted
+
+        @last_string_was_triple_quoted = false
+        return s(:structured_gen_lit, parts.value)
+
+      end
+
+      # Detect triple-quoted string start
+      if @current_token.type == :prompt
+        @last_string_was_triple_quoted = true
+        advance
+        return parse_primary
       end
 
       primitives = Primitives.new(self)
