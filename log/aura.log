@@ -1,69 +1,378 @@
-[30m        spec[0m | Initializing Aua interpreter with env: {}
-[30m        spec[0m | Running Aua interpreter with code: "name = \"Alice\"; \"\"\"Please write a short story about ${name}\"\"\""
-[30m  aura:parse[0m | parse-expr | Current token: id (name)
-[30m        spec[0m | [Handler#string] Current character: "\"", next character: "A"
-[30m        spec[0m | " [start] curr/next/skip=[ " A l ]
-[30m        spec[0m | [Handler#string] StringMachine returned nil, continuing in mode=:body
-[30m        spec[0m | " [body] curr/next/skip=[ A l i ]
-[30m        spec[0m | " [body] curr/next/skip=[ l i c ]
-[30m        spec[0m | " [body] curr/next/skip=[ i c e ]
-[30m        spec[0m | " [body] curr/next/skip=[ c e " ]
-[30m        spec[0m | " [body] curr/next/skip=[ e " ; ]
-[30m        spec[0m | " [body] curr/next/skip=[ " ;   ]
-[30m  aura:parse[0m | parse-expr | Current token: str_part (Alice)
-[30m        spec[0m | [Handler#string] Current character: "\"", next character: ";"
-[30m        spec[0m | " [end] curr/next/skip=[ " ;   ]
-[30m        spec[0m | [Handler#string] mode=end, returning :str_end
-[30m  aura:parse[0m | Parsed statement: \assign (["name", str ("Alice" )] )
-[30m        spec[0m | [Handler#string] Current character: "\"", next character: "\""
-[30m        spec[0m | """ [start] curr/next/skip=[ " " " ]
-[30m        spec[0m | [Handler#string] StringMachine returned nil, continuing in mode=:body
-[30m        spec[0m | """ [body] curr/next/skip=[ P l e ]
-[30m        spec[0m | """ [body] curr/next/skip=[ l e a ]
-[30m        spec[0m | """ [body] curr/next/skip=[ e a s ]
-[30m        spec[0m | """ [body] curr/next/skip=[ a s e ]
-[30m        spec[0m | """ [body] curr/next/skip=[ s e   ]
-[30m        spec[0m | """ [body] curr/next/skip=[ e   w ]
-[30m        spec[0m | """ [body] curr/next/skip=[   w r ]
-[30m        spec[0m | """ [body] curr/next/skip=[ w r i ]
-[30m        spec[0m | """ [body] curr/next/skip=[ r i t ]
-[30m        spec[0m | """ [body] curr/next/skip=[ i t e ]
-[30m        spec[0m | """ [body] curr/next/skip=[ t e   ]
-[30m        spec[0m | """ [body] curr/next/skip=[ e   a ]
-[30m        spec[0m | """ [body] curr/next/skip=[   a   ]
-[30m        spec[0m | """ [body] curr/next/skip=[ a   s ]
-[30m        spec[0m | """ [body] curr/next/skip=[   s h ]
-[30m        spec[0m | """ [body] curr/next/skip=[ s h o ]
-[30m        spec[0m | """ [body] curr/next/skip=[ h o r ]
-[30m        spec[0m | """ [body] curr/next/skip=[ o r t ]
-[30m        spec[0m | """ [body] curr/next/skip=[ r t   ]
-[30m        spec[0m | """ [body] curr/next/skip=[ t   s ]
-[30m        spec[0m | """ [body] curr/next/skip=[   s t ]
-[30m        spec[0m | """ [body] curr/next/skip=[ s t o ]
-[30m        spec[0m | """ [body] curr/next/skip=[ t o r ]
-[30m        spec[0m | """ [body] curr/next/skip=[ o r y ]
-[30m        spec[0m | """ [body] curr/next/skip=[ r y   ]
-[30m        spec[0m | """ [body] curr/next/skip=[ y   a ]
-[30m        spec[0m | """ [body] curr/next/skip=[   a b ]
-[30m        spec[0m | """ [body] curr/next/skip=[ a b o ]
-[30m        spec[0m | """ [body] curr/next/skip=[ b o u ]
-[30m        spec[0m | """ [body] curr/next/skip=[ o u t ]
-[30m        spec[0m | """ [body] curr/next/skip=[ u t   ]
-[30m        spec[0m | """ [body] curr/next/skip=[ t   $ ]
-[30m        spec[0m | """ [body] curr/next/skip=[   $ { ]
-[30m        spec[0m | """ [body] curr/next/skip=[ $ { n ]
-[30m  aura:parse[0m | parse-expr | Current token: str_part (Please write a short story about )
-[30m  aura:parse[0m | parse-expr | Current token: id (name)
-[30m  aura:parse[0m | Parsing command with ID: name
-[30m  aura:parse[0m | - Consumed command ID: name
-[30m  aura:parse[0m | - Parsed arguments: []
-[30m  aura:parse[0m | - No arguments found, restoring state and returning nil..
-[30m        spec[0m | [Handler#string] Current character: "\"", next character: "\""
-[30m        spec[0m | """ [body] curr/next/skip=[ " " " ]
-[30m        spec[0m | close str -- mode=body, gen=true
-[30m        spec[0m | saw_interpolation=false, buffer=""
-[30m        spec[0m | [Handler#string] ending with token type=gen_lit
-[30m  aura:parse[0m | Parsed statement: \structured_gen_lit ([str ("Please write a short story about " ), id ("name" )] )
+[30m        spec[0m | Invalid token: unexpected character at line 1, column 1:
+
+.
+^
+The character \"." is not valid in the current context.
+[30m        spec[0m | Invalid token: unexpected character at line 1, column 8:
+
+x = 42 @ unexpected
+       ^
+The character \"@" is not valid in the current context.
+[30m        spec[0m | Invalid token: unexpected character at line 1, column 1:
+
+.42
+^
+The character \"." is not valid in the current context.
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "&kDg"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "#q[n?=pg"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "%"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "S.v`2"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "d"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "ecj\nZgcq"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "~QBn"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "\\\vne"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "<\b\t*"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "\n\bDWe5"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "/p,M_"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "X`&"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "/V"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "9\r%7"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "^"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "pO20b"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "OjJ"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "\r\f?\aRL"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "\r>aC!Lo8"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "rWzU"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "w4"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "IYKknWq"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "M"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "F0pCc0C"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "1W-%.~"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "dC~9"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "9Riw+,"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "DRr\v]og3"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "tSk\eH\v}S"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "l\r}g]"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "EEG@-.L"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "F$"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ")"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "fIW"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "PV:\a"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "22F"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "\n29r"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "e"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "hello"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: ""
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "now"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "hello"
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "hello"
+[30m        spec[0m | LET ["_", <Aua::Int 123>]
+[30m        spec[0m | Resolving object: <Aua::Int 123>
+[30m        spec[0m | Setting variable _ to <Aua::Int 123>
+[30m        spec[0m | LET ["_", <Aua::Int -42>]
+[30m        spec[0m | Resolving object: <Aua::Int -42>
+[30m        spec[0m | Setting variable _ to <Aua::Int -42>
+[30m        spec[0m | LET ["_", <Aua::Int -42>]
+[30m        spec[0m | Resolving object: <Aua::Int -42>
+[30m        spec[0m | Setting variable _ to <Aua::Int -42>
+[30m        spec[0m | LET ["_", <Aua::Float 3.14>]
+[30m        spec[0m | Resolving object: <Aua::Float 3.14>
+[30m        spec[0m | Setting variable _ to <Aua::Float 3.14>
+[30m        spec[0m | LET ["_", <Aua::Bool true>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Setting variable _ to <Aua::Bool true>
+[30m        spec[0m | LET ["_", <Aua::Bool true>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Setting variable _ to <Aua::Bool true>
+[30m        spec[0m | Reifying string: str ("hello" )
+[30m        spec[0m | LET ["_", <Aua::Str [30mhello"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mhello"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhello"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mhello"[0m>
+[30m        spec[0m | LET ["_", <Aua::Nihil >]
+[30m        spec[0m | Resolving object: <Aua::Nihil >
+[30m        spec[0m | Setting variable _ to <Aua::Nihil >
+[30m        spec[0m | LET ["_", <Aua::Bool true>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Setting variable _ to <Aua::Bool true>
+[30m        spec[0m | LET ["_", <Aua::Bool true>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Setting variable _ to <Aua::Bool true>
+[30m        spec[0m | LET ["_", <Aua::Int 123>]
+[30m        spec[0m | Resolving object: <Aua::Int 123>
+[30m        spec[0m | Setting variable _ to <Aua::Int 123>
+[30m        spec[0m | LET ["_", <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Setting variable _ to <Aua::Int 42>
+[30m        spec[0m | LET ["_", <Aua::Int 123>]
+[30m        spec[0m | Resolving object: <Aua::Int 123>
+[30m        spec[0m | Setting variable _ to <Aua::Int 123>
+[30m        spec[0m | LET ["_", <Aua::Float -3.14>]
+[30m        spec[0m | Resolving object: <Aua::Float -3.14>
+[30m        spec[0m | Setting variable _ to <Aua::Float -3.14>
+[30m        spec[0m | LET ["_", <Aua::Float -3.14>]
+[30m        spec[0m | Resolving object: <Aua::Float -3.14>
+[30m        spec[0m | Setting variable _ to <Aua::Float -3.14>
+[30m        spec[0m | Translating sequence: []
+[30m        spec[0m | ID ["foo"]
+[30m        spec[0m | Getting variable foo
+[30m        spec[0m | Reifying string: str ("hello world" )
+[30m        spec[0m | LET ["_", <Aua::Str [30mhello world"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | LET ["x", <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Setting variable x to <Aua::Int 42>
+[30m        spec[0m | LET ["_", <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Setting variable _ to <Aua::Int 42>
+[30m        spec[0m | LET ["x", <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Setting variable x to <Aua::Int 42>
+[30m        spec[0m | LET ["_", <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Setting variable _ to <Aua::Int 42>
+[30m        spec[0m | LET ["x", <Aua::Int 100>]
+[30m        spec[0m | Resolving object: <Aua::Int 100>
+[30m        spec[0m | Setting variable x to <Aua::Int 100>
+[30m        spec[0m | LET ["_", <Aua::Int 100>]
+[30m        spec[0m | Resolving object: <Aua::Int 100>
+[30m        spec[0m | Setting variable _ to <Aua::Int 100>
+[30m        spec[0m | Reifying string: str ("Alice" )
+[30m        spec[0m | LET ["name", <Aua::Str [30mAlice"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Setting variable name to <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | LET ["_", <Aua::Str [30mAlice"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Translating binop: binop ([:plus, int (1 ), int (2 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 3>]
+[30m        spec[0m | Resolving object: <Aua::Int 3>
+[30m        spec[0m | Setting variable _ to <Aua::Int 3>
+[30m        spec[0m | Translating binop: binop ([:minus, int (5 ), int (3 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 2>]
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | Setting variable _ to <Aua::Int 2>
+[30m        spec[0m | Translating binop: binop ([:star, int (4 ), int (2 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 8>]
+[30m        spec[0m | Resolving object: <Aua::Int 8>
+[30m        spec[0m | Setting variable _ to <Aua::Int 8>
+[30m        spec[0m | Translating binop: binop ([:slash, int (8 ), int (2 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 4>]
+[30m        spec[0m | Resolving object: <Aua::Int 4>
+[30m        spec[0m | Setting variable _ to <Aua::Int 4>
+[30m        spec[0m | Translating binop: binop ([:slash, int (1 ), int (0 )] )
+[30m        spec[0m | Translating binop: binop ([:plus, float (1.5 ), float (2.5 )] )
+[30m        spec[0m | LET ["_", <Aua::Float 4.0>]
+[30m        spec[0m | Resolving object: <Aua::Float 4.0>
+[30m        spec[0m | Setting variable _ to <Aua::Float 4.0>
+[30m        spec[0m | Translating binop: binop ([:minus, float (5.5 ), float (3.5 )] )
+[30m        spec[0m | LET ["_", <Aua::Float 2.0>]
+[30m        spec[0m | Resolving object: <Aua::Float 2.0>
+[30m        spec[0m | Setting variable _ to <Aua::Float 2.0>
+[30m        spec[0m | Translating binop: binop ([:star, float (4.0 ), float (2.0 )] )
+[30m        spec[0m | LET ["_", <Aua::Float 8.0>]
+[30m        spec[0m | Resolving object: <Aua::Float 8.0>
+[30m        spec[0m | Setting variable _ to <Aua::Float 8.0>
+[30m        spec[0m | Translating binop: binop ([:slash, float (8.0 ), float (2.0 )] )
+[30m        spec[0m | LET ["_", <Aua::Float 4.0>]
+[30m        spec[0m | Resolving object: <Aua::Float 4.0>
+[30m        spec[0m | Setting variable _ to <Aua::Float 4.0>
+[30m        spec[0m | Translating binop: binop ([:plus, str ("hello" ), str (" world" )] )
+[30m        spec[0m | Reifying string: str ("hello" )
+[30m        spec[0m | Reifying string: str (" world" )
+[30m        spec[0m | LET ["_", <Aua::Str [30mhello world"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Translating binop: binop ([:plus, str ("hello" ), int (42 )] )
+[30m        spec[0m | Reifying string: str ("hello" )
+[30m        spec[0m | SEND [<Aua::Str [30mhello"[0m>, :+, <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mhello"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhello"[0m>
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Translating binop: binop ([:plus, bool (true ), bool (false )] )
+[30m        spec[0m | SEND [<Aua::Bool true>, :+, <Aua::Bool true>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Translating binop: binop ([:pow, int (2 ), int (3 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 8>]
+[30m        spec[0m | Resolving object: <Aua::Int 8>
+[30m        spec[0m | Setting variable _ to <Aua::Int 8>
+[30m        spec[0m | Translating binop: binop ([:pow, float (0.2 ), float (3.14159265 )] )
+[30m        spec[0m | LET ["_", <Aua::Float 0.0063697292365708005>]
+[30m        spec[0m | Resolving object: <Aua::Float 0.0063697292365708005>
+[30m        spec[0m | Setting variable _ to <Aua::Float 0.0063697292365708005>
+[30m        spec[0m | LET ["x", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable x to <Aua::Int 5>
+[30m        spec[0m | LET ["_", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable _ to <Aua::Int 5>
+[30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (3 )] )
+[30m        spec[0m | SEND [[ID ["x"]], :+, <Aua::Int 3>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 3>
+[30m        spec[0m | LET ["_", <Aua::Int 8>]
+[30m        spec[0m | Resolving object: <Aua::Int 8>
+[30m        spec[0m | Setting variable _ to <Aua::Int 8>
+[30m        spec[0m | LET ["x", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Setting variable x to <Aua::Int 10>
+[30m        spec[0m | LET ["_", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Setting variable _ to <Aua::Int 10>
+[30m        spec[0m | Translating binop: binop ([:minus, id ("x" ), int (4 )] )
+[30m        spec[0m | SEND [[ID ["x"]], :-, <Aua::Int 4>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 4>
+[30m        spec[0m | LET ["_", <Aua::Int 6>]
+[30m        spec[0m | Resolving object: <Aua::Int 6>
+[30m        spec[0m | Setting variable _ to <Aua::Int 6>
+[30m        spec[0m | LET ["x", <Aua::Int 7>]
+[30m        spec[0m | Resolving object: <Aua::Int 7>
+[30m        spec[0m | Setting variable x to <Aua::Int 7>
+[30m        spec[0m | LET ["_", <Aua::Int 7>]
+[30m        spec[0m | Resolving object: <Aua::Int 7>
+[30m        spec[0m | Setting variable _ to <Aua::Int 7>
+[30m        spec[0m | Translating binop: binop ([:star, id ("x" ), int (2 )] )
+[30m        spec[0m | SEND [[ID ["x"]], :*, <Aua::Int 2>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | LET ["_", <Aua::Int 14>]
+[30m        spec[0m | Resolving object: <Aua::Int 14>
+[30m        spec[0m | Setting variable _ to <Aua::Int 14>
+[30m        spec[0m | LET ["x", <Aua::Int 20>]
+[30m        spec[0m | Resolving object: <Aua::Int 20>
+[30m        spec[0m | Setting variable x to <Aua::Int 20>
+[30m        spec[0m | LET ["_", <Aua::Int 20>]
+[30m        spec[0m | Resolving object: <Aua::Int 20>
+[30m        spec[0m | Setting variable _ to <Aua::Int 20>
+[30m        spec[0m | Translating binop: binop ([:slash, id ("x" ), int (4 )] )
+[30m        spec[0m | SEND [[ID ["x"]], :/, <Aua::Int 4>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 4>
+[30m        spec[0m | LET ["_", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable _ to <Aua::Int 5>
+[30m        spec[0m | Translating binop: binop ([:pow, int (2 ), binop ([:pow, int (3 ), int (2 )] )] )
+[30m        spec[0m | Translating binop: binop ([:pow, int (3 ), int (2 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 512>]
+[30m        spec[0m | Resolving object: <Aua::Int 512>
+[30m        spec[0m | Setting variable _ to <Aua::Int 512>
+[30m        spec[0m | Translating binop: binop ([:minus, binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] ), binop ([:slash, int (5 ), int (5 )] )] )
+[30m        spec[0m | Translating binop: binop ([:plus, int (2 ), binop ([:star, int (3 ), int (4 )] )] )
+[30m        spec[0m | Translating binop: binop ([:star, int (3 ), int (4 )] )
+[30m        spec[0m | Translating binop: binop ([:slash, int (5 ), int (5 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 13>]
+[30m        spec[0m | Resolving object: <Aua::Int 13>
+[30m        spec[0m | Setting variable _ to <Aua::Int 13>
+[30m        spec[0m | Translating binop: binop ([:plus, binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] ), int (1 )] )
+[30m        spec[0m | Translating binop: binop ([:minus, int (10 ), binop ([:pow, int (2 ), int (3 )] )] )
+[30m        spec[0m | Translating binop: binop ([:pow, int (2 ), int (3 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 3>]
+[30m        spec[0m | Resolving object: <Aua::Int 3>
+[30m        spec[0m | Setting variable _ to <Aua::Int 3>
+[30m        spec[0m | Translating binop: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
+[30m        spec[0m | Translating binop: binop ([:plus, int (1 ), int (2 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 9>]
+[30m        spec[0m | Resolving object: <Aua::Int 9>
+[30m        spec[0m | Setting variable _ to <Aua::Int 9>
+[30m        spec[0m | Translating binop: binop ([:star, int (2 ), binop ([:plus, int (3 ), int (4 )] )] )
+[30m        spec[0m | Translating binop: binop ([:plus, int (3 ), int (4 )] )
+[30m        spec[0m | LET ["_", <Aua::Int 14>]
+[30m        spec[0m | Resolving object: <Aua::Int 14>
+[30m        spec[0m | Setting variable _ to <Aua::Int 14>
+[30m        spec[0m | Translating binop: binop ([:plus, str ("Hello, " ), str ("world!" )] )
+[30m        spec[0m | Reifying string: str ("Hello, " )
+[30m        spec[0m | Reifying string: str ("world!" )
+[30m        spec[0m | LET ["_", <Aua::Str [30mHello, world!"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mHello, world!"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mHello, world!"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mHello, world!"[0m>
+[30m        spec[0m | Reifying string: str ("Alice" )
+[30m        spec[0m | LET ["name", <Aua::Str [30mAlice"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Setting variable name to <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | LET ["_", <Aua::Str [30mAlice"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Translating structured string: structured_str ([str ("Hello, " ), id ("name" ), str ("!" )] )
+[30m        spec[0m | Translating part: str ("Hello, " )
+[30m        spec[0m | Reifying string: str ("Hello, " )
+[30m        spec[0m | Translating part: id ("name" )
+[30m        spec[0m | Translating part: str ("!" )
+[30m        spec[0m | Reifying string: str ("!" )
+[30m        spec[0m | Structured string parts: ["Hello, ", ID ["name"], "!"]
+[30m        spec[0m | CAT ["Hello, ", ID ["name"], "!"]
+[30m        spec[0m | Concatenating parts: ["Hello, ", ID ["name"], "!"]
+[30m        spec[0m | ID ["name"]
+[30m        spec[0m | Getting variable name
+[30m        spec[0m | LET ["_", <Aua::Str [30mHello, Alice!"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mHello, Alice!"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mHello, Alice!"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mHello, Alice!"[0m>
+[30m        spec[0m | Translating sequence: [assign (["x", int (5 )] ), assign (["y", int (10 )] )]
+[30m        spec[0m | LET ["x", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable x to <Aua::Int 5>
+[30m        spec[0m | LET ["y", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Setting variable y to <Aua::Int 10>
+[30m        spec[0m | LET ["_", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Setting variable _ to <Aua::Int 10>
+[30m        spec[0m | Translating structured string: structured_str ([str ("The values are " ), id ("x" ), str (" and " ), id ("y" )] )
+[30m        spec[0m | Translating part: str ("The values are " )
+[30m        spec[0m | Reifying string: str ("The values are " )
+[30m        spec[0m | Translating part: id ("x" )
+[30m        spec[0m | Translating part: str (" and " )
+[30m        spec[0m | Reifying string: str (" and " )
+[30m        spec[0m | Translating part: id ("y" )
+[30m        spec[0m | Structured string parts: ["The values are ", ID ["x"], " and ", ID ["y"]]
+[30m        spec[0m | CAT ["The values are ", ID ["x"], " and ", ID ["y"]]
+[30m        spec[0m | Concatenating parts: ["The values are ", ID ["x"], " and ", ID ["y"]]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Converting object to string: <Aua::Int 5>
+[30m        spec[0m | ID ["y"]
+[30m        spec[0m | Getting variable y
+[30m        spec[0m | Converting object to string: <Aua::Int 10>
+[30m        spec[0m | LET ["_", <Aua::Str [30mThe values are 5 and 10"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mThe values are 5 and 10"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mThe values are 5 and 10"[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mThe values are 5 and 10"[0m>
+[30m        spec[0m | IF [<Aua::Bool true>, <Aua::Int 1>, <Aua::Int 2>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Resolving object: <Aua::Int 1>
+[30m        spec[0m | LET ["_", <Aua::Int 1>]
+[30m        spec[0m | Resolving object: <Aua::Int 1>
+[30m        spec[0m | Setting variable _ to <Aua::Int 1>
+[30m        spec[0m | IF [<Aua::Bool true>, <Aua::Int 1>, <Aua::Int 2>]
+[30m        spec[0m | Resolving object: <Aua::Bool true>
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | LET ["_", <Aua::Int 2>]
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | Setting variable _ to <Aua::Int 2>
+[30m        spec[0m | >>> What is the name of the physical phenomena responsible for the sky being blue?
+[30m        spec[0m | Generating key for prompt: 'What is the name of the physical phenomena responsible for the sky being blue?' => 1d0f0fd14..
+[30m        spec[0m | Using cache file path: /home/jweissman/work/games/aua/.aua/test/responses.json
+[30m        spec[0m | LLM response cache loaded 3 entries
+[30m        spec[0m | Setting cache miss lambda...
+[30m        spec[0m | Fetching from cache for key: 1d0f0fd14759bf77ea4b2ed014b929268e87f4e2b0cccf38961ecd632147c0a0 (missed: false)
+[30m        spec[0m | <<< The phenomenon responsible for the sky being blue is called Rayleigh scattering.  [30m(1.0 seconds)[0m
+[30m        spec[0m | LET ["_", <Aua::Str [30mThe phenomenon responsible for the sky being blue is called Rayleigh scattering....[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mThe phenomenon responsible for the sky being blue is called Rayleigh scattering....[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mThe phenomenon responsible for the sky being blue is called Rayleigh scattering....[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mThe phenomenon responsible for the sky being blue is called Rayleigh scattering....[0m>
 [30m        spec[0m | Translating sequence: [assign (["name", str ("Alice" )] ), structured_gen_lit ([str ("Please write a short story about " ), id ("name" )] )]
 [30m        spec[0m | Reifying string: str ("Alice" )
 [30m        spec[0m | Translating structured string: structured_gen_lit ([str ("Please write a short story about " ), id ("name" )] )
@@ -71,40 +380,162 @@
 [30m        spec[0m | Reifying string: str ("Please write a short story about " )
 [30m        spec[0m | Translating part: id ("name" )
 [30m        spec[0m | Structured string parts: ["Please write a short story about ", ID ["name"]]
-[30m        spec[0m | LET ["name", <Aua::Str "Alice">]
-[30m        spec[0m | Resolving object: <Aua::Str "Alice">
-[30m        spec[0m | Interpolating string: <Aua::Str "Alice">
-[30m        spec[0m | Setting variable name to <Aua::Str "Alice">
+[30m        spec[0m | LET ["name", <Aua::Str [30mAlice"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mAlice"[0m>
+[30m        spec[0m | Setting variable name to <Aua::Str [30mAlice"[0m>
 [30m        spec[0m | GEN [CAT ["Please write a short story about ", ID ["name"]]]
 [30m        spec[0m | CAT ["Please write a short story about ", ID ["name"]]
 [30m        spec[0m | Concatenating parts: ["Please write a short story about ", ID ["name"]]
 [30m        spec[0m | ID ["name"]
 [30m        spec[0m | Getting variable name
-[30m        spec[0m | Asking question: <Aua::Str "Please write a short story about Alice">
-[30m        spec[0m | Cache already contains key: 1d0f0fd14759bf77ea4b2ed014b929268e87f4e2b0cccf38961ecd632147c0a0
-[30m        spec[0m | Cache already contains key: c9b11ba558a7302658314d171cf52146a73b3bba84dd6406548ed0dec5c3c3af
-[30m        spec[0m | Requesting LLM completion for prompt: 'Please write a short story about Alice' with model: 'qwen-2.5-1.5b-chat'
-[30m        spec[0m | Appending to cache file: /home/jweissman/work/games/aua/.aua/test/responses.json [0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f => {message: "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.", tokens_used: 225, model: "qwen-2.5-1.5b-chat", prompt: "Please write a short story about Alice", requested_at: 2025-06-14 14:02:06.57902894 -0400, responded_at: 2025-06-14 14:02:08.562992594 -0400, parameters: {temperature: 0.7, max_tokens: 1024, top_p: 0.9, frequency_penalty: 0.0, presence_penalty: 0.0}}]
-[30m        spec[0m | {"key":"0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f","value":{"message":"Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.","tokens_used":225,"model":"qwen-2.5-1.5b-chat","prompt":"Please write a short story about Alice","requested_at":"2025-06-14 14:02:06 -0400","responded_at":"2025-06-14 14:02:08 -0400","parameters":{"temperature":0.7,"max_tokens":1024,"top_p":0.9,"frequency_penalty":0.0,"presence_penalty":0.0}}}
-[30m        spec[0m | Appended to cache file at /home/jweissman/work/games/aua/.aua/test/responses.json [0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f => {message: "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.", tokens_used: 225, model: "qwen-2.5-1.5b-chat", prompt: "Please write a short story about Alice", requested_at: 2025-06-14 14:02:06.57902894 -0400, responded_at: 2025-06-14 14:02:08.562992594 -0400, parameters: {temperature: 0.7, max_tokens: 1024, top_p: 0.9, frequency_penalty: 0.0, presence_penalty: 0.0}}]
-[30m        spec[0m | Appending to cache file: /home/jweissman/work/games/aua/.aua/test/responses.json [0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f => {message: "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.", tokens_used: 225, model: "qwen-2.5-1.5b-chat", prompt: "Please write a short story about Alice", requested_at: 2025-06-14 14:02:06.57902894 -0400, responded_at: 2025-06-14 14:02:08.562992594 -0400, parameters: {temperature: 0.7, max_tokens: 1024, top_p: 0.9, frequency_penalty: 0.0, presence_penalty: 0.0}}]
-[30m        spec[0m | {"key":"0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f","value":{"message":"Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.","tokens_used":225,"model":"qwen-2.5-1.5b-chat","prompt":"Please write a short story about Alice","requested_at":"2025-06-14 14:02:06 -0400","responded_at":"2025-06-14 14:02:08 -0400","parameters":{"temperature":0.7,"max_tokens":1024,"top_p":0.9,"frequency_penalty":0.0,"presence_penalty":0.0}}}
-[30m        spec[0m | Appended to cache file at /home/jweissman/work/games/aua/.aua/test/responses.json [0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f => {message: "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.", tokens_used: 225, model: "qwen-2.5-1.5b-chat", prompt: "Please write a short story about Alice", requested_at: 2025-06-14 14:02:06.57902894 -0400, responded_at: 2025-06-14 14:02:08.562992594 -0400, parameters: {temperature: 0.7, max_tokens: 1024, top_p: 0.9, frequency_penalty: 0.0, presence_penalty: 0.0}}]
-[30m        spec[0m | [36m>>> Please write a short story about Alice[0m
-[34m<<< Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.
-One day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.
-Over the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.
-As a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.[..80][0m [30m(1.98 seconds)[0m
-[35mMODEL[0m [30mqwen-2.5-1.5b-chat[0m | [35mREQUESTED_AT[0m [30m2025-06-14 14:02:06[0m
-[30m        spec[0m | Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.
-One day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.
-Over the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.
-As a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.
-[30m        spec[0m | Response: Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.
-One day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.
-Over the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.
-As a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.
-[30m        spec[0m | LET ["_", <Aua::Str "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.">]
-[30m        spec[0m | Resolving object: <Aua::Str "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.">
-[30m        spec[0m | Interpolating string: <Aua::Str "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.">
-[30m        spec[0m | Setting variable _ to <Aua::Str "Alice was a curious and adventurous young woman who loved to explore the world around her. From a very early age, she had an insatiable appetite for learning new things and discovering new places.\nOne day, while on a long-awaited trip to Europe, Alice stumbled upon a small village in Italy that was known for its ancient ruins and rich history. She immediately knew that this was exactly the kind of place where she wanted to spend her time.\nOver the next few weeks, Alice immersed herself in the local culture, learning about the customs and traditions of the people who called this place home. She took part in local festivals and attended lectures on the history of the area.\nAs a result of her experiences, Alice was able to gain a deep understanding of the world around her and develop a sense of wonder at the diversity of human experience. And she knew that wherever her travels took her next, she would always be ready for new adventures and discoveries.">
+[30m        spec[0m | Posing question to chat: "Please write a short story about Alice" (38 chars, String => String)
+[30m        spec[0m | >>> Please write a short story about Alice
+[30m        spec[0m | Generating key for prompt: 'Please write a short story about Alice' => 0081156fa..
+[30m        spec[0m | Fetching from cache for key: 0081156faf62dc9ae9dad8ea59c4fb5479fd8b75027079f6e9cf5700ab07a09f (missed: false)
+[30m        spec[0m | <<< Alice had always been a curious and adventurous girl. She loved exploring new pla [30m(3.0 seconds)[0m
+[30m        spec[0m | LET ["_", <Aua::Str [30mAlice had always been a curious and adventurous girl. She loved exploring new pl...[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mAlice had always been a curious and adventurous girl. She loved exploring new pl...[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mAlice had always been a curious and adventurous girl. She loved exploring new pl...[0m>
+[30m        spec[0m | Setting variable _ to <Aua::Str [30mAlice had always been a curious and adventurous girl. She loved exploring new pl...[0m>
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "now"
+[30m        spec[0m | Reifying string: simple_str ("now" )
+[30m        spec[0m | CALL ["time", <Aua::Str [30mnow"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mnow"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mnow"[0m>
+[30m        spec[0m | Resolving object: <Aua::Str [30mnow"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mnow"[0m>
+[30m        spec[0m | Current time: 2025-06-14 15:37:35
+[30m        spec[0m | LET ["_", <Aua::Time 2025-06-14 15:37:35>]
+[30m        spec[0m | Resolving object: <Aua::Time 2025-06-14 15:37:35>
+[30m        spec[0m | Setting variable _ to <Aua::Time 2025-06-14 15:37:35>
+[30m        spec[0m | CALL ["rand", <Aua::Int 10>]
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Resolving object: <Aua::Int 10>
+[30m        spec[0m | Generating random number... (max: <Aua::Int 10>)
+[30m        spec[0m | Using max value: 10
+[30m        spec[0m | LET ["_", <Aua::Int 3>]
+[30m        spec[0m | Resolving object: <Aua::Int 3>
+[30m        spec[0m | Setting variable _ to <Aua::Int 3>
+[30m        spec[0m | [Recognizer#encode_string] Encoding string with quote: "'", value: "hi"
+[30m        spec[0m | Reifying string: simple_str ("hi" )
+[30m        spec[0m | CALL ["say", <Aua::Str [30mhi"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mhi"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhi"[0m>
+[30m        spec[0m | Resolving object: <Aua::Str [30mhi"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhi"[0m>
+[30m        spec[0m | LET ["_", <Aua::Nihil >]
+[30m        spec[0m | Resolving object: <Aua::Nihil >
+[30m        spec[0m | Setting variable _ to <Aua::Nihil >
+[30m        spec[0m | Reifying string: str ("hello world" )
+[30m        spec[0m | CALL ["say", <Aua::Str [30mhello world"[0m>]
+[30m        spec[0m | Resolving object: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Resolving object: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mhello world"[0m>
+[30m        spec[0m | LET ["_", <Aua::Nihil >]
+[30m        spec[0m | Resolving object: <Aua::Nihil >
+[30m        spec[0m | Setting variable _ to <Aua::Nihil >
+[30m        spec[0m | >>> hello world
+[30m        spec[0m | Generating key for prompt: 'hello world' => c9b11ba55..
+[30m        spec[0m | Fetching from cache for key: c9b11ba558a7302658314d171cf52146a73b3bba84dd6406548ed0dec5c3c3af (missed: false)
+[30m        spec[0m | <<< Hello! How can I assist you today? [30m(1.0 seconds)[0m
+[30m        spec[0m | CALL ["say", [<Aua::Str [30mHello! How can I assist you today?"[0m>]]
+[30m        spec[0m | Resolving object: <Aua::Str [30mHello! How can I assist you today?"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mHello! How can I assist you today?"[0m>
+[30m        spec[0m | Resolving object: <Aua::Str [30mHello! How can I assist you today?"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mHello! How can I assist you today?"[0m>
+[30m        spec[0m | LET ["_", <Aua::Nihil >]
+[30m        spec[0m | Resolving object: <Aua::Nihil >
+[30m        spec[0m | Setting variable _ to <Aua::Nihil >
+[30m        spec[0m | Translating sequence: [assign (["x", int (5 )] ), assign (["y", binop ([:plus, id ("x" ), int (2 )] )] ), binop ([:star, id ("y" ), int (3 )] )]
+[30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (2 )] )
+[30m        spec[0m | Translating binop: binop ([:star, id ("y" ), int (3 )] )
+[30m        spec[0m | LET ["x", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable x to <Aua::Int 5>
+[30m        spec[0m | LET ["y", [SEND [[ID ["x"]], :+, <Aua::Int 2>]]]
+[30m        spec[0m | SEND [[ID ["x"]], :+, <Aua::Int 2>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | Setting variable y to <Aua::Int 7>
+[30m        spec[0m | SEND [[ID ["y"]], :*, <Aua::Int 3>]
+[30m        spec[0m | ID ["y"]
+[30m        spec[0m | Getting variable y
+[30m        spec[0m | Resolving object: <Aua::Int 3>
+[30m        spec[0m | LET ["_", <Aua::Int 21>]
+[30m        spec[0m | Resolving object: <Aua::Int 21>
+[30m        spec[0m | Setting variable _ to <Aua::Int 21>
+[30m        spec[0m | Translating sequence: [assign (["x", binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )] ), assign (["y", binop ([:minus, id ("x" ), int (4 )] )] ), assign (["z", binop ([:star, id ("y" ), int (2 )] )] ), binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )]
+[30m        spec[0m | Translating binop: binop ([:star, binop ([:plus, int (1 ), int (2 )] ), int (3 )] )
+[30m        spec[0m | Translating binop: binop ([:plus, int (1 ), int (2 )] )
+[30m        spec[0m | Translating binop: binop ([:minus, id ("x" ), int (4 )] )
+[30m        spec[0m | Translating binop: binop ([:star, id ("y" ), int (2 )] )
+[30m        spec[0m | Translating binop: binop ([:plus, binop ([:plus, id ("x" ), id ("y" )] ), id ("z" )] )
+[30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), id ("y" )] )
+[30m        spec[0m | LET ["x", <Aua::Int 9>]
+[30m        spec[0m | Resolving object: <Aua::Int 9>
+[30m        spec[0m | Setting variable x to <Aua::Int 9>
+[30m        spec[0m | LET ["y", [SEND [[ID ["x"]], :-, <Aua::Int 4>]]]
+[30m        spec[0m | SEND [[ID ["x"]], :-, <Aua::Int 4>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 4>
+[30m        spec[0m | Setting variable y to <Aua::Int 5>
+[30m        spec[0m | LET ["z", [SEND [[ID ["y"]], :*, <Aua::Int 2>]]]
+[30m        spec[0m | SEND [[ID ["y"]], :*, <Aua::Int 2>]
+[30m        spec[0m | ID ["y"]
+[30m        spec[0m | Getting variable y
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | Setting variable z to <Aua::Int 10>
+[30m        spec[0m | SEND [[SEND [[ID ["x"]], :+, [ID ["y"]]]], :+, [ID ["z"]]]
+[30m        spec[0m | SEND [[ID ["x"]], :+, [ID ["y"]]]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | ID ["y"]
+[30m        spec[0m | Getting variable y
+[30m        spec[0m | ID ["z"]
+[30m        spec[0m | Getting variable z
+[30m        spec[0m | LET ["_", <Aua::Int 24>]
+[30m        spec[0m | Resolving object: <Aua::Int 24>
+[30m        spec[0m | Setting variable _ to <Aua::Int 24>
+[30m        spec[0m | Translating sequence: [assign (["x", int (5 )] ), assign (["y", binop ([:plus, id ("x" ), int (2 )] )] ), call (["say", [structured_str ([str ("The result is: " ), id ("y" )] )]] )]
+[30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (2 )] )
+[30m        spec[0m | Translating structured string: structured_str ([str ("The result is: " ), id ("y" )] )
+[30m        spec[0m | Translating part: str ("The result is: " )
+[30m        spec[0m | Reifying string: str ("The result is: " )
+[30m        spec[0m | Translating part: id ("y" )
+[30m        spec[0m | Structured string parts: ["The result is: ", ID ["y"]]
+[30m        spec[0m | LET ["x", <Aua::Int 5>]
+[30m        spec[0m | Resolving object: <Aua::Int 5>
+[30m        spec[0m | Setting variable x to <Aua::Int 5>
+[30m        spec[0m | LET ["y", [SEND [[ID ["x"]], :+, <Aua::Int 2>]]]
+[30m        spec[0m | SEND [[ID ["x"]], :+, <Aua::Int 2>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 2>
+[30m        spec[0m | Setting variable y to <Aua::Int 7>
+[30m        spec[0m | CALL ["say", [CAT ["The result is: ", ID ["y"]]]]
+[30m        spec[0m | CAT ["The result is: ", ID ["y"]]
+[30m        spec[0m | Concatenating parts: ["The result is: ", ID ["y"]]
+[30m        spec[0m | ID ["y"]
+[30m        spec[0m | Getting variable y
+[30m        spec[0m | Converting object to string: <Aua::Int 7>
+[30m        spec[0m | Resolving object: <Aua::Str [30mThe result is: 7"[0m>
+[30m        spec[0m | Interpolating string: <Aua::Str [30mThe result is: 7"[0m>
+[30m        spec[0m | LET ["_", <Aua::Nihil >]
+[30m        spec[0m | Resolving object: <Aua::Nihil >
+[30m        spec[0m | Setting variable _ to <Aua::Nihil >
+[30m        spec[0m | Translating sequence: [assign (["x", int (42 )] ), binop ([:plus, id ("x" ), int (1 )] )]
+[30m        spec[0m | Translating binop: binop ([:plus, id ("x" ), int (1 )] )
+[30m        spec[0m | LET ["x", <Aua::Int 42>]
+[30m        spec[0m | Resolving object: <Aua::Int 42>
+[30m        spec[0m | Setting variable x to <Aua::Int 42>
+[30m        spec[0m | SEND [[ID ["x"]], :+, <Aua::Int 1>]
+[30m        spec[0m | ID ["x"]
+[30m        spec[0m | Getting variable x
+[30m        spec[0m | Resolving object: <Aua::Int 1>
+[30m        spec[0m | LET ["_", <Aua::Int 43>]
+[30m        spec[0m | Resolving object: <Aua::Int 43>
+[30m        spec[0m | Setting variable _ to <Aua::Int 43>

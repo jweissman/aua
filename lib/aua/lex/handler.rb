@@ -74,7 +74,7 @@ module Aua
             @mode = nil
             return t(:gen_lit, @buffer)
           end
-          Aua.logger.info "[Handler#string] mode=end, returning :str_end"
+          Aua.logger.debug "[Handler#string] mode=end, returning :str_end"
           advance
           @mode = nil
           @pending_tokens&.clear
@@ -86,8 +86,8 @@ module Aua
 
           # End triple-quoted string
           if @quote == '"""' && current_char == '"' && next_char == '"' && next_next_char == '"'
-            Aua.logger.info "close str -- mode=body, gen=#{@quote == '"""'}"
-            Aua.logger.info "saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@buffer.inspect}"
+            Aua.logger.debug "close str -- mode=body, gen=#{@quote == '"""'}"
+            Aua.logger.debug "saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@buffer.inspect}"
             token = if @saw_interpolation
                       t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
                     else
@@ -97,7 +97,7 @@ module Aua
             @buffer = nil
             @mode = :end
             advance(3)
-            Aua.logger.info "[Handler#string] ending with token type=#{token&.type}"
+            Aua.logger.debug "[Handler#string] ending with token type=#{token&.type}"
             return token if token
             return :continue
           end
@@ -165,8 +165,8 @@ module Aua
       end
 
       def string(quote)
-        # Aua.logger.info "[Handler#string] Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
-        Aua.logger.info "[Handler#string] Current character: #{current_char.inspect}, next character: #{next_char.inspect}"
+        Aua.logger.debug "[Handler#string] Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
+        Aua.logger.debug "[Handler#string] Current character: #{current_char.inspect}, next character: #{next_char.inspect}"
         sm = string_machine
         if quote == '"""'
           sm.saw_interpolation = false
@@ -179,7 +179,7 @@ module Aua
           sm.max_len = 2048
           return sm.pending_tokens.shift unless sm.pending_tokens.empty?
           until (sm.buffer&.length || 0) >= sm.max_len || sm.mode.nil?
-            Aua.logger.info "#{quote} [#{sm.mode}] curr/next/skip=[ #{current_char} #{next_char} #{next_next_char} ]"
+            Aua.logger.debug "#{quote} [#{sm.mode}] curr/next/skip=[ #{current_char} #{next_char} #{next_next_char} ]"
             sm_ret = sm.perform!
             if sm_ret == :continue
               Aua.logger.debug "[Handler#string] Continuing in mode=#{sm.mode.inspect}, buffer=#{sm.buffer.inspect}"
@@ -192,7 +192,7 @@ module Aua
               sm.pending_tokens.concat(sm_ret)
               return sm.pending_tokens.shift
             else
-              Aua.logger.warn "[Handler#string] StringMachine returned #{sm_ret.inspect}, continuing in mode=#{sm.mode.inspect}"
+              Aua.logger.debug "[Handler#string] StringMachine returned #{sm_ret.inspect}, continuing in mode=#{sm.mode.inspect}"
             end
           end
         else

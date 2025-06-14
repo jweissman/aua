@@ -12,5 +12,5 @@
 
 # ignore development interpreter traces/logs/cache/etc
 /.aua
-/log/aua.log
+/log/aura.log
 /log/

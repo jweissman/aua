@@ -333,7 +333,9 @@ module Aua
           Aua::Nihil.new
         },
         ask: lambda { |question| # ie from stdin
-          Aua.logger.info "Asking question: #{question.inspect}"
+          # question = question.first if question.is_a?(Array)
+          question = question.aura_send(:to_s) if question.is_a?(Obj) && !question.is_a?(Str)
+          # question = question.value if question.is_a?(Str)
           raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
 
           Aua.logger.info "Asking question: #{question.value}"
@@ -344,12 +346,14 @@ module Aua
           Str.new(response.chomp) # .strip
         },
         chat: lambda { |question|
-          Aua.logger.info "Asking question: #{question.inspect}"
           raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
 
+          q = question.value
+          Aua.logger.info "Posing question to chat: #{q.inspect} (#{q.length} chars, #{q.class} => String)"
+
           current_conversation = Aua::LLM.chat
-          response = current_conversation.ask(question.value)
-          Aua.logger.info "Response: #{response}"
+          response = current_conversation.ask(q)
+          Aua.logger.debug "Response: #{response}"
           Aua::Str.new(response)
         },
         see_url: lambda { |url|
@@ -360,7 +364,7 @@ module Aua
           response = Net::HTTP.get_response(uri)
           raise Error, "Failed to fetch URL: #{url.value} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
-          Aua.logger.info "Response from #{url.value}: #{response.body}"
+          Aua.logger.debug "Response from #{url.value}: #{response.body}"
           Aua::Str.new(response.body)
         }
 
@@ -514,7 +518,7 @@ module Aua
     attr_reader :env
 
     def initialize(env = {})
-      Aua.logger.info "Initializing Aua interpreter with env: #{env.inspect}"
+      Aua.logger.debug "Initializing Aua interpreter with env: #{env.inspect}"
       @env = env
     end
 
@@ -532,7 +536,7 @@ module Aua
     #
     # @param code [String] The source code to interpret.
     def run(ctx, code)
-      Aua.logger.warn "Running Aua interpreter with code: #{code.inspect}"
+      # Aua.logger.warn "Running Aua interpreter with code: #{code.inspect}"
       pipeline = [method(:lex), method(:parse), vm.method(:evaluate)]
       pipeline.reduce(code) do |input, step|
         out = step.call(ctx, input)

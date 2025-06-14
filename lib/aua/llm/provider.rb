@@ -41,16 +41,18 @@ module Aua
         )
           @cache = {} # : Hash[String, completion_trace]
           @cache_miss_lambda = nil
+          @file_path = file_path
 
-          unless File.exist?(file_path)
-            warn "Cache file does not exist, creating: #{file_path}"
-            FileUtils.mkdir_p(File.dirname(file_path))
+          unless File.exist?(@file_path)
+            warn "Cache file does not exist, creating: #{@file_path}"
+            FileUtils.mkdir_p(File.dirname(@file_path))
           end
 
-          hydrate(file_path)
+          hydrate(@file_path)
           miss do |key, val|
-            warn "Cache miss for key: #{key}"
-            append_to_cache_file(key, val, file_path)
+            Aua.logger.info "[Cache#initialize miss block] Cache miss for key: #{key}"
+
+            append_to_cache_file(key, val) # , @file_path)
             val
           end
         end
@@ -62,30 +64,29 @@ module Aua
           )
         end
 
+        # def cache = @cache ||= {} # : Hash[String, completion_trace]
+
         def fetch(key, &)
           @cache ||= {} # : Hash[String, completion_trace]
-          unless @cache.key?(key)
-            val = fetch!(key, &)
-            if @cache_miss_lambda
-              @cache_miss_lambda.call(key, val)
-            else
-              warn "No cache miss handler defined!"
-            end
-          end
+          fetch!(key, &) unless @cache.key?(key)
           @cache[key]
         end
 
         def fetch!(key, &block)
-          val = block.call
-          @cache[key] = val
-          val
+          @cache ||= {} # : Hash[String, completion_trace]
+          @cache[key] = block.call unless @cache.key?(key)
         end
 
         def with_cache(the_key, &)
           @cache ||= {} # : Hash[String, completion_trace]
           missed = !@cache.key?(the_key)
+          Aua.logger.info "Fetching from cache for key: #{the_key} (missed: #{missed})"
           val = fetch(the_key, &)
-          @cache_miss_lambda.call(the_key, val) if missed && @cache_miss_lambda
+          if missed && @cache_miss_lambda
+            Aua.logger.info "[Cache#with_cache] Cache miss for key: #{the_key}, invoking cache miss lambda..."
+            @cache_miss_lambda.call(the_key, val)
+            Aua.logger.info "[Cache#with_cache] Cache miss handled for #{the_key}"
+          end
           val
         end
 
@@ -101,12 +102,16 @@ module Aua
               hydrate_line(line.strip)
             end
           end
+
+          entries = @cache.length
+
+          Aua.logger.info "LLM response cache loaded #{entries} entries"
         end
 
         def hydrate_line(line)
           entry = JSON.parse(line, symbolize_names: true)
           if @cache.key?(entry[:key])
-            Aua.logger.info "Cache already contains key: #{entry[:key]}"
+            Aua.logger.debug "[while hydrating response db] Cache already contains key: #{entry[:key]}"
             return
           end
           @cache[entry[:key]] = entry[:value]
@@ -124,16 +129,22 @@ module Aua
           end
         end
 
-        def miss(&blk) = @cache_miss_lambda = blk
+        def miss(&blk)
+          Aua.logger.info "Setting cache miss lambda..."
+          @cache_miss_lambda = blk
+        end
 
-        def append_to_cache_file(key, val, file_path)
+        def append_to_cache_file(key, val, file_path = @file_path)
+          Aua.logger.info "Appending to cache file: #{file_path} for key: #{key}"
           FileUtils.mkdir_p(File.dirname(file_path))
-          File.open(file_path, "a") do |_file|
+          File.open(file_path, "a") do |file|
             entry = { key:, value: val }
-            Aua.logger.info "Appending to cache file: #{file_path} [#{key} => #{val}]"
-            Aua.logger.info(entry.to_json)
+            entry_json = entry.to_json
+
+            file.puts(entry_json)
           end
-          Aua.logger.info "Appended to cache file at #{file_path} [#{key} => #{val}]"
+
+          # Aua.logger.info "Appended to cache file (#{file_path}) #{key} => #{val.is_a?(Hash) ? val.fetch(:message, val)[..80] : val}..."
           val
         rescue StandardError => e
           Aua.logger.info "Failed to append to cache file: #{e.message}"
@@ -142,15 +153,14 @@ module Aua
         def self.file_path
           env = Aua.testing ? "test" : "dev"
           file_name = "responses.json"
-          File.expand_path(File.join(Dir.pwd, ".aua", env, file_name))
+
+          cache_db_path = File.expand_path(File.join(Dir.pwd, ".aua", env, file_name))
+          Aua.logger.info "Using cache file path: #{cache_db_path}"
+          cache_db_path
         end
 
         def self.instance
           @instance ||= new
-          # .tap do |cache|
-
-          # end
-          # end
         end
       end
 
@@ -247,6 +257,7 @@ module Aua
 
         def generate
           key = Cache.simple_key([prompt, { model:, generation: }])
+          Aua.logger.info "Generating key for prompt: '#{prompt}' => #{key[..8]}.."
           db.with_cache(key) { call }
         end
 
@@ -265,7 +276,7 @@ module Aua
         private
 
         def request(prompt:, model: Aua.configuration.model, generation: nil)
-          Aua.logger.info "Requesting LLM completion for prompt: '#{prompt}' with model: '#{model}'"
+          Aua.logger.debug "'#{prompt}' with model: '#{model}'"
           uri = URI("#{@base_uri}/chat/completions")
           t0 = ::Time.now # ::Time
           response = post(uri, request_body(prompt, model:, generation:).to_json)
@@ -325,11 +336,11 @@ module Aua
         completion = Completion.new(prompt:, model:, generation:)
         rsp = completion.generate
         metadata = Response::Metadata.new(
-          model: rsp[:model],
-          requested_at: rsp[:requested_at],
-          responded_at: rsp[:responded_at],
-          tokens_used: rsp[:tokens_used] || 0,
-          parameters: rsp[:parameters]
+          model:         rsp[:model],
+          requested_at:  rsp[:requested_at],
+          responded_at:  rsp[:responded_at],
+          tokens_used:   rsp[:tokens_used] || 0,
+          parameters:    rsp[:parameters]
         )
         Response.new(prompt:, message: rsp[:message], metadata:)
       end
@@ -344,9 +355,10 @@ module Aua
       end
 
       def ask(prompt)
+        Aua.logger.info ">>> #{prompt}"
         resp = @provider.chat_completion(prompt:)
-        Aua.logger.info resp.inspect
-        Aua.logger.info resp
+        # Aua.logger.info resp.inspect
+        Aua.logger.info "<<< #{resp.message[..80]} #{resp.metadata.timing}"
 
         resp.message
       end

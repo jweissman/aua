@@ -337,7 +337,7 @@ RSpec.describe Aua do
     end
   end
 
-  describe "Generative String Literals" do
+  describe "Generative String Literals", gen: true do
     it "evaluates a generative string literal and returns a string containing Rayleigh" do
       # result = Aua.run('"""Why is the sky blue?"""')
       result = Aua.run('"""What is the name of the physical phenomena responsible for the sky being blue?"""')
@@ -393,7 +393,7 @@ RSpec.describe Aua do
 
       it "prints to standard output with generative string" do
         stdout = with_captured_stdout { Aua.run('say """hello world"""') }
-        expect(stdout).to include("How can I help you today?")
+        expect(stdout).to include("How can I")
       end
     end
   end

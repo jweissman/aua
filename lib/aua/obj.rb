@@ -136,6 +136,8 @@ module Aua
 
   # String value in Aua.
   class Str < Obj
+    using Rainbow
+
     def initialize(value)
       super()
       @value = value
@@ -143,7 +145,9 @@ module Aua
 
     def klass = Klass.new("Str", Klass.obj)
     def name = "str"
-    def introspect = @value.inspect
+    def introspect = (
+      @value.inspect[1..80]&.concat(@value.length > 80 ? "..." : "")
+    ).black
 
     attr_reader :value
   end
