@@ -26,7 +26,10 @@ module Aua
         def next_char = @lexer.lens.peek
         def next_next_char = @lexer.lens.peek_n(2).last
         def current_pos = @lexer.lens.current_pos
-        def t(...) = @lexer.t(...)
+
+        def t(type, value = nil)
+          @lexer.t(type, value, at: @lexer.caret)
+        end
 
         def flush
           val = @buffer
@@ -56,6 +59,7 @@ module Aua
         def perform(state)
           Aua.logger.debug "[StringMachine#perform] Performing state: #{state.inspect} at position #{current_pos}"
           raise Error, "Invalid string machine state: #{state.inspect}" unless %i[start body end].include?(state)
+
           send state
         end
 
@@ -99,6 +103,7 @@ module Aua
             advance(3)
             Aua.logger.debug "[Handler#string] ending with token type=#{token&.type}"
             return token if token
+
             return :continue
           end
 
@@ -108,6 +113,7 @@ module Aua
             @buffer = nil
             @mode = :end
             return token if token
+
             return :continue
           end
 
@@ -153,6 +159,7 @@ module Aua
       def whitespace(chars)
         advance
         return unless chars == "\n"
+
         t(:eos)
       end
 
@@ -168,9 +175,7 @@ module Aua
         Aua.logger.debug "[Handler#string] Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
         Aua.logger.debug "[Handler#string] Current character: #{current_char.inspect}, next character: #{next_char.inspect}"
         sm = string_machine
-        if quote == '"""'
-          sm.saw_interpolation = false
-        end
+        sm.saw_interpolation = false if quote == '"""'
         if interpolative_quote?(quote)
           sm.pending_tokens ||= []
           sm.mode ||= :start
@@ -178,6 +183,7 @@ module Aua
           sm.quote = quote
           sm.max_len = 2048
           return sm.pending_tokens.shift unless sm.pending_tokens.empty?
+
           until (sm.buffer&.length || 0) >= sm.max_len || sm.mode.nil?
             Aua.logger.debug "#{quote} [#{sm.mode}] curr/next/skip=[ #{current_char} #{next_char} #{next_next_char} ]"
             sm_ret = sm.perform!
@@ -192,7 +198,7 @@ module Aua
               sm.pending_tokens.concat(sm_ret)
               return sm.pending_tokens.shift
             else
-              Aua.logger.debug "[Handler#string] StringMachine returned #{sm_ret.inspect}, continuing in mode=#{sm.mode.inspect}"
+              Aua.logger.debug "[Handler#string] StringMachine returned #{sm_ret}, continuing in mode=#{sm.mode.inspect}"
             end
           end
         else
@@ -200,16 +206,51 @@ module Aua
         end
       end
 
-      def prompt(_) = string('"""')
+      def prompt(_)
+        string('"""') || raise(Error, "Prompt could not be recognized at position #{current_pos}")
+      end
+
       def number(_) = recognize.number_lit
-      def minus(_) = (advance; t(:minus))
-      def plus(_) = (advance; t(:plus))
-      def star(_) = (advance; t(:star))
-      def slash(_) = (advance; t(:slash))
-      def lparen(_) = (advance; t(:lparen))
-      def rparen(_) = (advance; t(:rparen))
-      def equals(eql) = (advance; t(:equals, eql))
-      def pow(_) = (2.times { advance }; t(:pow))
+
+      def minus(_)
+        advance
+        t(:minus)
+      end
+
+      def plus(_)
+        advance
+        t(:plus)
+      end
+
+      def star(_)
+        advance
+        t(:star)
+      end
+
+      def slash(_)
+        advance
+        t(:slash)
+      end
+
+      def lparen(_)
+        advance
+        t(:lparen)
+      end
+
+      def rparen(_)
+        advance
+        t(:rparen)
+      end
+
+      def equals(eql)
+        advance
+        t(:equals, eql)
+      end
+
+      def pow(_)
+        (2.times { advance }
+         t(:pow))
+      end
 
       def comment(_chars)
         advance while lens.current_char != "\n" && !lens.eof?
@@ -242,6 +283,7 @@ module Aua
       def string_machine = @lexer.string_machine
 
       protected
+
       def lens = @lexer.lens
       def advance(inc = 1) = @lexer.advance(inc)
       def recognize = @lexer.recognize

@@ -1,6 +1,21 @@
 # frozen_string_literal: true
 
 module Aua
+  module Registry
+    class Store
+      attr_reader :store
+
+      def initialize
+        @store = {}
+      end
+
+      def [](aisle) = @store[aisle] ||= {}
+    end
+  end
+
+  # Global state aggregator for Aua runtime metadata
+  Methods = Registry::Store.new
+
   # The base object for all Aua values.
   class Obj
     def klass = Klass.klass
@@ -19,19 +34,14 @@ module Aua
       end
 
       meth = self.class.aura_method(method_name)
-
-      # Call the method with the current instance as the receiver
+      # m = meth
       instance_exec(
         *args,
-        &meth # : () { () -> Aua::Obj } -> Aua::Obj
+        &meth
       )
     end
 
-    def self.aura_methods
-      @method_store ||= {} # : Hash[String, Hash[Symbol, Proc]]
-      @method_store[name] ||= {} # : untyped
-      @method_store[name]
-    end
+    def self.aura_methods = Methods[name]
 
     def self.aura_method(name)
       raise NoMethodError, "Method #{name} not defined for #{self.name}" unless aura_methods.key?(name)
@@ -51,7 +61,7 @@ module Aua
     #   Aua::Obj.define_aura_method(:my_method) { |arg| Aua.logger.info arg }
     #
     def self.define_aura_method(name, &block)
-      aura_methods[name] = block # Store as Proc, not UnboundMethod
+      aura_methods[name] = block # : aura_meth
       print "#{self.name.split("::").last}##{name} "
     end
   end
@@ -145,9 +155,7 @@ module Aua
 
     def klass = Klass.new("Str", Klass.obj)
     def name = "str"
-    def introspect = (
-      @value.inspect[1..80]&.concat(@value.length > 80 ? "..." : "")
-    ).black
+    def introspect = @value.inspect[1..80]&.concat(@value.length > 80 ? "..." : "") || ""
 
     attr_reader :value
   end

@@ -52,6 +52,7 @@ module Aua
       def finished?: () -> bool
       def caret: () -> Cursor
       def content: () -> String
+      def size: () -> Integer
     end
 
     def self.indicate: (String, Cursor) -> Array[String]
@@ -74,9 +75,44 @@ module Aua
 
   type token = Syntax::Token
   type matchy = Regexp | String
+  type string_machine_mode = :start | :body | :end | :none
+  type tkn = token | Array[token]
 
   class Lex
     class Handler
+      class StringMachine
+        @lexer: Lex
+
+        attr_accessor mode: string_machine_mode
+        attr_accessor buffer: String
+        attr_accessor quote: String
+        attr_accessor pending_tokens: Array[token]
+        attr_accessor saw_interpolation: bool
+        attr_accessor inside_string: bool
+        attr_accessor max_len: Integer
+
+        def initialize: (Lex) -> void
+        def reset!: () -> void
+        def lens: () -> Lex::Lens
+        def advance: (?Integer) -> void
+        def current_char: () -> char
+        def next_char: () -> char
+        def next_next_char: () -> char
+        def eof?: () -> bool
+        def current_pos: () -> Integer
+        def t: (Symbol, untyped) -> Syntax::Token
+             | (Symbol) -> Syntax::Token
+        def flush: () -> String
+        def append: (String) -> void
+        def at_str_end?: () -> bool
+        def perform!: () -> (:continue | Syntax::Token | Array[Syntax::Token])
+        def perform: (string_machine_mode) -> (:continue | Syntax::Token | Array[Syntax::Token])
+
+        def start: () -> void
+        def body: () -> void
+        def end: () -> void
+      end
+
       def initialize: (Lex) -> void
 
       def comment: (String) -> token?
@@ -93,19 +129,23 @@ module Aua
       def minus: (String) -> token?
       def whitespace: (String) -> void
       def unexpected: (String) -> void
-      def prompt: (String) -> token?
+      def prompt: (String) -> tkn
 
       def interpolation_end: (String) -> token?
       def eos: (String) -> token?
+
+      def string_machine: () -> StringMachine
+      def interpolative_quote?: (String) -> bool
+
+      def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
+           | (Symbol, untyped) -> Syntax::Token
+           | (Symbol) -> Syntax::Token
 
       private
 
       def lens: () -> Lex::Lens
       def advance: (?Integer) -> void
       def recognize: () -> Lex::Recognizer
-      def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
-           | (Symbol, untyped) -> Syntax::Token
-           | (Symbol) -> Syntax::Token
       def current_char: () -> char
       def next_char: () -> char
       def next_next_char: () -> char
@@ -166,6 +206,8 @@ module Aua
     @recognize: Recognizer
     @handle: Handler
 
+    attr_reader lens: Lens
+
     def initialize: (String) -> void
 
     def tokens: () -> Enumerator[token]
@@ -173,6 +215,8 @@ module Aua
     def recognize: () -> Lex::Recognizer
     def caret: () -> Text::Cursor
     def slice_from: (Integer) -> String?
+    def string_machine: () -> Handler::StringMachine
+    def observe: (token) -> void
 
     def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
          | (Symbol, untyped) -> Syntax::Token
@@ -277,13 +321,30 @@ module Aua
     def info: (String) -> void
   end
 
+  module Registry
+    class Store[T]
+      @store: Hash[String, Hash[Symbol, T]]
+
+      def initialize: () -> void
+      def []: (String) -> Hash[Symbol, T]
+    end
+  end
+
+  type aura_meth = ^(*untyped) [self: self] -> Aua::Obj
+  Methods: Registry::Store[aura_meth]
+
   class Obj
+    @method_store: Hash[Symbol, aura_meth]
+
     def klass: () -> Klass
     def introspect: () -> String
     def pretty: () -> String
-    def self.aura_methods: () -> Hash[Symbol, Proc]
-    def self.aura_method: (Symbol) -> Proc
-    def self.define_aura_method: (Symbol) { (*untyped) -> untyped } -> void
+    def aura_methods: () -> Hash[Symbol, aura_meth]
+    def self.aura_methods: () -> Hash[Symbol, aura_meth]
+    def self.aura_method: (Symbol) -> aura_meth
+    # Proc
+    def self.define_aura_method: (Symbol) { (*untyped) [self: self] -> Aua::Obj } -> void
+
     def aura_respond_to?: (Symbol) -> bool
     def aura_send: (Symbol, *untyped) -> untyped
   end
@@ -373,6 +434,7 @@ module Aua
       LOCAL_VARIABLE_GET: untyped
       SEND: untyped
       CONCATENATE: untyped
+      GEN: untyped
     end
 
     class Translator
@@ -416,7 +478,7 @@ module Aua
 
     def evaluate: (Context, AST::Node) -> untyped
     def evaluate_one: (Statement) -> untyped
-    def eval_call: (String, Array[untyped]) -> untyped
+    def eval_call: (String | Symbol, Array[untyped]) -> untyped
     def eval_id: (untyped) -> untyped
     def eval_let: (untyped, untyped) -> untyped
     def eval_if: (untyped, untyped, untyped?) -> untyped
@@ -445,12 +507,12 @@ module Aua
       class Error < Aua::Error
       end
 
-      class Cache[T = untyped]
+      class Cache[ T = untyped]
         @cache: Hash[String, T]
         @cache_miss_lambda: ^(String, T) -> void
         def fetch: (String) { () -> T } -> T
 
-        def append_to_cache_file: (String, T, untyped) -> void
+        def append_to_cache_file: (String, T) -> void
         def dump: (String) -> void
         def fetch!: (String) { () -> T } -> T
         def hydrate: (String) -> void

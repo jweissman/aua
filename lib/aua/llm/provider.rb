@@ -72,9 +72,10 @@ module Aua
           @cache[key]
         end
 
-        def fetch!(key, &block)
+        def fetch!(key, default_value: nil, &block)
           @cache ||= {} # : Hash[String, completion_trace]
           @cache[key] = block.call unless @cache.key?(key)
+          @cache[key] || default_value
         end
 
         def with_cache(the_key, &)
@@ -336,11 +337,11 @@ module Aua
         completion = Completion.new(prompt:, model:, generation:)
         rsp = completion.generate
         metadata = Response::Metadata.new(
-          model:         rsp[:model],
-          requested_at:  rsp[:requested_at],
-          responded_at:  rsp[:responded_at],
-          tokens_used:   rsp[:tokens_used] || 0,
-          parameters:    rsp[:parameters]
+          model: rsp[:model],
+          requested_at: rsp[:requested_at],
+          responded_at: rsp[:responded_at],
+          tokens_used: rsp[:tokens_used] || 0,
+          parameters: rsp[:parameters]
         )
         Response.new(prompt:, message: rsp[:message], metadata:)
       end

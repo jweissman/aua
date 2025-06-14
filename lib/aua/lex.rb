@@ -37,14 +37,13 @@ module Aua
     def slice_from(start) = @doc.slice(start, @doc.position - start)
     def t(type, value = nil, at: caret) = Token.new(type:, value:, at: at || caret)
     def string_machine = @string_machine ||= Handler::StringMachine.new(self)
-    def string_mode = string_machine.mode
 
     private
 
     # Returns true if we should resume string mode after an interpolation_end.
     # This is true if we are in the middle of a double-quoted string (i.e., string_machine.mode is not nil)
     def should_resume_string
-      !!(string_mode && string_mode != :end && !string_mode.nil?)
+      !!(string_machine.mode && string_machine.mode != :end && !string_machine.mode.nil?)
     end
 
     def observe(token)
@@ -53,7 +52,7 @@ module Aua
       return unless token.type == :str_end
 
       string_machine.inside_string = false
-      string_machine.mode = nil
+      string_machine.mode = :none
     end
 
     def tokenize(&)
@@ -87,9 +86,12 @@ module Aua
           Aua.logger.debug "Resuming string lexing: inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}, current_char=\\#{@lens.current_char.inspect}"
           # Use the correct quote type for resuming string lexing
           token = handle.string(string_machine.quote || '"')
-          tokens = token.is_a?(Array) ? token : [token]
-          string_machine.pending_tokens.concat(tokens[1..]) if tokens.size > 1
-          tok = tokens.first
+          # tokens = token.is_a?(Array) ? token : [token]
+          # string_machine.pending_tokens.concat(tokens[1..] || []) if tokens.size > 1
+          # tok = tokens.first
+          tokens = [*token].compact
+          tok, *rest = tokens
+          string_machine.pending_tokens.concat(rest) if rest.any?
           if tok
             Aua.logger.debug "Yielding token (string mode): \\#{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}"
             observe(tok)
@@ -103,8 +105,10 @@ module Aua
         else
           Aua.logger.debug "Not inside string, consuming next tokens..."
           token = consume_until_acceptance
-          tokens = token.is_a?(Array) ? token : [token]
-          string_machine.pending_tokens.concat(tokens[1..]) if tokens.size > 1
+
+          # tokens = token.is_a?(Array) ? token : [token]
+          tokens = [*token].compact
+          string_machine.pending_tokens.concat(tokens[1..] || []) if tokens.size > 1
           tok = tokens.first
           if tok
             yield(tok)

@@ -2,6 +2,10 @@ module Aua
   # Provides utility methods for syntax-related tasks.
   module Syntax
     # Token = Data.define(:type, :value)
+    # Most tokens should have `at` set by their lexer.
+    # def t(type, value = nil, at:)
+    #   Token.new(type:, value:, at:)
+    # end
     class Token < Data.define(:type, :value, :at)
       attr_reader :at
     end
