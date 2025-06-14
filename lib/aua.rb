@@ -64,6 +64,10 @@ module Aua
         # This is used for structured strings.
         Semantics.inst(:cat, *parts)
       end
+
+      GEN = lambda do |prompt|
+        Semantics.inst(:gen, prompt)
+      end
     end
 
     # The translator class that converts Aua AST nodes into VM instructions.
@@ -83,7 +87,7 @@ module Aua
         when :gen_lit then translate_gen_lit(ast)
         when :call then translate_call(ast)
         when :seq then translate_sequence(ast)
-        when :structured_str
+        when :structured_str, :structured_gen_lit
           # Join all parts, recursively translating expressions
           Aua.logger.info "Translating structured string: #{ast.inspect}"
 
@@ -100,8 +104,11 @@ module Aua
 
           Aua.logger.info "Structured string parts: #{parts.inspect}"
 
-          # [Str.new(*parts)]
-          [CONCATENATE[parts]] # Concatenate all parts into a single string
+          if ast.type == :structured_gen_lit
+            [GEN[CONCATENATE[parts]]] # Use CHAT to handle structured generative strings
+          else
+            [CONCATENATE[parts]] # Concatenate all parts into a single string
+          end
         else
           raise Error, "Unknown AST node type: \\#{ast.type}"
         end
@@ -388,6 +395,7 @@ module Aua
       case stmt.type
       when :id then eval_id(stmt.value)
       when :let then eval_let(stmt.value[0], evaluate_one(stmt.value[1]))
+      when :gen then eval_call(:chat, [stmt.value])
       when :if
         cond, true_branch, false_branch = stmt.value
         eval_if(cond, true_branch, false_branch)

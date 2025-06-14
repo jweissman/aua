@@ -369,6 +369,7 @@ module Aua
     # Parses a structured/interpolated string
     # @type method parse_structured_str: () -> AST::Node
     def parse_structured_str
+      token_type = :structured_str
       parts = [] # : Array[AST::Node]
       loop do
         case @current_token.type
@@ -388,6 +389,11 @@ module Aua
         when :str_end
           advance
           break
+        when :gen_lit
+          advance
+          token_type = :structured_gen_lit
+          break
+
         else
           raise Error, "Unterminated string literal #{current_token.at}" if current_token.type == :eof
 
@@ -396,7 +402,7 @@ module Aua
       end
       return s(:str, parts.first.value) if parts.size == 1 && parts.first.type == :str
 
-      s(:structured_str, parts)
+      s(token_type, parts)
     end
   end
 end

@@ -46,7 +46,7 @@ RSpec.describe Aua::Parse do
       let(:input) { "\"\"\"The current time is: ${time 'now'}\"\"\"" }
       it "parses structured generative strings with function calls" do
         extend Aua::Grammar
-        expect(ast.type).to eq(:structured_str)
+        expect(ast.type).to eq(:structured_gen_lit)
         expect(ast.value).to eq([
                                   s(:str, "The current time is: "),
                                   s(:call, ["time", [s(:simple_str, "now")]])

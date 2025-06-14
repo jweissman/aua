@@ -208,19 +208,19 @@ module Aua
       end
 
       describe "generative" do
-        let(:input) do
-          # NOTE: this is a manual ruby interpolation not a 'real' generative string interpolation!
-          "\"\"\"The current day is #{::Time.now.strftime("%A")}.\"\"\""
-        end
+        context "with simple string" do
+          let(:input) do
+            "\"\"\"The current day is Wednesday.\"\"\""
+          end
 
-        it "lexes" do
-          puts "Tokens: #{tokens.map { |t| [t.type, t.value] }}"
-          str_token = tokens.find { |t| t.type == :gen_lit }
-          expect(str_token).not_to be_nil
-          expect(str_token.value).to start_with("The current day is ")
-          expect(str_token.value).to match ::Time.now.strftime("%A")
-          expect(str_token.value).to end_with("day.")
-          expect(str_token.value.length).to be >= 2
+          it "lexes" do
+            puts "Tokens: #{tokens.map { |t| [t.type, t.value] }}"
+            str_token = tokens.find { |t| t.type == :gen_lit }
+            expect(str_token).not_to be_nil
+            expect(str_token.value).to start_with("The current day is ")
+            expect(str_token.value).to end_with("day.")
+            expect(str_token.value.length).to be >= 2
+          end
         end
 
         context "with newlines" do
@@ -229,6 +229,24 @@ module Aua
             str_token = tokens.find { |t| t.type == :gen_lit }
             expect(str_token).not_to be_nil
             expect(str_token.value).to include("hello\nworld")
+          end
+        end
+
+        context "with interpolation" do
+          let(:input) { "\"\"\"The result is: ${x}\"\"\"" }
+
+          it "lexes triple-quoted string with interpolation" do
+            # expect(tokens.size).to eq(7)
+            token_map = tokens.map { |t| [t.type, t.value] }
+            puts "Tokens: #{token_map.inspect}"
+
+            expect(token_map).to eq([
+                                      [:str_part, "The result is: "],
+                                      [:interpolation_start, "${"],
+                                      [:id, "x"],
+                                      [:interpolation_end, "}"],
+                                      [:gen_lit, ""]
+                                    ])
           end
         end
       end

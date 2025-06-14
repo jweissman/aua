@@ -344,6 +344,12 @@ RSpec.describe Aua do
       expect(result).to be_a(Aua::Str)
       expect(result.value).to match(/Rayleigh/i)
     end
+
+    it "interpolates variables in generative strings" do
+      result = Aua.run('name = "Alice"; """Please write a short story about ${name}"""')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to include("Alice")
+    end
   end
 
   describe "Universal Generative Typecasting" do
