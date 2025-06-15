@@ -34,11 +34,19 @@ def repl!
   loop { rep! }
 end
 
+def gets!
+  Readline.readline("aura >> ".black, true)
+end
+
 def rep!
-  input = Readline.readline("aura >> ".black, true)
-  bye if input.nil? || input.strip == "exit"
+  input = gets!.chomp
   return if input.strip.empty?
 
+  bye if input.nil? || input.strip == "exit"
+  eval_print(input)
+end
+
+def eval_print(input)
   result = Aua.run(input)
   info result.pretty.color(color_for(result.class)).bright
 rescue Interrupt

@@ -13,7 +13,7 @@ module Aua
     def ident
       tuple(ident_start, array(ident_rest, min: 0, max: 11))
         .map(
-          lambda(&:join),
+          ->(v) { v.respond_to?(:join) ? v.join : v },
           lambda(&:to_s) # Convert to string for consistency
         )
     end

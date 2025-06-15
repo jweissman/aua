@@ -1,112 +1,8 @@
 require "aua/ast"
+require "aua/grammar"
 
 # Aua is a programming language and interpreter written in Ruby...
 module Aua
-  # Grammar helpers for constructing AST nodes.
-  module Grammar
-    PRIMARY_NAMES = {
-      lparen: :parens,
-      id: :id,
-      int: :int,
-      float: :float,
-      bool: :bool,
-      str: :str,
-      nihil: :nihil,
-      gen_lit: :generative_lit,
-      simple_str: :simple_str,
-      str_part: :str_part,
-      str_end: :str_end
-    }.freeze
-
-    # Operator precedence (higher number = higher precedence)
-    BINARY_PRECEDENCE = {
-      plus: 1, minus: 1,
-      star: 2, slash: 2,
-      pow: 3
-    }.freeze
-
-    def s(type, *values)
-      normalized_values = normalize_maybe_list(values)
-      at = if defined?(@current_token) && @current_token.respond_to?(:location) && @current_token.location
-             @current_token.location
-           else
-             Aua::Text::Cursor.new(0, 0)
-           end
-      AST::Node.new(type:, value: normalized_values, at: at)
-    end
-
-    def normalize_maybe_list(values)
-      return nil if values.empty?
-
-      values.length == 1 ? values.first : values
-    end
-
-    # A class for parsing primitive values in Aua.
-    class Primitives
-      include Grammar
-
-      def initialize(parse)
-        @parse = parse
-      end
-
-      def parse_id = parse_one(:id)
-      def parse_int = parse_one(:int)
-      def parse_float = parse_one(:float)
-      def parse_bool = parse_one(:bool)
-      def parse_str = parse_one(:str)
-
-      def parse_nihil = parse_one(:nihil)
-      def parse_simple_str = parse_one(:simple_str)
-
-      def parse_str_part
-        @str_parts ||= [] # : Array[AST::Node]
-        value = @parse.current_token.value
-        @parse.consume(:str_part)
-        part = s(:str_part, value)
-        @str_parts << part
-
-        nil
-      end
-
-      def parse_str_end
-        @str_parts ||= [] # : Array[AST::Node]
-        @parse.consume(:str_end)
-        # If we have str_parts, we can return a structured string node
-        return s(:str, @str_parts.first.value) if @str_parts.size == 1
-
-        s(:structured_str, @str_parts)
-      end
-
-      def parse_parens
-        @parse.consume(:lparen)
-        expr = @parse.send :parse_expression
-        begin
-          @parse.consume(:rparen)
-        rescue Aua::Error
-          raise Error, "Unmatched opening parenthesis"
-        end
-        expr
-      end
-
-      def parse_generative_lit
-        value = @parse.current_token.value
-        @parse.consume(:gen_lit)
-        s(:structured_gen_lit, [s(:str, value)])
-      end
-
-      private
-
-      def parse_one(type)
-        value = @parse.current_token.value
-        @parse.consume(type)
-        s(type, value)
-      end
-    end
-  end
-
-  extend Grammar
-  NOTHING = s(:nihil)
-
   # A parser for the Aua language that builds an abstract syntax tree (AST).
   # Consumes tokens and produces an AST.
   class Parse
@@ -117,6 +13,7 @@ module Aua
     def initialize(tokens)
       @tokens = tokens
       @buffer = [] # : Array[Syntax::Token | nil]
+      @current_string_quote = nil
 
       advance
     end
@@ -158,37 +55,42 @@ module Aua
       @length != @current_token_index && @current_token.type != :eos
     end
 
-    protected
-
     def info(message) = Aua.logger.info("aura:parse") { message }
 
     private
 
-    def parse
-      parse_statements
-      # parse_expression
+    def parse = parse_statements
+
+    def statement_enumerator
+      Enumerator.new do |yielder|
+        loop do
+          advance while @current_token.type == :eos
+          advance while @current_token.type == :str_end
+          break if %i[eos eof].include?(@current_token.type)
+
+          statement = parse_expression
+          raise Error, "Unexpected end of input while parsing statements" if statement.nil?
+
+          yielder << statement
+        end
+      end
     end
 
     def parse_statements
-      statements = [] # : Array[AST::Node]
-      while @current_token.type != :eos && @current_token.type != :eof
-        # Skip any leading :eos tokens (blank lines, etc.)
-        advance while @current_token.type == :eos
-        # Skip stray :str_end tokens at the top level (from string lexing)
-        advance while @current_token.type == :str_end
-        break if %i[eos eof].include?(@current_token.type)
+      statements = statement_enumerator.to_a
+      # statements = [] # : Array[AST::Node]
+      # while @current_token.type != :eos && @current_token.type != :eof
+      #   advance while @current_token.type == :eos
+      #   advance while @current_token.type == :str_end
+      #   break if %i[eos eof].include?(@current_token.type)
 
-        statement = parse_expression
-        raise Error, "Unexpected end of input while parsing statements" if statement.nil?
+      #   statement = parse_expression
+      #   raise Error, "Unexpected end of input while parsing statements" if statement.nil?
 
-        info "Parsed statement: \\#{statement.inspect}"
-        statements << statement
-        advance while @current_token.type == :eos
-        # Also skip any stray :str_end tokens after a statement
-        advance while @current_token.type == :str_end
-      end
-
-      # return s(:nihil) if statements.empty?
+      #   statements << statement
+      #   advance while @current_token.type == :eos
+      #   advance while @current_token.type == :str_end
+      # end
 
       statements.size == 1 ? statements.first : s(:seq, statements.compact)
     end
@@ -224,8 +126,7 @@ module Aua
       while PRIMARY_NAMES.key?(@current_token.type)
         # Special case: if the token is :str_part, parse the whole structured string
         arg = if @current_token.type == :str_part
-                info " - Parsing structured string from str_part token"
-                parse_structured_str(false)
+                parse_structured_str
               else
                 Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
               end
@@ -233,9 +134,9 @@ module Aua
         info " - Parsed argument: #{arg.inspect}"
         if @current_token.type == :comma
           consume(:comma)
-          info " - Consumed comma, expecting more args"
+          # info " - Consumed comma, expecting more args"
         elsif %i[eos eof interpolation_end str_end].include?(@current_token.type)
-          info " - End of arguments reached"
+          # info " - End of arguments reached"
           break
         else
           # If the next token is a valid statement starter, break out of the argument loop
@@ -252,7 +153,7 @@ module Aua
         # Not a call, restore state and return nil
         @current_token = save_token
         @buffer = save_buffer
-        info " - No arguments found, restoring state and returning nil.."
+        # info " - No arguments found, restoring state and returning nil.."
         return nil
       end
       info " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}"
@@ -327,66 +228,66 @@ module Aua
     def binary_op?(type) = BINARY_PRECEDENCE.key?(type)
 
     def parse_primary
-      raise Aua::Error, "No current token to parse" if @current_token.nil?
       raise Aua::Error, "Unexpected end of input while parsing primary expression" if @current_token.type == :eos
 
+      # Aua.logger.info("parse:pri") { "expression with token: #{@current_token.type} (#{@current_token.value})" }
+
       # Handle structured/interpolated strings
-      if @current_token.type == :str_part
-        # Use and reset @last_string_was_triple_quoted for this string only
-        use_triple = @last_string_was_triple_quoted
-        @last_string_was_triple_quoted = false
-        parts = parse_structured_str(use_triple)
-        return parts
-      end
+      return parse_structured_str if @current_token.type == :str_part
 
       # Detect triple-quoted string start
       if @current_token.type == :prompt
-        @last_string_was_triple_quoted = true
         advance
         return parse_primary
       end
 
-      primitives = Primitives.new(self)
+      # primitives = Primitives.new(self)
       return primitives.send "parse_#{PRIMARY_NAMES[@current_token.type]}" if PRIMARY_NAMES.key?(@current_token.type)
 
       raise Error, "Unexpected token type: #{@current_token.type}"
     end
 
-    # Parses a structured/interpolated string
-    # @type method parse_structured_str: (bool) -> AST::Node
-    def parse_structured_str(triple_quoted = false)
-      info "Parsing structured string, triple_quoted=#{triple_quoted}, current_token=#{@current_token.type} (#{@current_token.value})"
-      token_type = triple_quoted ? :structured_gen_lit : :structured_str
-      parts = [] # : Array[AST::Node]
-      loop do
-        case @current_token.type
-        when :str_part
-          parts << s(:str, @current_token.value)
-          advance
-        when :interpolation_start
-          advance
-          expr = parse_expression
-          parts << expr
-          unless @current_token.type == :interpolation_end
-            raise Error, "Expected interpolation_end, got #{@current_token.type}"
+    def primitives = @primitives ||= Primitives.new(self)
+
+    # (update_token_type)
+    def structured_string_enumerator
+      Enumerator.new do |yielder|
+        loop do
+          case @current_token.type
+          when :str_part
+            yielder << s(:str, @current_token.value)
+            advance
+          when :interpolation_start
+            advance
+            yielder << parse_expression
+            unless @current_token.type == :interpolation_end
+              raise Error, "Expected interpolation_end, got #{@current_token.type}"
+            end
+
+            advance
+          when :gen_end, :gen_lit
+            @current_string_quote = "\"\"\""
+
+            advance
+            break
+          when :str_end
+            advance
+            break
+          else
+            raise Error, "Unterminated string literal #{current_token.at}" if current_token.type == :eof
+
+            raise Error, "Unexpected token in structured string: #{current_token.type} #{current_token.at}"
           end
-
-          advance
-
-        when :str_end
-          advance
-          break
-        when :gen_lit
-          advance
-          token_type = :structured_gen_lit
-          break
-
-        else
-          raise Error, "Unterminated string literal #{current_token.at}" if current_token.type == :eof
-
-          raise Error, "Unexpected token in structured string: #{current_token.type} #{current_token.at}"
         end
       end
+    end
+
+    # Parses a structured/interpolated string
+    # @type method parse_structured_str: (bool) -> AST::Node
+    # (triple_quoted = @current_string_quote == '"""')
+    def parse_structured_str
+      parts = structured_string_enumerator.to_a # (->(type) { token_type = type }).to_a
+      token_type = @current_string_quote == "\"\"\"" ? :structured_gen_lit : :structured_str
       return s(:str, parts.first.value) if parts.size == 1 && parts.first.type == :str
 
       s(token_type, parts)

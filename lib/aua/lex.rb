@@ -46,16 +46,17 @@ module Aua
       !!(string_machine.mode && string_machine.mode != :end && !string_machine.mode.nil?)
     end
 
-    def observe(token)
+    def observe(token, &)
       Aua.logger.debug("observe") do
         "token: \\#{token.type} (value: \\#{token.value.inspect}), at: \\#{token.at.inspect}"
       end
+
+      yield token if block_given?
 
       # Reset string state after any string-ending token
       return unless %i[str_end].include?(token.type)
 
       string_machine.inside_string = false
-      # string_machine.mode = :end
       string_machine.buffer = ""
     end
 
@@ -70,78 +71,60 @@ module Aua
     end
 
     def tokenize!(&)
-      unless string_machine.pending_tokens.empty?
-        tok = string_machine.pending_tokens.shift
-        if tok
-          Aua.logger.debug("tokenize") do
-            <<~LOG
-              Yielding #{tok.type} (value: \\#{tok.value.inspect})
-              - inside_string=\\#{string_machine.inside_string.inspect}
-              - string_mode=\\#{string_machine.mode.inspect}
-            LOG
-          end
-          observe(tok)
-          yield(tok)
-          string_machine.inside_string = false if tok.type == :interpolation_start
-          if tok.type == :interpolation_end
-            string_machine.inside_string = true
-            string_machine.mode = :body
-          end
-        end
+      return handle_pending_tokens(&) unless string_machine.pending_tokens.empty?
+      return handle_string_mode(&) if string_machine.inside_string && !string_machine.mode.nil?
 
-        return true
-      end
-
-      if string_machine.inside_string && !string_machine.mode.nil?
-        Aua.logger.debug("tokenize") do
-          <<~LOG
-            Resuming string lexing
-            - inside_string=\\#{string_machine.inside_string.inspect}
-            - string_mode=\\#{string_machine.mode.inspect}
-            - current_char=\\#{@lens.current_char.inspect}"
-          LOG
-        end
-        token = handle.string(string_machine.quote || '"')
-        tokens = [*token].compact
-        tok, *rest = tokens
-        string_machine.pending_tokens.concat(rest) if rest.any?
-        if tok
-          Aua.logger.debug("tokenize") do
-            <<~LOG
-              Yielding (string mode):
-              - #{tok.type} (value: \\#{tok.value.inspect})
-              - inside_string=\\#{string_machine.inside_string.inspect}
-              - string_mode=\\#{string_machine.mode.inspect}
-            LOG
-          end
-          observe(tok)
-          yield(tok)
-          string_machine.inside_string = false if tok.type == :interpolation_start
-          if tok.type == :interpolation_end
-            string_machine.inside_string = true
-            string_machine.mode = :body
-          end
-        end
-      else
-        token = consume_until_acceptance
-        tokens = [*token].compact
-        string_machine.pending_tokens.concat(tokens[1..] || []) if tokens.size > 1
-        tok = tokens.first
-        if tok
-          observe(tok)
-          yield(tok)
-          string_machine.inside_string = true if tok.type == :string
-          if tok.type == :interpolation_end
-            string_machine.inside_string = true
-            string_machine.mode = :body
-          end
-        else
-          Aua.logger.debug("tokenize") { "No token accepted, checking for pending tokens." }
-          raise Error, Handle.unexpected_character_message(@lens) if @lens.more?
-        end
-      end
-
+      handle_normal_mode(&)
       false
+    end
+
+    def handle_pending_tokens(&)
+      tok = string_machine.pending_tokens.shift
+      if tok
+        log_tokenize(tok)
+        observe(tok, &)
+        update_string_state(tok)
+      end
+      true
+    end
+
+    def handle_string_mode(&)
+      token = handle.string(string_machine.quote || '"')
+      tokens = [*token].compact
+      tok, *rest = tokens
+      string_machine.pending_tokens.concat(rest) if rest.any?
+      return unless tok
+
+      handle_string_mode_token(tok, &)
+    end
+
+    def handle_string_mode_token(tok, &)
+      observe(tok, &)
+      string_machine.inside_string = false if tok.type == :interpolation_start
+      return unless tok.type == :interpolation_end
+
+      string_machine.inside!
+    end
+
+    def handle_normal_mode(&)
+      token = consume_until_acceptance
+      tokens = [*token].compact
+      string_machine.pending_tokens.concat(tokens[1..] || []) if tokens.size > 1
+      tok = tokens.first
+      handle_normal_mode_token(tok, &)
+    end
+
+    def handle_normal_mode_token(tok, &)
+      if tok
+        observe(tok, &)
+        string_machine.inside_string = true if tok.type == :string
+        if tok.type == :interpolation_end
+          string_machine.inside_string = true
+          string_machine.mode = :body
+        end
+      elsif @lens.more?
+        raise Error, Handle.unexpected_character_message(@lens)
+      end
     end
 
     def consume_until_acceptance(attempts = 16_536)
@@ -173,10 +156,8 @@ module Aua
       matched_handle = token_names(chars.count).find do |pattern, _token_name|
         pattern_match?(pattern, chars.join)
       end
-
       return unless matched_handle
 
-      # Aua.logger.debug "Matched Handle: #{matched_Handle.inspect}"
       handle.send(matched_handle.last, chars.join)
     end
 
@@ -190,5 +171,23 @@ module Aua
     end
 
     def handle = @handle ||= Handle.new(self)
+
+    def log_tokenize(tok)
+      Aua.logger.debug("tokenize") do
+        <<~LOG
+          Yielding \\#{tok.type} (value: \\#{tok.value.inspect})
+          - inside_string=\\#{string_machine.inside_string.inspect}
+          - string_mode=\\#{string_machine.mode.inspect}
+        LOG
+      end
+    end
+
+    def update_string_state(tok)
+      string_machine.inside_string = false if tok.type == :interpolation_start
+      return unless tok.type == :interpolation_end
+
+      string_machine.inside_string = true
+      string_machine.mode = :body
+    end
   end
 end

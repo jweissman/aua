@@ -50,11 +50,27 @@ module Aua
           end
         end
 
-        def perform!
-          perform(@mode)
+        def perform! = perform(@mode)
+
+        def spin!(&)
+          @pending_tokens ||= []
+          @mode ||= :start
+          until spindown?
+            ret = perform!
+            next if ret == :continue
+
+            yield ret
+          end
+        end
+
+        def inside!(mode = :body)
+          @inside_string = true
+          @mode = mode
         end
 
         protected
+
+        def spindown? = @buffer&.length.to_i >= @max_len || @mode.nil?
 
         def perform(state)
           # Aua.logger.debug "[StringMachine#perform] Performing state: #{state.inspect} at position #{current_pos}"
@@ -66,16 +82,18 @@ module Aua
         def start
           @buffer = ""
           @mode = :body
-          if @quote == '"""'
-            advance(3)
-          else
-            advance
-          end
+          advance @quote.length
+          # if @quote == '"""'
+          #   advance(3)
+          # else
+          #   advance
+          # end
         end
 
         def end
-          str_kind = :str_end
-          str_kind = :gen_end if (@quote = @saw_interpolation)
+          # str_kind = :str_end
+          # str_kind = :gen_end if (@quote = @saw_interpolation)
+          str_kind = @quote == '"""' ? :gen_end : :str_end
           advance
           @mode = nil
           @pending_tokens&.clear

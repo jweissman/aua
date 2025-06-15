@@ -169,7 +169,7 @@ module Aua
           expect(tokens.size).to eq(2)
           expect(tokens.map { |t| [t.type, t.value] }).to eq([
                                                                [:str_part, "hello"],
-                                                               [:str_end, ""]
+                                                               [:str_end, nil]
                                                              ])
         end
       end
@@ -245,7 +245,7 @@ module Aua
                                       [:interpolation_start, "${"],
                                       [:id, "x"],
                                       [:interpolation_end, "}"],
-                                      [:gen_lit, ""]
+                                      [:gen_end, nil]
                                     ])
           end
         end
@@ -388,7 +388,7 @@ module Aua
                                 [:equals, "="],
                                 [:id, "ask"],
                                 [:str_part, "what is your name?"],
-                                [:str_end, ""]
+                                [:str_end, nil]
                               ])
             expect(snd).to eq([
                                 [:id, "say"],

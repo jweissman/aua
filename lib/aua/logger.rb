@@ -4,7 +4,7 @@ module Aua
   class Logger < ::Logger
     using Rainbow
 
-    LHS_WIDTH = 12
+    LHS_WIDTH = 20
 
     def format_message(_severity, _timestamp, progname, msg)
       lhs = [

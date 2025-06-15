@@ -52,21 +52,22 @@ module Aua
 
         # Join all parts, recursively translating expressions
         def translate_structured_str(node)
-          parts = node.value.map do |part|
-            Aua.logger.info "Translating part: #{part.inspect}"
-            if part.is_a?(AST::Node)
-              val = translate(part)
-              val = val.first if val.is_a?(Array) && val.size == 1
-              val.is_a?(Str) ? val.value : val
-            else
-              part.to_s
-            end
-          end
-
+          parts = node.value.map { |part| translate_structured_str_part(part) }
           if node.type == :structured_gen_lit
             [GEN[CONCATENATE[parts]]]
           else
             [CONCATENATE[parts]]
+          end
+        end
+
+        def translate_structured_str_part(part)
+          Aua.logger.info "Translating part: \\#{part.inspect}"
+          if part.is_a?(AST::Node)
+            val = translate(part)
+            val = val.first if val.is_a?(Array) && val.size == 1
+            val.is_a?(Str) ? val.value : val
+          else
+            part.to_s
           end
         end
 
@@ -256,81 +257,85 @@ module Aua
 
       def builtins
         @builtins ||= {
-          inspect: lambda { |obj|
-            Aua.logger.info "Inspecting object: #{obj.inspect}"
-            raise Error, "inspect requires a single argument" unless obj.is_a?(Obj)
-
-            Aua.logger.info "Object class: #{obj.class}"
-            # Aua.logger.info "Object value: #{obj.value.inspect}"
-
-            Str.new(obj.introspect)
-          },
-          rand: lambda { |max|
-            Aua.logger.info "Generating random number... (max: #{max.inspect})"
-            rng = Random.new
-            max = max.is_a?(Int) ? max.value : 100 if max.is_a?(Obj)
-            Aua.logger.info "Using max value: #{max}"
-            Aua::Int.new(
-              rng.rand(0..max)
-            )
-          },
-          time: lambda { |_args|
-            Aua.logger.info "Current time: #{Time.now}"
-            Aua::Time.now
-          },
-          say: lambda { |arg|
-            # raise Error, "say requires a single argument" unless args.size == 1
-
-            value = arg # s.first
-            raise Error, "say only accepts Str arguments, got #{value.class}" unless value.is_a?(Str)
-
-            puts arg.value
-
-            Aua::Nihil.new
-          },
-          ask: lambda { |question| # ie from stdin
-            # question = question.first if question.is_a?(Array)
-            question = question.aura_send(:to_s) if question.is_a?(Obj) && !question.is_a?(Str)
-            # question = question.value if question.is_a?(Str)
-            raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
-
-            Aua.logger.info "Asking question: #{question.value}"
-            response = $stdin.gets
-            Aua.logger.info "Response: #{response}"
-            raise Error, "No response received" if response.nil?
-
-            Str.new(response.chomp) # .strip
-          },
-          chat: lambda { |question|
-            raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
-
-            q = question.value
-            Aua.logger.info "Posing question to chat: #{q.inspect} (#{q.length} chars, #{q.class} => String)"
-
-            current_conversation = Aua::LLM.chat
-            response = current_conversation.ask(q)
-            Aua.logger.debug "Response: #{response}"
-            Aua::Str.new(response)
-          },
-          see_url: lambda { |url|
-            Aua.logger.info "Fetching URL: #{url.inspect}"
-            raise Error, "see_url requires a single Str argument" unless url.is_a?(Str)
-
-            uri = URI(url.value)
-            response = Net::HTTP.get_response(uri)
-            unless response.is_a?(Net::HTTPSuccess)
-              raise Error,
-                    "Failed to fetch URL: #{url.value} - #{response.message}"
-            end
-
-            Aua.logger.debug "Response from #{url.value}: #{response.body}"
-            Aua::Str.new(response.body)
-          }
-
+          inspect: method(:builtin_inspect),
+          rand: method(:builtin_rand),
+          time: method(:builtin_time),
+          say: method(:builtin_say),
+          ask: method(:builtin_ask),
+          chat: method(:builtin_chat),
+          see_url: method(:builtin_see_url)
         }
       end
 
       private
+
+      def builtin_inspect(obj)
+        Aua.logger.info "Inspecting object: \\#{obj.inspect}"
+        raise Error, "inspect requires a single argument" unless obj.is_a?(Obj)
+
+        Aua.logger.info "Object class: \\#{obj.class}"
+        Str.new(obj.introspect)
+      end
+
+      def builtin_rand(max)
+        Aua.logger.info "Generating random number... (max: \\#{max.inspect})"
+        rng = Random.new
+        max = max.is_a?(Int) ? max.value : 100 if max.is_a?(Obj)
+        Aua.logger.info "Using max value: \\#{max}"
+        Aua::Int.new(rng.rand(0..max))
+      end
+
+      def builtin_time(_args)
+        Aua.logger.info "Current time: \\#{Time.now}"
+        Aua::Time.now
+      end
+
+      def builtin_say(arg)
+        value = arg
+        raise Error, "say only accepts Str arguments, got \\#{value.class}" unless value.is_a?(Str)
+
+        puts arg.value
+        Aua::Nihil.new
+      end
+
+      def builtin_ask(question)
+        question = question.aura_send(:to_s) if question.is_a?(Obj) && !question.is_a?(Str)
+        raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
+
+        Aua.logger.info "Asking question: \\#{question.value}"
+        response = $stdin.gets
+        Aua.logger.info "Response: \\#{response}"
+        raise Error, "No response received" if response.nil?
+
+        Str.new(response.chomp)
+      end
+
+      def builtin_chat(question)
+        raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
+
+        q = question.value
+        Aua.logger.info "Posing question to chat: \\#{q.inspect} (\\#{q.length} chars, \\#{q.class} => String)"
+        current_conversation = Aua::LLM.chat
+        response = current_conversation.ask(q)
+        Aua.logger.debug "Response: \\#{response}"
+        Aua::Str.new(response)
+      end
+
+      def builtin_see_url(url)
+        Aua.logger.info "Fetching URL: #{url.inspect}"
+        raise Error, "see_url requires a single Str argument" unless url.is_a?(Str)
+
+        uri = URI(url.value)
+        response = Net::HTTP.get_response(uri)
+        handle_see_url_response(url, response)
+      end
+
+      def handle_see_url_response(url, response)
+        raise Error, "Failed to fetch URL: #{url.value} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
+
+        Aua.logger.debug "Response from #{url.value}: #{response.body}"
+        Aua::Str.new(response.body)
+      end
 
       def reduce(ast) = @tx.translate(ast)
 
@@ -354,32 +359,36 @@ module Aua
 
         raise Error, "Expected a Statement, got: #{stmt.inspect} (#{stmt.class})" unless stmt.is_a? Statement
 
-        case stmt.type
-        when :id, :if, :let, :call, :send then evaluate_simple(stmt)
-        when :gen then eval_call(:chat, [stmt.value])
-        when :cat then eval_cat(stmt.value)
-        else
-          raise Error, "Unknown statement type: #{stmt.type}" if stmt.is_a?(Statement)
+        evaluate_one!(stmt)
+      end
 
-          raise Error, "Unknown statement: #{stmt.inspect} (#{stmt.class})"
+      def evaluate_one!(stmt)
+        val = stmt.value
+
+        case stmt.type
+        when :id, :let, :send then evaluate_simple(stmt)
+        when :gen then eval_call(:chat, [val])
+        when :cat then eval_cat(val)
+        when :call
+          fn_name, *args = val
+          eval_call(fn_name, args.map { |a| evaluate_one(a) })
+        when :if
+          cond, true_branch, false_branch = val
+          eval_if(cond, true_branch, false_branch)
+        else
+          raise Error, "Unknown statement: #{stmt} (#{stmt.class})"
         end
       end
 
       def evaluate_simple(stmt)
+        val = stmt.value
         case stmt.type
-        when :id then eval_id(stmt.value)
-        when :if
-          cond, true_branch, false_branch = stmt.value
-          eval_if(cond, true_branch, false_branch)
-        when :let then eval_let(stmt.value[0], evaluate_one(stmt.value[1]))
-        when :call
-          fn_name, *args = stmt.value
-          eval_call(fn_name, args.map { |a| evaluate_one(a) })
-        when :send then eval_send(stmt.value[0], stmt.value[1], *stmt.value[2..])
+        when :id then eval_id(val)
+        when :let then eval_let(val[0], evaluate_one(val[1]))
+        when :send then eval_send(val[0], val[1], *val[2..])
         else
-          raise Error, "Unknown simple statement type: #{stmt.type}" if stmt.is_a?(Statement)
 
-          raise Error, "Unknown simple statement: #{stmt.inspect} (#{stmt.class})"
+          raise Error, "Unknown simple statement: #{stmt} (#{stmt.class})"
         end
       end
 
@@ -400,7 +409,6 @@ module Aua
       end
 
       def eval_send(receiver, method, *args)
-        # receiver, method, *args = stmt.value
         receiver = evaluate_one(
           receiver # : Statement
         )
@@ -418,22 +426,8 @@ module Aua
       end
 
       def eval_cat(parts)
-        Aua.logger.info "Concatenating parts: #{parts.inspect}"
-        to_ruby_str = lambda { |maybe_str|
-          case maybe_str
-          when String
-            maybe_str
-          when Str
-            maybe_str.value
-          when Obj
-            Aua.logger.info "Converting object to string: #{maybe_str.inspect}"
-            maybe_str.aura_send(:to_s)
-          else
-            raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
-          end
-        }
         parts = parts.map do |part|
-          part.is_a?(String) ? part : to_ruby_str.call(evaluate_one(part))
+          part.is_a?(String) ? part : to_ruby_str(evaluate_one(part))
         end
 
         # Concatenate all parts into a single string
@@ -468,6 +462,20 @@ module Aua
           evaluate_one(true_branch)
         elsif false_branch
           evaluate_one(false_branch)
+        end
+      end
+
+      def to_ruby_str(maybe_str)
+        case maybe_str
+        when String
+          maybe_str
+        when Str
+          maybe_str.value
+        when Obj
+          Aua.logger.info "Converting object to string: #{maybe_str.inspect}"
+          maybe_str.aura_send(:to_s)
+        else
+          raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
         end
       end
     end

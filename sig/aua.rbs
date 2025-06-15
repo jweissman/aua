@@ -219,7 +219,7 @@ module Aua
     def caret: () -> Text::Cursor
     def slice_from: (Integer) -> String?
     def string_machine: () -> Handle::StringMachine
-    def observe: (token) -> void
+    def observe: (token) { (token) -> void } -> void
 
     def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
          | (Symbol, untyped) -> Syntax::Token
@@ -246,6 +246,7 @@ module Aua
     def yield_lexeme: () { (token) -> void } -> void
 
     def should_resume_string: () -> bool
+    def handle_pending_tokens: () { (token) -> void } -> void
   end
 
   module AST
@@ -478,6 +479,7 @@ module Aua
         def translate_call: (AST::Node) -> Array[Statement]
         def translate_sequence: (AST::Node) -> Array[Statement]
         def translate_structured_str: (AST::Node) -> statement
+        def translate_structured_str_part: (untyped) -> untyped
       end
 
       extend Semantics
@@ -502,6 +504,8 @@ module Aua
       def interpolated: (Aua::Obj) -> Aua::Obj
       def resolve: (Aua::Obj) -> Aua::Obj
       def reduce: (AST::Node) -> statement
+
+      def to_ruby_str: (untyped) -> String
     end
 
     class PrettyPrinter

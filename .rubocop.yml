@@ -7,9 +7,9 @@ AllCops:
   SuggestExtensions: false
   NewCops: enable
   Exclude:
-    - 'vendor/**/*'
-    - 'bundle/**/*'
-    - 'node_modules/**/*'
+    - "vendor/**/*"
+    - "bundle/**/*"
+    - "node_modules/**/*"
 
 Style/GlobalStdStream:
   Enabled: true
@@ -24,18 +24,20 @@ Style/DataInheritance:
   Enabled: false
 
 Metrics/ModuleLength:
-  Max: 220
+  Max: 240
+  Exclude:
+    - "spec/**/*"
 
 Metrics/ClassLength:
-  Max: 160
+  Max: 180
 
 Metrics/MethodLength:
-  Max: 14
+  Max: 16
 
 Metrics/BlockLength:
   Max: 32
   Exclude:
-    - 'spec/**/*'
+    - "spec/**/*"
 
 Style/ItBlockParameter:
   Enabled: false
@@ -48,4 +50,10 @@ Style/Documentation:
   Enabled: false
 
 Style/ArgumentsForwarding:
+  Enabled: false
+
+RBS/Lint/WillSyntaxError:
+  Enabled: false
+
+Naming/PredicateMethod:
   Enabled: false

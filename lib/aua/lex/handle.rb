@@ -31,46 +31,32 @@ module Aua
         Aua.logger.debug("Handle#string") do
           "Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
         end
-        # Aua.logger.debug "[Handle#string] Current character: #{current_char.inspect}, next character: #{next_char.inspect}"
-        sm = string_machine
-        sm.saw_interpolation = false if quote == '"""'
+        string_machine
+        # sm.saw_interpolation = false if quote == '"""'
         if interpolative_quote?(quote)
-          sm.pending_tokens ||= []
-          sm.mode ||= :start
-          sm.buffer ||= ""
-          sm.quote = quote
-          sm.max_len = 2048
-          return sm.pending_tokens.shift unless sm.pending_tokens.empty?
-
-          until (sm.buffer&.length || 0) >= sm.max_len || sm.mode.nil?
-            sm_ret = sm.perform!
-            unless sm_ret == :continue
-              Aua.logger.debug("Handle#string") do
-                "#{quote} [#{sm.mode}] curr/next/skip=[ >#{current_char} / >#{next_char} / >#{next_next_char} ]"
-              end
-            end
-
-            case sm_ret
-            when :continue
-              # Aua.logger.debug "[Handle#string] Continuing in mode=#{sm.mode.inspect}, buffer=#{sm.buffer.inspect}"
-              next
-            when Syntax::Token
-              Aua.logger.debug("Handle#string") do
-                "Returning token: #{sm_ret.type.inspect} with value: #{sm_ret.value.inspect}"
-              end
-              return sm_ret
-            when Array
-              Aua.logger.debug("Handle#string") { "Returning array of tokens: #{sm_ret.map(&:type).join(", ")}" }
-              sm.pending_tokens.concat(sm_ret)
-              return sm.pending_tokens.shift
-            else
-              Aua.logger.debug("Handle#string") do
-                "StringMachine returned #{sm_ret}, continuing in mode=#{sm.mode.inspect}"
-              end
-            end
-          end
+          interpolative_string(quote)
         else
           recognize.string(quote)
+        end
+      end
+
+      def interpolative_string(quote)
+        sm = string_machine
+        sm.quote = quote
+        sm.max_len = 2048
+        return sm.pending_tokens.shift unless sm.pending_tokens.empty?
+
+        sm.spin! do |sm_ret|
+          case sm_ret
+          when Syntax::Token
+            # Aua.logger.debug("Handle#string") do
+            #   "Returning token: #{sm_ret.type.inspect} with value: #{sm_ret.value.inspect}"
+            # end
+            return sm_ret
+          when Array
+            sm.pending_tokens.concat(sm_ret)
+            return sm.pending_tokens.shift
+          end
         end
       end
 
