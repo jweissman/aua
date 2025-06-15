@@ -3,7 +3,7 @@ require "aua/text"
 require "aua/logger"
 require "aua/syntax"
 require "aua/lex/lens"
-require "aua/lex/handler"
+require "aua/lex/handle"
 require "aua/lex/recognizer"
 
 module Aua
@@ -36,7 +36,7 @@ module Aua
     def caret = @doc.caret
     def slice_from(start) = @doc.slice(start, @doc.position - start)
     def t(type, value = nil, at: caret) = Token.new(type:, value:, at: at || caret)
-    def string_machine = @string_machine ||= Handler::StringMachine.new(self)
+    def string_machine = @string_machine ||= Handle::StringMachine.new(self)
 
     private
 
@@ -120,7 +120,7 @@ module Aua
           else
             Aua.logger.debug "No token accepted, checking for pending tokens."
             # Only raise if there is still non-ignorable input
-            raise Error, Handler.unexpected_character_message(@lens) if @lens.more?
+            raise Error, Handle.unexpected_character_message(@lens) if @lens.more?
 
             break
           end
@@ -154,14 +154,14 @@ module Aua
     end
 
     def accept_n(chars)
-      matched_handler = token_names(chars.count).find do |pattern, _token_name|
+      matched_Handle = token_names(chars.count).find do |pattern, _token_name|
         pattern_match?(pattern, chars.join)
       end
 
-      return unless matched_handler
+      return unless matched_Handle
 
-      Aua.logger.debug "Matched handler: #{matched_handler.inspect}"
-      handle.send(matched_handler.last, chars.join)
+      Aua.logger.debug "Matched Handle: #{matched_Handle.inspect}"
+      handle.send(matched_Handle.last, chars.join)
     end
 
     def pattern_match?(pattern, content)
@@ -173,6 +173,6 @@ module Aua
       end
     end
 
-    def handle = @handle ||= Handler.new(self)
+    def handle = @handle ||= Handle.new(self)
   end
 end

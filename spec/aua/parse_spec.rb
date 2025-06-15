@@ -116,7 +116,7 @@ RSpec.describe Aua::Parse do
       AURA
     end
 
-    xit "parses commands following generative literals" do
+    it "parses commands following generative literals" do
       expect(ast.type).to eq(:seq)
       expect(ast.value.size).to eq(2)
 
