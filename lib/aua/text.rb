@@ -35,7 +35,7 @@ module Aua
       def peek = peek_at(1)
       def caret = @cursor.dup.freeze
       def content = @text.dup.freeze
-      def size = @len ||= content.length
+      def size = @size ||= content.length
       alias length size
 
       # Returns an array of the next n characters from the current position.

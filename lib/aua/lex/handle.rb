@@ -50,15 +50,16 @@ module Aua
               end
             end
 
-            if sm_ret == :continue
+            case sm_ret
+            when :continue
               # Aua.logger.debug "[Handle#string] Continuing in mode=#{sm.mode.inspect}, buffer=#{sm.buffer.inspect}"
               next
-            elsif sm_ret.is_a?(Syntax::Token)
+            when Syntax::Token
               Aua.logger.debug("Handle#string") do
                 "Returning token: #{sm_ret.type.inspect} with value: #{sm_ret.value.inspect}"
               end
               return sm_ret
-            elsif sm_ret.is_a?(Array)
+            when Array
               Aua.logger.debug("Handle#string") { "Returning array of tokens: #{sm_ret.map(&:type).join(", ")}" }
               sm.pending_tokens.concat(sm_ret)
               return sm.pending_tokens.shift

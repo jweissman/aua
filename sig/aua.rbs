@@ -9,11 +9,13 @@ module Aua
   class Logger
     LHS_WIDTH: Integer
     def initialize: (?String, ?untyped) -> void
+
     def info: (String) -> void
+            | (String) { (untyped) -> String } -> void
     def warn: (String) -> void
     def error: (String) -> void
     def debug: (String) -> void
-             | (String) { (untyped) -> void } -> void
+             | (String) { (untyped) -> String } -> void
     def trace: (String) -> void
     def fatal: (String) -> void
     def self.default: () -> Logger
@@ -79,7 +81,7 @@ module Aua
   type tkn = token | Array[token]
 
   class Lex
-    class Handler
+    class Handle
       class StringMachine
         @lexer: Lex
 
@@ -111,6 +113,7 @@ module Aua
         def start: () -> void
         def body: () -> void
         def end: () -> void
+        def none: () -> void
       end
 
       def initialize: (Lex) -> void
@@ -204,7 +207,7 @@ module Aua
     @doc: Text::Document
     @lens: Lens
     @recognize: Recognizer
-    @handle: Handler
+    @handle: Handle
 
     attr_reader lens: Lens
 
@@ -215,7 +218,7 @@ module Aua
     def recognize: () -> Lex::Recognizer
     def caret: () -> Text::Cursor
     def slice_from: (Integer) -> String?
-    def string_machine: () -> Handler::StringMachine
+    def string_machine: () -> Handle::StringMachine
     def observe: (token) -> void
 
     def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
@@ -225,6 +228,7 @@ module Aua
     private
 
     def tokenize: () { (token) -> void } -> void
+    def tokenize!: () { (token) -> void } -> void
     def accept: () -> untyped
     def accept_n: (Array[char]) -> untyped
     def accept_token: () -> token?
@@ -235,7 +239,7 @@ module Aua
     def current_pos: () -> Integer
     def each_token: () { (token) -> void } -> void
     def eof?: () -> bool
-    def handle: () -> Lex::Handler
+    def handle: () -> Lex::Handle
     def pattern_match?: (String | Regexp, String) -> bool
     def token_names: (Integer) -> untyped
     def unexpected_character_message: () -> String
@@ -306,7 +310,7 @@ module Aua
     def parse_unary: () -> AST::Node?
     def parse_conditional: () -> AST::Node?
     def parse_condition_body: () -> [AST::Node, AST::Node?]
-    def parse_structured_str: () -> AST::Node
+    def parse_structured_str: (?bool) -> AST::Node
     def parse_statements: () -> AST::Node
     def unexpected_tokens?: () -> bool
     def unexpected_token: () -> untyped
@@ -406,100 +410,131 @@ module Aua
     attr_reader value: ::Time
   end
 
-  class Statement
-    attr_reader type: Symbol
-    attr_reader value: untyped
-    def initialize: (type: Symbol, value: untyped) -> void
-  end
-
-  module Semantics
-    MEMO: String
-    def self.inst: (Symbol, *untyped) -> Statement
-  end
-
-  class Context
-    def initialize: (String) -> void
-    def source_document: () -> Text::Document
-  end
-
-  type primary = Int | Float | Str | Bool | Nihil
-  type environment = Hash[String, untyped]
-
-  type statement = Array[Statement] | Statement | Array[primary] | primary
-
-  class VM
-    module Commands
-      LET: untyped
-      RECALL: untyped
-      LOCAL_VARIABLE_GET: untyped
-      SEND: untyped
-      CONCATENATE: untyped
-      GEN: untyped
+  module Runtime
+    class Statement
+      attr_reader type: Symbol
+      attr_reader value: untyped
+      def initialize: (type: Symbol, value: untyped) -> void
     end
 
-    class Translator
-      include Commands
-      def initialize: (VM) -> void
-      def environment: () -> environment
-      def reify_primary: (AST::Node) -> primary
-      def translate_negation: (AST::Node) -> Array[Statement]
-      def translate: (AST::Node) -> statement
-      def translate_assignment: (AST::Node) -> Array[Statement]
-      def translate_basic: (AST::Node) -> statement
-      def translate_binop: (AST::Node) -> statement
-      def translate_if: (AST::Node) -> statement
-      def translate_gen_lit: (untyped) -> Array[Aua::Str]
-      def translate_call: (AST::Node) -> Array[Statement]
-      def translate_sequence: (AST::Node) -> Array[Statement]
-      module Binop
-        include Commands
-        def self.binary_operation: (Symbol, statement, statement) -> statement
-        def self.binop_plus: (statement, statement) -> statement
-        def self.binop_minus: (statement, statement) -> statement
-        def self.binop_slash: (statement, statement) -> statement
-        def self.float_slash: (statement, statement) -> statement
-        def self.int_slash: (Int, Int) -> statement
-        def self.int_plus: (Int, Int) -> statement
-        def self.float_plus: (Float, Float) -> statement
-        def self.str_plus: (Str, Str) -> statement
-        def self.raise_binop_type_error: (Symbol, statement, statement) -> statement
-        def self.binop_star: (statement, statement) -> statement
-        def self.binop_pow: (statement, statement) -> statement
+    module Semantics
+      MEMO: String
+      def self.inst: (Symbol, *untyped) -> Statement
+    end
+
+    class Context
+      def initialize: (String) -> void
+      def source_document: () -> Text::Document
+    end
+
+    type primary = Int | Float | Str | Bool | Nihil
+    type environment = Hash[String, untyped]
+
+    type statement = Array[Statement] | Statement | Array[primary] | primary
+
+    class VM
+      module Commands
+        LET: untyped
+        RECALL: untyped
+        LOCAL_VARIABLE_GET: untyped
+        SEND: untyped
+        CONCATENATE: untyped
+        GEN: untyped
       end
 
-      TRANSLATIONS: Hash[Symbol, Array[Statement]]
+      class Translator
+        module Binop
+          include Commands
+          def self.binary_operation: (Symbol, statement, statement) -> statement
+          def self.binop_plus: (statement, statement) -> statement
+          def self.binop_minus: (statement, statement) -> statement
+          def self.binop_slash: (statement, statement) -> statement
+          def self.float_slash: (statement, statement) -> statement
+          def self.int_slash: (Int, Int) -> statement
+          def self.int_plus: (Int, Int) -> statement
+          def self.float_plus: (Float, Float) -> statement
+          def self.str_plus: (Str, Str) -> statement
+          def self.raise_binop_type_error: (Symbol, statement, statement) -> statement
+          def self.binop_star: (statement, statement) -> statement
+          def self.binop_pow: (statement, statement) -> statement
+        end
+
+        TRANSLATIONS: Hash[Symbol, Array[Statement]]
+
+        @vm: VM
+
+        include Commands
+
+        def initialize: (VM) -> void
+        def environment: () -> environment
+        def reify_primary: (AST::Node) -> primary
+        def translate_negation: (AST::Node) -> Array[Statement]
+        def translate: (AST::Node) -> statement
+        def translate_assignment: (AST::Node) -> Array[Statement]
+        def translate_basic: (AST::Node) -> statement
+        def translate_binop: (AST::Node) -> statement
+        def translate_if: (AST::Node) -> statement
+        def translate_gen_lit: (untyped) -> Array[Aua::Str]
+        def translate_call: (AST::Node) -> Array[Statement]
+        def translate_sequence: (AST::Node) -> Array[Statement]
+        def translate_structured_str: (AST::Node) -> statement
+      end
+
+      extend Semantics
+      @env: environment
+      @tx: Translator
+      @builtins: Hash[Symbol, untyped]
+      def initialize: (?environment) -> void
+      def builtins: () -> Hash[Symbol, untyped]
+
+      private
+
+      def evaluate: (Context, AST::Node) -> untyped
+      def evaluate_one: (Statement) -> Aua::Obj
+      def evaluate_simple: (Statement) -> untyped
+      def eval_cat: (Array[untyped]) -> untyped
+      def eval_send: (String | Symbol receiver, Symbol method, *untyped args) -> untyped
+      def eval_gen: (Array[untyped]) -> untyped
+      def eval_call: (String | Symbol, Array[untyped]) -> untyped
+      def eval_id: (untyped) -> untyped
+      def eval_let: (untyped, untyped) -> untyped
+      def eval_if: (untyped, untyped, untyped?) -> untyped
+      def interpolated: (Aua::Obj) -> Aua::Obj
+      def resolve: (Aua::Obj) -> Aua::Obj
+      def reduce: (AST::Node) -> statement
     end
 
-    extend Semantics
-    def initialize: (?environment) -> void
-    def builtins: () -> Hash[Symbol, untyped]
+    class PrettyPrinter
+      def pretty: (Obj) -> String
+    end
 
-    private
+    class Interpreter
+      def initialize: (?environment) -> void
+      def lex: (Context, String) -> Enumerator[token]
+      def parse: (Context, Enumerator[token]) -> AST::Node
+      def run: (Context, String) -> untyped
 
-    def evaluate: (Context, AST::Node) -> untyped
-    def evaluate_one: (Statement) -> untyped
-    def eval_call: (String | Symbol, Array[untyped]) -> untyped
-    def eval_id: (untyped) -> untyped
-    def eval_let: (untyped, untyped) -> untyped
-    def eval_if: (untyped, untyped, untyped?) -> untyped
-    def interpolated: (Aua::Obj) -> Aua::Obj
-    def resolve: (Aua::Obj) -> Aua::Obj
-    def reduce: (AST::Node) -> Array[Statement]
-  end
+      private
 
-  class PrettyPrinter
-    def pretty: (Obj) -> String
-  end
+      def vm: () -> VM
+    end
 
-  class Interpreter
-    def initialize: (?environment) -> void
-    def lex: (Context, String) -> Enumerator[token]
-    def parse: (Context, Enumerator[token]) -> AST::Node
-    def run: (Context, String) -> untyped
-
-    private
-
-    def vm: () -> VM
+    class Configuration
+      attr_reader base_uri: String
+      attr_reader model: String
+      attr_reader testing: bool
+      attr_reader temperature: ::Float
+      attr_reader max_tokens: Integer
+      attr_reader top_p: ::Float
+      attr_reader frequency_penalty: ::Float
+      attr_reader presence_penalty: ::Float
+      def initialize: (
+        ?base_uri: String, ?model: String, ?testing: bool, ?temperature: ::Float,
+        ?max_tokens: Integer, ?top_p: ::Float, ?frequency_penalty: ::Float,
+        ?presence_penalty: ::Float
+      ) -> void
+      def self.default: () -> Configuration
+    end
   end
 
   module LLM
@@ -585,35 +620,18 @@ module Aua
     def self.chat: () -> Chat
   end
 
-  class Configuration
-    attr_reader base_uri: String
-    attr_reader model: String
-    attr_reader testing: bool
-    attr_reader temperature: ::Float
-    attr_reader max_tokens: Integer
-    attr_reader top_p: ::Float
-    attr_reader frequency_penalty: ::Float
-    attr_reader presence_penalty: ::Float
-    def initialize: (
-      ?base_uri: String, ?model: String, ?testing: bool, ?temperature: ::Float,
-      ?max_tokens: Integer, ?top_p: ::Float, ?frequency_penalty: ::Float,
-      ?presence_penalty: ::Float
-    ) -> void
-    def self.default: () -> Configuration
-  end
-
   def self.testing: () -> bool
   def self.testing=: (bool) -> void
   def self.configure: () { (untyped) -> void } -> void
-  def self.configuration: () -> Configuration
+  def self.configuration: () -> Runtime::Configuration
 
   # Constants and helpers
   EOS: token
   NOTHING: AST::Node
 
   def self.run: (String) -> untyped
-  def self.vm: (?environment) -> VM
+  def self.vm: (?Runtime::environment) -> Runtime::VM
   def self.testing?: () -> bool
   def self.builtins: () -> Hash[Symbol, untyped]
-  def self.interpreter: () -> Interpreter
+  def self.interpreter: () -> Runtime::Interpreter
 end

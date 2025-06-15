@@ -75,7 +75,7 @@ module Aua
 
         def end
           str_kind = :str_end
-          str_kind = :gen_end if @quote = '"""' && @saw_interpolation
+          str_kind = :gen_end if (@quote = @saw_interpolation)
           advance
           @mode = nil
           @pending_tokens&.clear
