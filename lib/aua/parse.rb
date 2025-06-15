@@ -283,7 +283,6 @@ module Aua
     end
 
     # Parses a structured/interpolated string
-    # @type method parse_structured_str: (bool) -> AST::Node
     # (triple_quoted = @current_string_quote == '"""')
     def parse_structured_str
       parts = structured_string_enumerator.to_a # (->(type) { token_type = type }).to_a

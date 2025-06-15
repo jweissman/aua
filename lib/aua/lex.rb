@@ -46,6 +46,7 @@ module Aua
       !!(string_machine.mode && string_machine.mode != :end && !string_machine.mode.nil?)
     end
 
+    # NOTE: - also yields the token to the block if given
     def observe(token, &)
       Aua.logger.debug("observe") do
         "token: \\#{token.type} (value: \\#{token.value.inspect}), at: \\#{token.at.inspect}"
@@ -81,9 +82,8 @@ module Aua
     def handle_pending_tokens(&)
       tok = string_machine.pending_tokens.shift
       if tok
-        log_tokenize(tok)
         observe(tok, &)
-        update_string_state(tok)
+        check_string_bounds(tok)
       end
       true
     end
@@ -172,22 +172,11 @@ module Aua
 
     def handle = @handle ||= Handle.new(self)
 
-    def log_tokenize(tok)
-      Aua.logger.debug("tokenize") do
-        <<~LOG
-          Yielding \\#{tok.type} (value: \\#{tok.value.inspect})
-          - inside_string=\\#{string_machine.inside_string.inspect}
-          - string_mode=\\#{string_machine.mode.inspect}
-        LOG
-      end
-    end
-
-    def update_string_state(tok)
+    def check_string_bounds(tok)
       string_machine.inside_string = false if tok.type == :interpolation_start
       return unless tok.type == :interpolation_end
 
-      string_machine.inside_string = true
-      string_machine.mode = :body
+      string_machine.inside!
     end
   end
 end

@@ -53,7 +53,7 @@ module Aua
         def perform! = perform(@mode)
 
         def spin!(&)
-          @pending_tokens ||= []
+          @pending_tokens ||= [] # : Array[Syntax::Token]
           @mode ||= :start
           until spindown?
             ret = perform!

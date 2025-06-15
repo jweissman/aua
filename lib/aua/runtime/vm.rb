@@ -327,13 +327,13 @@ module Aua
 
         uri = URI(url.value)
         response = Net::HTTP.get_response(uri)
-        handle_see_url_response(url, response)
+        handle_see_url_response(uri, response)
       end
 
       def handle_see_url_response(url, response)
-        raise Error, "Failed to fetch URL: #{url.value} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
+        raise Error, "Failed to fetch URL: #{url} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
-        Aua.logger.debug "Response from #{url.value}: #{response.body}"
+        Aua.logger.debug "Response from #{url}: #{response.body}"
         Aua::Str.new(response.body)
       end
 

@@ -114,6 +114,9 @@ module Aua
         def body: () -> void
         def end: () -> void
         def none: () -> void
+        def spin!: () { (untyped) -> untyped } -> untyped
+        def spindown?: () -> bool
+        def inside!: (?Symbol) -> void
       end
 
       def initialize: (Lex) -> void
@@ -143,6 +146,8 @@ module Aua
       def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
            | (Symbol, untyped) -> Syntax::Token
            | (Symbol) -> Syntax::Token
+
+      def interpolative_string: (String) -> untyped
 
       private
 
@@ -247,6 +252,12 @@ module Aua
 
     def should_resume_string: () -> bool
     def handle_pending_tokens: () { (token) -> void } -> void
+
+    def handle_string_mode: () { (token) -> void } -> void
+    def handle_string_mode_token: (token) { (token) -> void } -> void
+    def handle_normal_mode: () { (token) -> void } -> void
+    def handle_normal_mode_token: (token) { (token) -> void } -> void
+    def check_string_bounds: (token) -> void
   end
 
   module AST
@@ -311,13 +322,17 @@ module Aua
     def parse_unary: () -> AST::Node?
     def parse_conditional: () -> AST::Node?
     def parse_condition_body: () -> [AST::Node, AST::Node?]
-    def parse_structured_str: (?bool) -> AST::Node
+    def parse_structured_str: () -> AST::Node
     def parse_statements: () -> AST::Node
     def unexpected_tokens?: () -> bool
     def unexpected_token: () -> untyped
     def self.ast: (Array[token]) -> AST::Node
     def binary_op?: (Symbol) -> bool
     def advance: () -> void
+
+    def statement_enumerator: () -> Enumerator[AST::Node]
+    def primitives: () -> Grammar::Primitives
+    def structured_string_enumerator: () -> Enumerator[AST::Node]
 
     def precedent?: (Symbol, Integer) -> bool
     def consume_binary_op: (AST::Node) -> AST::Node
@@ -493,6 +508,7 @@ module Aua
 
       def evaluate: (Context, AST::Node) -> untyped
       def evaluate_one: (Statement) -> Aua::Obj
+      def evaluate_one!: (Statement) -> Aua::Obj
       def evaluate_simple: (Statement) -> untyped
       def eval_cat: (Array[untyped]) -> untyped
       def eval_send: (String | Symbol receiver, Symbol method, *untyped args) -> untyped
@@ -506,6 +522,16 @@ module Aua
       def reduce: (AST::Node) -> statement
 
       def to_ruby_str: (untyped) -> String
+
+      def builtin_inspect: (Aua::Obj) -> Aua::Str
+      def builtin_rand: (Aua::Obj) -> Aua::Int
+      def builtin_time: (Aua::Str) -> Aua::Time
+      def builtin_say: (Aua::Str) -> Aua::Nihil
+      def builtin_ask: (Aua::Str) -> Aua::Str
+      def builtin_chat: (Aua::Str) -> Aua::Str
+      def builtin_see_url: (Aua::Str) -> Aua::Str
+
+      def handle_see_url_response: (URI, Net::HTTPResponse) -> Aua::Str
     end
 
     class PrettyPrinter
