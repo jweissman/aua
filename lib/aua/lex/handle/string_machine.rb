@@ -57,9 +57,9 @@ module Aua
         protected
 
         def perform(state)
-          # Aua.logger.debug "[StringMachine#perform] Performing state: #{state.inspect} at position #{current_pos}"
+          return if state.nil?
+          # Only allow valid states
           raise Error, "Invalid string machine state: #{state.inspect}" unless %i[start body end].include?(state)
-
           send state
         end
 
@@ -99,9 +99,7 @@ module Aua
             @mode = :end
             advance(3)
             Aua.logger.debug "[Handle#string] ending with token type=#{token&.type}"
-            if token && token.type == :gen_lit
-              reset!
-            end
+            reset! if token && token.type == :gen_lit
             return token if token
 
             return :continue
@@ -147,6 +145,11 @@ module Aua
                   "Unterminated string literal (of length #{@buffer.length}) at " + @lexer.lens.describe
           end
           :continue
+        end
+
+        # never
+        def none
+          raise Error, "StringMachine is in an invalid state: none"
         end
       end
     end

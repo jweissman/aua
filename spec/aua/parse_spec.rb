@@ -127,8 +127,36 @@ RSpec.describe Aua::Parse do
 
       extend Aua::Grammar
       expect(lines[1].value[1]).to eq([
-                                        s(:structured_gen_lit, [
+                                        s(:structured_str, [
                                             s(:str, "You are a "),
+                                            s(:id, "profession")
+                                          ])
+                                      ])
+    end
+  end
+  describe "commands after gen lits containing interpolative gen lits" do
+    let(:input) do
+      <<~AURA
+        profession = """Please invent a short profession for a character. One word only. No spaces"""
+
+        say """Please describe a character with the profession ${profession}"""
+      AURA
+    end
+
+    it "parses commands following generative literals" do
+      # puts tokens.to_a.map { |t| [t.type, t.value] }.inspect
+      expect(ast.type).to eq(:seq)
+      expect(ast.value.size).to eq(2)
+
+      lines = ast.value
+      expect(lines[0].type).to eq(:assign)
+      expect(lines[1].type).to eq(:call)
+      expect(lines[1].value[0]).to eq("say")
+
+      extend Aua::Grammar
+      expect(lines[1].value[1]).to eq([
+                                        s(:structured_gen_lit, [
+                                            s(:str, "Please describe a character with the profession "),
                                             s(:id, "profession")
                                           ])
                                       ])

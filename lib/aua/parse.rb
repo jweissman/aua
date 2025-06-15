@@ -176,7 +176,7 @@ module Aua
 
     protected
 
-    def info(message) = Aua.logger.debug("aura:parse") { message }
+    def info(message) = Aua.logger.info("aura:parse") { message }
 
     private
 
@@ -239,15 +239,18 @@ module Aua
       # Accept one or more primary expressions as arguments (space-separated)
       while PRIMARY_NAMES.key?(@current_token.type)
         # Special case: if the token is :str_part, parse the whole structured string
-        args << if @current_token.type == :str_part
-                  parse_structured_str
-                else
-                  Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
-                end
+        arg = if @current_token.type == :str_part
+                info " - Parsing structured string from str_part token"
+                parse_structured_str(false)
+              else
+                Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+              end
+        args << arg
+        info " - Parsed argument: #{arg.inspect}"
         if @current_token.type == :comma
           consume(:comma)
           info " - Consumed comma, expecting more args"
-        elsif %i[eos eof interpolation_end].include?(@current_token.type)
+        elsif %i[eos eof interpolation_end str_end].include?(@current_token.type)
           info " - End of arguments reached"
           break
         else
@@ -342,15 +345,11 @@ module Aua
 
       # Handle structured/interpolated strings
       if @current_token.type == :str_part
-        # Heuristic: if the previous token was a prompt (triple-quoted), treat as structured_gen_lit
-        # Since the lexer now emits str_part/interpolation_start for triple-quoted with interpolation,
-        # we can always wrap structured/interpolated strings in :structured_gen_lit if the input was triple-quoted.
-        parts = parse_structured_str
-        return parts unless @last_string_was_triple_quoted
-
+        # Use and reset @last_string_was_triple_quoted for this string only
+        use_triple = @last_string_was_triple_quoted
         @last_string_was_triple_quoted = false
-        return s(:structured_gen_lit, parts.value)
-
+        parts = parse_structured_str(use_triple)
+        return parts
       end
 
       # Detect triple-quoted string start
@@ -367,9 +366,10 @@ module Aua
     end
 
     # Parses a structured/interpolated string
-    # @type method parse_structured_str: () -> AST::Node
-    def parse_structured_str
-      token_type = :structured_str
+    # @type method parse_structured_str: (bool) -> AST::Node
+    def parse_structured_str(triple_quoted = false)
+      info "Parsing structured string, triple_quoted=#{triple_quoted}, current_token=#{@current_token.type} (#{@current_token.value})"
+      token_type = triple_quoted ? :structured_gen_lit : :structured_str
       parts = [] # : Array[AST::Node]
       loop do
         case @current_token.type
