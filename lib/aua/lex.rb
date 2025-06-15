@@ -47,30 +47,36 @@ module Aua
     end
 
     def observe(token)
-      Aua.logger.debug "Observed token: \\#{token.type} (value: \\#{token.value.inspect}), at: \\#{token.at.inspect}"
+      Aua.logger.debug("observe") do
+        "token: \\#{token.type} (value: \\#{token.value.inspect}), at: \\#{token.at.inspect}"
+      end
 
-      return unless token.type == :str_end
+      # Reset string state after any string-ending token
+      return unless %i[str_end].include?(token.type)
 
       string_machine.inside_string = false
-      string_machine.mode = :none
+      # string_machine.mode = :end
+      string_machine.buffer = ""
     end
 
     def tokenize(&)
-      Aua.logger.debug "Starting lexing \\#{caret} (reading \\#{@doc.size} characters)"
+      Aua.logger.debug("tokenize") { "Starting lexing \\#{caret} (reading \\#{@doc.size} characters)" }
       string_machine.inside_string = false
       string_machine.pending_tokens ||= [] # : Array[token]
       while @lens.more? || !string_machine.pending_tokens.empty?
-        Aua.logger.debug "Lens -- \\#{@lens.describe}"
+        # Aua.logger.debug "Lens -- \\#{@lens.describe}"
         if string_machine.pending_tokens.empty?
-          Aua.logger.debug "No pending tokens, consuming next character."
+          # Aua.logger.debug "No pending tokens, consuming next character."
         else
-          Aua.logger.debug "Pending tokens: \\#{string_machine.pending_tokens.map(&:type).join(", ")}"
+          Aua.logger.debug("tokenize") { "Pending tokens: \\#{string_machine.pending_tokens.map(&:type).join(", ")}" }
         end
         # end
         unless string_machine.pending_tokens.empty?
           tok = string_machine.pending_tokens.shift
           if tok
-            Aua.logger.debug "Yielding token: \\#{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}"
+            Aua.logger.debug("tokenize") do
+              "Yielding #{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}"
+            end
             observe(tok)
             yield(tok)
             string_machine.inside_string = false if tok.type == :interpolation_start
@@ -83,7 +89,9 @@ module Aua
         end
 
         if string_machine.inside_string && !string_machine.mode.nil?
-          Aua.logger.debug "Resuming string lexing: inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}, current_char=\\#{@lens.current_char.inspect}"
+          Aua.logger.debug("tokenize") do
+            "Resuming string lexing: inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}, current_char=\\#{@lens.current_char.inspect}"
+          end
           # Use the correct quote type for resuming string lexing
           token = handle.string(string_machine.quote || '"')
           # tokens = token.is_a?(Array) ? token : [token]
@@ -93,7 +101,9 @@ module Aua
           tok, *rest = tokens
           string_machine.pending_tokens.concat(rest) if rest.any?
           if tok
-            Aua.logger.debug "Yielding token (string mode): \\#{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}"
+            Aua.logger.debug("tokenize") do
+              "Yielding (string mode): \\#{tok.type} (value: \\#{tok.value.inspect}), inside_string=\\#{string_machine.inside_string.inspect}, string_mode=\\#{string_machine.mode.inspect}"
+            end
             observe(tok)
             yield(tok)
             string_machine.inside_string = false if tok.type == :interpolation_start
@@ -103,7 +113,7 @@ module Aua
             end
           end
         else
-          Aua.logger.debug "Not inside string, consuming next tokens..."
+          # Aua.logger.debug "Not inside string, consuming next tokens..."
           token = consume_until_acceptance
 
           # tokens = token.is_a?(Array) ? token : [token]
@@ -111,6 +121,7 @@ module Aua
           string_machine.pending_tokens.concat(tokens[1..] || []) if tokens.size > 1
           tok = tokens.first
           if tok
+            observe(tok)
             yield(tok)
             string_machine.inside_string = true if tok.type == :string
             if tok.type == :interpolation_end
@@ -118,7 +129,7 @@ module Aua
               string_machine.mode = :body
             end
           else
-            Aua.logger.debug "No token accepted, checking for pending tokens."
+            Aua.logger.debug("tokenize") { "No token accepted, checking for pending tokens." }
             # Only raise if there is still non-ignorable input
             raise Error, Handle.unexpected_character_message(@lens) if @lens.more?
 
@@ -160,7 +171,7 @@ module Aua
 
       return unless matched_Handle
 
-      Aua.logger.debug "Matched Handle: #{matched_Handle.inspect}"
+      # Aua.logger.debug "Matched Handle: #{matched_Handle.inspect}"
       handle.send(matched_Handle.last, chars.join)
     end
 

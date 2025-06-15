@@ -1,23 +1,7 @@
-# frozen_string_literal: true
+require "aua/ast"
 
 # Aua is a programming language and interpreter written in Ruby...
 module Aua
-  # The AST (Abstract Syntax Tree) node definitions for Aua.
-  module AST
-    # Represents a node in the abstract syntax tree (AST) of Aua.
-    class Node < Data.define(:type, :value, :at)
-      attr_reader :at
-
-      def inspect = "#{type} (#{value.inspect} #{at})"
-
-      def ==(other)
-        return false unless other.is_a?(Node)
-
-        type == other.type && value == other.value
-      end
-    end
-  end
-
   # Grammar helpers for constructing AST nodes.
   module Grammar
     PRIMARY_NAMES = {
@@ -107,7 +91,7 @@ module Aua
       def parse_generative_lit
         value = @parse.current_token.value
         @parse.consume(:gen_lit)
-        s(:gen_lit, value)
+        s(:structured_gen_lit, [s(:str, value)])
       end
 
       private
@@ -254,7 +238,10 @@ module Aua
           info " - End of arguments reached"
           break
         else
-          raise Error, "Unexpected token while parsing arguments: #{@current_token.type}"
+          # If the next token is a valid statement starter, break out of the argument loop
+          # break if %i[id keyword eof eos].include?(@current_token.type)
+
+          raise Error, "Unexpected token while parsing arguments: \\#{@current_token.type}"
         end
       end
 

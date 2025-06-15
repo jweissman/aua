@@ -51,12 +51,12 @@ rescue StandardError => e
 end
 
 def bye(code = 0)
-  puts "#{"~".green}|#{"~".blue}"
+  puts "#{"-".green}|#{"~".blue}"
   puts "(c) 2023-2024 aura-lang"
   exit(code)
 end
 
-puts "#{"~".blue}|#{"~".green}"
+puts "#{"~".blue}|#{"-".green}"
 if ARGV.empty?
   repl!
 else

@@ -28,7 +28,9 @@ module Aua
       end
 
       def string(quote)
-        Aua.logger.debug "[Handle#string] Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
+        Aua.logger.debug("Handle#string") do
+          "Starting string lexing with quote: #{quote.inspect} at position #{current_pos}"
+        end
         # Aua.logger.debug "[Handle#string] Current character: #{current_char.inspect}, next character: #{next_char.inspect}"
         sm = string_machine
         sm.saw_interpolation = false if quote == '"""'
@@ -43,21 +45,27 @@ module Aua
           until (sm.buffer&.length || 0) >= sm.max_len || sm.mode.nil?
             sm_ret = sm.perform!
             unless sm_ret == :continue
-              Aua.logger.debug "#{quote} [#{sm.mode}] curr/next/skip=[ >#{current_char} / >#{next_char} / >#{next_next_char} ]"
+              Aua.logger.debug("Handle#string") do
+                "#{quote} [#{sm.mode}] curr/next/skip=[ >#{current_char} / >#{next_char} / >#{next_next_char} ]"
+              end
             end
 
             if sm_ret == :continue
               # Aua.logger.debug "[Handle#string] Continuing in mode=#{sm.mode.inspect}, buffer=#{sm.buffer.inspect}"
               next
             elsif sm_ret.is_a?(Syntax::Token)
-              Aua.logger.debug "[Handle#string] Returning token: #{sm_ret.type.inspect} with value: #{sm_ret.value.inspect}"
+              Aua.logger.debug("Handle#string") do
+                "Returning token: #{sm_ret.type.inspect} with value: #{sm_ret.value.inspect}"
+              end
               return sm_ret
             elsif sm_ret.is_a?(Array)
-              Aua.logger.debug "[Handle#string] Returning array of tokens: #{sm_ret.map(&:type).join(", ")}"
+              Aua.logger.debug("Handle#string") { "Returning array of tokens: #{sm_ret.map(&:type).join(", ")}" }
               sm.pending_tokens.concat(sm_ret)
               return sm.pending_tokens.shift
             else
-              Aua.logger.debug "[Handle#string] StringMachine returned #{sm_ret}, continuing in mode=#{sm.mode.inspect}"
+              Aua.logger.debug("Handle#string") do
+                "StringMachine returned #{sm_ret}, continuing in mode=#{sm.mode.inspect}"
+              end
             end
           end
         else

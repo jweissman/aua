@@ -1,6 +1,4 @@
 #!/usr/bin/env aura
-say "hello world"
-say "this is a simple game that shows how to use the aura framework"
 name = ask "what is your name?"
 say "Hello ${name}"
 profession = """Please invent a short profession for a character. One word only. No spaces"""

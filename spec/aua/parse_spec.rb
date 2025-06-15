@@ -162,4 +162,50 @@ RSpec.describe Aua::Parse do
                                       ])
     end
   end
+
+  describe "complex command parsing" do
+    let(:input) do
+      <<~AURA
+        say "hello world"
+        say "this is a simple game that shows how to use the aura framework"
+        name = ask "what is your name?"
+        say "Hello ${name}"
+        profession = """Please invent a short profession for a character"""
+        say "You are a ${profession}"
+      AURA
+    end
+
+    it "parses a sequence of commands with string interpolation" do
+      # puts tokens.to_a.map { |t| [t.type, t.value] }.inspect
+
+      expect(ast.type).to eq(:seq)
+      expect(ast.value.size).to eq(6)
+
+      lines = ast.value
+
+      extend Aua::Grammar
+      expect(lines[0].type).to eq(:call)
+      expect(lines[0].value[0]).to eq("say")
+      expect(lines[0].value[1]).to eq([s(:str, "hello world")])
+
+      expect(lines[1].type).to eq(:call)
+      expect(lines[1].value[0]).to eq("say")
+      expect(lines[1].value[1]).to eq([s(:str,
+                                         "this is a simple game that shows how to use the aura framework")])
+
+      expect(lines[2].type).to eq(:assign)
+      expect(lines[2].value[0]).to eq("name")
+      expect(lines[2].value[1]).to eq(s(:call, ["ask", [s(:str, "what is your name?")]]))
+
+      expect(lines[3].type).to eq(:call)
+      expect(lines[3].value[0]).to eq("say")
+      expect(lines[3].value[1]).to eq([s(:structured_str, [s(:str, "Hello "), s(:id, "name")])])
+
+      expect(lines[4].type).to eq(:assign)
+      expect(lines[4].value[0]).to eq("profession")
+      expect(lines[4].value[1]).to eq(s(:structured_gen_lit,
+                                        [s(:str,
+                                           "Please invent a short profession for a character")]))
+    end
+  end
 end

@@ -57,10 +57,10 @@ module Aua
         protected
 
         def perform(state)
-          return if state.nil?
-          # Only allow valid states
-          raise Error, "Invalid string machine state: #{state.inspect}" unless %i[start body end].include?(state)
-          send state
+          # Aua.logger.debug "[StringMachine#perform] Performing state: #{state.inspect} at position #{current_pos}"
+          raise Error, "Invalid string machine state: #{state.inspect}" unless %i[start body end none].include?(state)
+
+          send state # unless @mode == :none
         end
 
         def start
@@ -87,22 +87,29 @@ module Aua
 
           # End triple-quoted string
           if @quote == '"""' && current_char == '"' && next_char == '"' && next_next_char == '"'
-            Aua.logger.debug "close str -- mode=body, gen=#{@quote == '"""'}"
-            Aua.logger.debug "saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@buffer.inspect}"
-            token = if @saw_interpolation
-                      t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
-                    else
-                      @mode = nil
-                      t(:gen_lit, @buffer)
-                    end
-            @buffer = nil
-            @mode = :end
-            advance(3)
-            Aua.logger.debug "[Handle#string] ending with token type=#{token&.type}"
-            reset! if token && token.type == :gen_lit
-            return token if token
+            Aua.logger.debug("string_machine#body") do
+              "close str -- mode=body, gen=#{@quote == '"""'}, \
+              saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@buffer.inspect}"
+            end
 
-            return :continue
+            if @saw_interpolation
+              token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
+              @buffer = nil
+              @mode = :end
+              advance(3)
+              Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type}" }
+              return token if token
+
+              return :continue
+            else
+              token = t(:gen_lit, @buffer)
+              @buffer = nil
+              @mode = nil
+              advance(3)
+              reset!
+              Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type} (reset after gen_lit)" }
+              return token
+            end
           end
 
           # End single/double-quoted string
@@ -125,7 +132,9 @@ module Aua
           # Interpolation
           if current_char == "$" && next_char == "{"
             @saw_interpolation = true if @quote == '"""'
-            Aua.logger.debug "[Handle#string] Found interpolation start at pos=#{current_pos}, buffer=#{@buffer.inspect}"
+            Aua.logger.debug("string_machine#body") do
+              "Found interpolation start at pos=#{current_pos}, buffer=#{@buffer.inspect}"
+            end
             advance(2)
             token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
             @buffer = ""
@@ -150,6 +159,7 @@ module Aua
         # never
         def none
           raise Error, "StringMachine is in an invalid state: none"
+          # advance
         end
       end
     end

@@ -366,35 +366,54 @@ module Aua
                                     [:str_end, nil],
                                     [:eos, nil]
                                   ])
+        end
 
-          # Uncomment the following lines if you want to check the individual tokens
-          # expect(tokens[0].type).to eq(:id)
-          # expect(tokens[0].value).to eq("profession")
-          # expect(tokens[1].type).to eq(:equals)
-          # expect(tokens[2].type).to eq(:gen_lit)
-          # expect(tokens[2].value).to include("Please invent a short profession")
+        describe "complex command lexing" do
+          let(:input) do
+            <<~AURA
+              name = ask "what is your name?"
+              say "Hello ${name}"
+              profession = """Please invent a short profession for a character"""
+              say "You are a ${profession}"
+            AURA
+          end
 
-          # expect(tokens[3].type).to eq(:eos)
+          it "parses a sequence of commands with string interpolation" do
+            token_map = tokens.map { |t| [t.type, t.value] }.to_a
+            lines = token_map.chunk { |t| t.first == :eos }.reject { |k, _| k }.map(&:last)
+            fst, snd, thd, *rest = lines
+            expect(fst.size).to eq(5)
+            expect(fst).to eq([
+                                [:id, "name"],
+                                [:equals, "="],
+                                [:id, "ask"],
+                                [:str_part, "what is your name?"],
+                                [:str_end, ""]
+                              ])
+            expect(snd).to eq([
+                                [:id, "say"],
+                                [:str_part, "Hello "],
+                                [:interpolation_start, "${"],
+                                [:id, "name"],
+                                [:interpolation_end, "}"],
+                                [:str_end, nil]
+                              ])
 
-          # expect(tokens[0].type).to eq(:id)
-          # expect(tokens[0].value).to eq("profession")
-          # expect(tokens[1].type).to eq(:equals)
-          # expect(tokens[2].type).to eq(:gen_lit)
-          # expect(tokens[2].value).to include("Please invent a short profession")
+            expect(thd).to eq([
+                                [:id, "profession"],
+                                [:equals, "="],
+                                [:gen_lit, "Please invent a short profession for a character"]
+                              ])
 
-          # expect(tokens[3].type).to eq(:eos)
-
-          # expect(tokens[4].type).to eq(:id)
-          # expect(tokens[4].value).to eq("say")
-          # expect(tokens[5].type).to eq(:str_part)
-          # expect(tokens[5].value).to eq("You are a ")
-          # expect(tokens[6].type).to eq(:interpolation_start)
-          # expect(tokens[6].value).to eq("${")
-          # expect(tokens[7].type).to eq(:id)
-          # expect(tokens[7].value).to eq("profession")
-          # expect(tokens[8].type).to eq(:interpolation_end)
-          # expect(tokens[8].value).to eq("}")
-          # expect(tokens[9].type).to eq(:str_end)
+            expect(*rest).to eq([
+                                  [:id, "say"],
+                                  [:str_part, "You are a "],
+                                  [:interpolation_start, "${"],
+                                  [:id, "profession"],
+                                  [:interpolation_end, "}"],
+                                  [:str_end, nil]
+                                ])
+          end
         end
       end
     end
