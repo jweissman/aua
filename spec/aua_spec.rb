@@ -11,19 +11,20 @@ RSpec.describe Aua do
   end
 
   # define a helper method to run Aua code and return the result
-  RSpec::Matchers.define :be_aua do |code|
-    match do |actual, type: Aua::Obj|
+  RSpec::Matchers.define :be_aua do |subj|
+    match do |code|
       @result = Aua.run(code)
-      @result.is_a?(type) && @result.value == actual
+      warn "Aua.run(#{code.inspect}) returned #{@result.value.inspect} / subj #{subj.inspect} / actual #{actual.inspect}"
+      @result.value == subj
     end
     failure_message do
-      "expected Aua to return #{actual.inspect}, but got #{@result.inspect}"
+      "expected Aua to return #{subj.inspect}, but got #{@result.value}"
     end
     failure_message_when_negated do
-      "expected Aua not to return #{actual.inspect}, but it did"
+      "expected Aua not to return #{subj.inspect}, but it did"
     end
     description do
-      "run Aua code and return #{actual.inspect}"
+      "run Aua code and return #{subj.inspect}"
     end
   end
 
@@ -353,12 +354,22 @@ RSpec.describe Aua do
   end
 
   describe "Universal Generative Typecasting" do
-    it "generates an appropriate string/bool representation for various types", skip: true do
-      expect(Aua.run("1 as Word").to_s).to eq("'one'")
-      expect(Aua.run("3.14 as Word").to_s).to eq("'pi'")
-      expect(Aua.run("true as 'yes' | 'no'").to_s).to eq("'yes'")
-      expect(Aua.run('"ok" as Bool').to_s).to eq("false")
-      expect(Aua.run("nihil as String").to_s).to eq("'nothing'")
+    context "when generates an appropriate representation for various types", skip: false do
+      it "strings" do
+        expect("1 as Word").to be_aua("One")
+        expect("3.14 as Word").to be_aua("three point one four")
+      end
+      it "booleans", skip: true do
+        expect('"yep" as Bool').to be_aua("true")
+        expect('"ok" as Bool').to be_aua("false")
+      end
+
+      it "nihil", skip: true do
+        expect("nihil as String").to be_aua("'nothing'")
+      end
+
+      # enums
+      # expect("true as 'yes' | 'no'").to be_aua("'yes'")
     end
   end
 

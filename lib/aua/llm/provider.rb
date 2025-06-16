@@ -50,7 +50,7 @@ module Aua
 
           hydrate(@file_path)
           miss do |key, val|
-            Aua.logger.info "[Cache#initialize miss block] Cache miss for key: #{key}"
+            Aua.logger.debug "[Cache#initialize miss block] Cache miss for key: #{key}"
 
             append_to_cache_file(key, val) # , @file_path)
             val
@@ -81,12 +81,12 @@ module Aua
         def with_cache(the_key, &)
           @cache ||= {} # : Hash[String, completion_trace]
           missed = !@cache.key?(the_key)
-          Aua.logger.info "Fetching from cache for key: #{the_key} (missed: #{missed})"
+          Aua.logger.debug "Fetching from cache for key: #{the_key} (missed: #{missed})"
           val = fetch(the_key, &)
           if missed && @cache_miss_lambda
-            Aua.logger.info "[Cache#with_cache] Cache miss for key: #{the_key}, invoking cache miss lambda..."
+            Aua.logger.debug "[Cache#with_cache] Cache miss for key: #{the_key}, invoking cache miss lambda..."
             @cache_miss_lambda.call(the_key, val)
-            Aua.logger.info "[Cache#with_cache] Cache miss handled for #{the_key}"
+            Aua.logger.debug "[Cache#with_cache] Cache miss handled for #{the_key}"
           end
           val
         end
@@ -106,7 +106,7 @@ module Aua
 
           entries = @cache.length
 
-          Aua.logger.info "LLM response cache loaded #{entries} entries"
+          Aua.logger.info("llm") { "response cache loaded #{entries} entries" }
         end
 
         def hydrate_line(line)
@@ -125,18 +125,18 @@ module Aua
           File.open(file_path, "w") do |_file|
             @cache.each do |key, val|
               entry = { key:, value: val }
-              Aua.logger.info(entry.to_json)
+              Aua.logger.debug(entry.to_json)
             end
           end
         end
 
         def miss(&blk)
-          Aua.logger.info "Setting cache miss lambda..."
+          Aua.logger.debug "Setting cache miss lambda..."
           @cache_miss_lambda = blk
         end
 
         def append_to_cache_file(key, val, file_path = @file_path)
-          Aua.logger.info "Appending to cache file: #{file_path} for key: #{key}"
+          Aua.logger.debug "Appending to cache file: #{file_path} for key: #{key}"
           FileUtils.mkdir_p(File.dirname(file_path))
           File.open(file_path, "a") do |file|
             entry = { key:, value: val }
@@ -146,7 +146,7 @@ module Aua
           end
           val
         rescue StandardError => e
-          Aua.logger.info "Failed to append to cache file: #{e.message}"
+          Aua.logger.debug "Failed to append to cache file: #{e.message}"
         end
 
         def self.file_path
@@ -154,7 +154,7 @@ module Aua
           file_name = "responses.json"
 
           cache_db_path = File.expand_path(File.join(Dir.pwd, ".aua", env, file_name))
-          Aua.logger.info "Using cache file path: #{cache_db_path}"
+          Aua.logger.debug "Using cache file path: #{cache_db_path}"
           cache_db_path
         end
 
@@ -256,7 +256,7 @@ module Aua
 
         def generate
           key = Cache.simple_key([prompt, { model:, generation: }])
-          Aua.logger.info "Generating key for prompt: '#{prompt}' => #{key[..8]}.."
+          Aua.logger.debug "Generating key for prompt: '#{prompt}' => #{key[..8]}.."
           db.with_cache(key) { call }
         end
 
@@ -367,7 +367,7 @@ module Aua
       end
 
       def ask(prompt)
-        Aua.logger.info ">>> #{prompt}"
+        Aua.logger.debug ">>> #{prompt}"
         resp = @provider.chat_completion(prompt:)
         # Aua.logger.info resp.inspect
         Aua.logger.info "<<< #{resp.message[..80]} #{resp.metadata.timing}"
@@ -380,14 +380,14 @@ module Aua
           type: "json_schema",
           json_schema:
         }
-        Aua.logger.info "Using JSON schema for guidance: #{json_schema}"
+        Aua.logger.debug "Using JSON schema for guidance: #{json_schema}"
         yield if block_given?
       rescue StandardError => e
         Aua.logger.error "Error while setting JSON schema guidance: #{e.message}"
         raise e
       ensure
         @provider.generation.delete(:response_format)
-        Aua.logger.info "JSON schema guidance cleared"
+        Aua.logger.debug "JSON schema guidance cleared"
       end
     end
 

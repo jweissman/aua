@@ -20,7 +20,9 @@ module Aua
     class Interpreter
       attr_reader :env
 
-      def initialize(env = {})
+      def initialize(env = {
+        # hi: Aua::Str.new("Hello, world!")
+      })
         Aua.logger.debug "Initializing Aua interpreter with env: #{env.inspect}"
         @env = env
       end
@@ -69,7 +71,6 @@ module Aua
         model: "qwen-2.5-1.5b-chat",
         base_uri: "http://10.0.0.158:1234/v1",
         temperature: 0.7,
-        # top_p: 0.9,
         max_tokens: 1024
       )
         new(

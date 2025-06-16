@@ -39,7 +39,11 @@ module Aua
 
     def vm(env = {})
       @vm ||= Runtime::VM.new
-      @vm.instance_variable_set(:@env, env.merge(@vm.instance_variable_get(:@env) || {})) unless env.empty?
+      unless env.empty?
+        @vm.instance_variable_set(:@env, env.merge(@vm.instance_variable_get(:@env) || {
+                                                     hi: Aua::Str.new("Hello, world!")
+                                                   }))
+      end
       @vm
     end
 

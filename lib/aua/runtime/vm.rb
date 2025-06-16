@@ -175,18 +175,23 @@ module Aua
                 # Type casting operation
                 raise Error, "Type cast lhs must be obj (got #{left.class})" unless left.is_a?(Obj)
 
+                # Unwrap rhs until we get a single value
+                right = right.first while right.is_a?(Array) && right.size == 1
+
+                Aua.logger.info "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}"
+
                 # Resolve right-hand side to a Klass object
                 klass =
                   if right.is_a?(Klass)
                     right
-                  elsif right.is_a?(Statement) && right.type == :id
-                    # right.value is ["Word"]
-                    name = right.value.first
-                    env = Aua.vm.instance_variable_get(:@env)
-                    k = env[name]
-                    raise Error, "Type cast rhs must be a Klass (got \\#{k.class} for '#{name}')" unless k.is_a?(Klass)
+                  # elsif right.is_a?(Statement) && right.type == :id
+                  #   # right.value is ["Word"]
+                  #   name = right.value.first
+                  #   env = Aua.vm.instance_variable_get(:@env)
+                  #   k = env[name]
+                  #   raise Error, "Type cast rhs must be a Klass (got \\#{k.class} for '#{name}')" unless k.is_a?(Klass)
 
-                    k
+                  #   k
                   else
                     # raise Error, "Type cast rhs must be a Klass or identifier (got \\#{right.class})"
                     Str.klass
@@ -310,24 +315,34 @@ module Aua
 
         # use chat provider + json schema to produce structured output
         Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
+        # debugger
         schema = {
-          name: "joke_response",
+          name: klass.name,
+          # description: "Please cast the object to a type in the Aura runtime (#{klass.introspect})",
           strict: "true",
           schema: {
-            type: "object",
-            properties: {
-              joke: {
-                type: "string"
-              }
-            },
-            required: ["joke"]
-          } # klass.json_schema
+            **klass.json_schema,
+            required: ["value"]
+          }
         }
 
         chat = Aua::LLM.chat
-        chat.with_json_guidance(schema) do
-          chat.ask("Cast the object #{obj.introspect} to the type #{klass.introspect}")
+        ret = chat.with_json_guidance(schema) do
+          chat.ask(
+            <<~PROMPT
+              You are an English-language runtime.
+              Please provide a 'translation' of the given object in the requested type (#{klass.introspect}).
+              This should be a forgiving and humanizing cast into the spirit of the target type.
+
+              The object is '#{obj.introspect}'.
+            PROMPT
+          )
         end
+
+        value = JSON.parse(ret).dig("value") # || ret
+        obj = klass.construct(value)
+        Aua.logger.info "Cast result: \\#{obj.inspect} (\\#{obj.class})"
+        obj
       end
 
       def builtin_inspect(obj)

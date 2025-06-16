@@ -74,6 +74,8 @@ module Aua
 
   # The class object for Aua types.
   class Klass < Obj
+    attr_reader :name
+
     def initialize(name, parent = nil)
       super()
       @name = name
@@ -86,6 +88,44 @@ module Aua
     def self.obj   = @klass_obj ||= Klass.new("Obj", klass)
 
     def introspect = @name
+
+    def json_schema
+      case @name
+      when "Nihil"
+        Nihil.json_schema
+      when "Int"
+        Int.json_schema
+      when "Float"
+        Float.json_schema
+      when "Bool"
+        Bool.json_schema
+      when "Str"
+        Str.json_schema
+      when "Time"
+        Time.json_schema
+      else
+        raise "Not a primitive type: #{@name}" unless @parent.nil?
+      end
+    end
+
+    def construct(val)
+      case @name
+      when "Nihil"
+        Nihil.new
+      when "Int"
+        Int.new(val)
+      when "Float"
+        Float.new(val)
+      when "Bool"
+        Bool.new(val)
+      when "Str"
+        Str.new(val)
+      when "Time"
+        Time.new(val)
+      else
+        raise "Not a primitive type: #{@name}" unless @parent.nil?
+      end
+    end
   end
 
   # The 'nothing' value in Aua.
@@ -97,6 +137,10 @@ module Aua
     def name = "nothing"
     def value = nil
     def self.klass = @klass ||= Klass.new("Nihil", nil)
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "null" } }, required: ["value"] }
+    end
   end
 
   # Integer value in Aua.
@@ -120,6 +164,10 @@ module Aua
 
     define_aura_method(:to_i) { @value }
     define_aura_method(:to_s) { @value.to_s }
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "integer" } }, required: ["value"] }
+    end
   end
 
   # Floating-point value in Aua.
@@ -134,6 +182,10 @@ module Aua
     def self.klass = @klass ||= Klass.new("Float", Klass.obj)
 
     attr_reader :value
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "number" } }, required: ["value"] }
+    end
   end
 
   # Boolean value in Aua.
@@ -151,6 +203,10 @@ module Aua
     attr_reader :value
 
     define_aura_method(:to_i) { Int.new(@value ? 1 : 0) }
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "boolean" } }, required: ["value"] }
+    end
   end
 
   # String value in Aua.
@@ -169,6 +225,10 @@ module Aua
     def self.klass = @klass ||= Klass.new("Str", Klass.obj)
 
     attr_reader :value
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "string" } }, required: ["value"] }
+    end
   end
 
   # Timestamp value in Aua.
@@ -188,5 +248,9 @@ module Aua
     def to_s = @value.strftime("%Y-%m-%d %H:%M:%S")
 
     attr_reader :value
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "string", format: "date-time" } }, required: ["value"] }
+    end
   end
 end

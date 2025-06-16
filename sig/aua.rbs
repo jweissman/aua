@@ -393,6 +393,7 @@ module Aua
 
     def aura_respond_to?: (Symbol) -> bool
     def aura_send: (Symbol, *untyped) -> untyped
+    def json_schema: () -> untyped
   end
 
   class Klass < Obj
@@ -401,6 +402,7 @@ module Aua
     def introspect: () -> String
     def self.klass: () -> Klass
     def self.obj: () -> Klass
+    def json_schema: () -> untyped
   end
 
   class Nihil < Obj
@@ -408,6 +410,7 @@ module Aua
     def name: () -> String
     def value: () -> nil
     def introspect: () -> String
+    def json_schema: () -> untyped
   end
 
   class Int < Obj
@@ -416,6 +419,7 @@ module Aua
     def name: () -> String
     def introspect: () -> String
     attr_reader value: Integer
+    def json_schema: () -> untyped
   end
 
   class Float < Obj
@@ -424,6 +428,7 @@ module Aua
     def name: () -> String
     def introspect: () -> String
     attr_reader value: ::Float
+    def json_schema: () -> untyped
   end
 
   class Str < Obj
@@ -432,6 +437,7 @@ module Aua
     def name: () -> String
     def introspect: () -> String
     attr_reader value: String
+    def json_schema: () -> untyped
   end
 
   class Bool < Obj
@@ -440,6 +446,7 @@ module Aua
     def name: () -> String
     def introspect: () -> String
     attr_reader value: bool
+    def json_schema: () -> untyped
   end
 
   class Time < Obj
@@ -450,6 +457,7 @@ module Aua
     def self.now: () -> Time
 
     attr_reader value: ::Time
+    def json_schema: () -> untyped
   end
 
   module Runtime
