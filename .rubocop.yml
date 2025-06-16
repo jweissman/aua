@@ -29,7 +29,7 @@ Metrics/ModuleLength:
     - "spec/**/*"
 
 Metrics/ClassLength:
-  Max: 180
+  Max: 200
 
 Metrics/MethodLength:
   Max: 16

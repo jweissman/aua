@@ -106,7 +106,7 @@ module Aua
              | (Symbol) -> Syntax::Token
         def flush: () -> String
         def append: (String) -> void
-        def at_str_end?: () -> bool
+        def at_str_end?: (?quote: String) -> bool
         def perform!: () -> (:continue | Syntax::Token | Array[Syntax::Token])
         def perform: (string_machine_mode) -> (:continue | Syntax::Token | Array[Syntax::Token])
 
@@ -117,6 +117,12 @@ module Aua
         def spin!: () { (untyped) -> untyped } -> untyped
         def spindown?: () -> bool
         def inside!: (?Symbol) -> void
+
+        def body_transition: () -> void
+        def body_transition_single_double_quote: () -> void
+        def body_transition_triple_quote: () -> void
+        def body_transition_escape: () -> void
+        def body_transition_interpolation: () -> void
       end
 
       def initialize: (Lex) -> void
@@ -190,6 +196,7 @@ module Aua
       def string_end?: (Array[String]) -> bool
       def invalid_token_message: (String) -> String
       def check_number_followed_by_identifier: () -> void
+      def string_character_enumerator: (String) -> Enumerator[char]
     end
 
     class Lens
@@ -286,6 +293,7 @@ module Aua
       def parse_float: () -> AST::Node
       def parse_bool: () -> AST::Node
       def parse_str: () -> AST::Node
+      def parse_str_start: () -> nil
       def parse_str_part: () -> nil
       def parse_str_end: () -> AST::Node
       def parse_simple_str: () -> AST::Node
@@ -300,12 +308,28 @@ module Aua
   def self.s: (Symbol, *untyped) -> AST::Node
 
   class Parse
+    module Enumerators
+      class StructuredString
+        include Grammar
+        attr_reader parser: Parse
+        def initialize: (Parse) -> void
+
+        def str_part: (untyped yielder) -> void
+        def interpolation_start: (untyped yielder) -> void
+        def gen_end: (untyped yielder) -> void
+        def str_end: (untyped yielder) -> void
+      end
+
+      def self.structured_string: (Parse) -> Enumerator[AST::Node]
+    end
+
     include Grammar
 
     @tokens: Enumerator[token]
     @buffer: Array[token?]
 
     attr_reader current_token: token
+    attr_accessor current_string_quote: String?
 
     def initialize: (Enumerator[token]) -> void
     def tree: () -> AST::Node
@@ -337,6 +361,8 @@ module Aua
     def precedent?: (Symbol, Integer) -> bool
     def consume_binary_op: (AST::Node) -> AST::Node
     def parse_call: () -> AST::Node?
+    def command_argument_enumerator: () -> Enumerator[AST::Node]
+    def should_end_command_args?: (token) -> bool
 
     def info: (String) -> void
   end

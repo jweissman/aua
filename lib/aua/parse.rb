@@ -6,7 +6,68 @@ module Aua
   # A parser for the Aua language that builds an abstract syntax tree (AST).
   # Consumes tokens and produces an AST.
   class Parse
+    module Enumerators
+      class StructuredString
+        include Aua::Grammar
+
+        attr_reader :parser
+
+        def initialize(parser)
+          @parser = parser
+        end
+
+        def str_part(yielder)
+          yielder << s(:str, parser.current_token.value)
+          parser.advance
+          true
+        end
+
+        def interpolation_start(yielder)
+          parser.advance
+          yielder << parser.send(:parse_expression)
+          unless parser.current_token.type == :interpolation_end
+            raise Error, "Expected interpolation_end, got #{parser.current_token.type}"
+          end
+
+          parser.advance
+          true
+        end
+
+        def gen_end(_yielder)
+          parser.current_string_quote = "\"\"\""
+          parser.advance
+          false
+        end
+        alias gen_lit gen_end
+
+        def str_end(_yielder)
+          parser.advance
+          false
+        end
+        alias str_start str_end
+
+        def method_missing(_method_name, *_args, **_kwargs, &)
+          raise Error, "Unterminated string literal #{parser.current_token.at}" if parser.current_token.type == :eof
+
+          raise Error,
+                "Unexpected token in structured string: #{parser.current_token.type} #{parser.current_token.at}"
+        end
+
+        def respond_to_missing?(_method_name, _include_private = false)
+          false
+        end
+      end
+
+      def self.structured_string(parser)
+        structured_string = StructuredString.new(parser)
+        Enumerator.new do |yielder|
+          loop while structured_string.send(parser.current_token.type, yielder)
+        end
+      end
+    end
+
     attr_reader :current_token
+    attr_accessor :current_string_quote
 
     include Grammar
 
@@ -46,14 +107,10 @@ module Aua
     def next_token
       @tokens.next
     rescue StopIteration
-      Syntax::Token.new(
-        type: :eof, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0)
-      )
+      Syntax::Token.new(type: :eof, value: nil, at: @current_token&.at || Aua::Text::Cursor.new(0, 0))
     end
 
-    def unexpected_tokens?
-      @length != @current_token_index && @current_token.type != :eos
-    end
+    def unexpected_tokens? = @length != @current_token_index && @current_token.type != :eos
 
     def info(message) = Aua.logger.info("aura:parse") { message }
 
@@ -78,20 +135,6 @@ module Aua
 
     def parse_statements
       statements = statement_enumerator.to_a
-      # statements = [] # : Array[AST::Node]
-      # while @current_token.type != :eos && @current_token.type != :eof
-      #   advance while @current_token.type == :eos
-      #   advance while @current_token.type == :str_end
-      #   break if %i[eos eof].include?(@current_token.type)
-
-      #   statement = parse_expression
-      #   raise Error, "Unexpected end of input while parsing statements" if statement.nil?
-
-      #   statements << statement
-      #   advance while @current_token.type == :eos
-      #   advance while @current_token.type == :str_end
-      # end
-
       statements.size == 1 ? statements.first : s(:seq, statements.compact)
     end
 
@@ -110,50 +153,44 @@ module Aua
       parse_binop
     end
 
+    def should_end_command_args?(token)
+      %i[eos eof interpolation_end str_end].include?(token.type)
+    end
+
+    def command_argument_enumerator
+      Enumerator.new do |yielder|
+        while PRIMARY_NAMES.key?(@current_token.type)
+          yielder << if @current_token.type == :str_part
+                       parse_structured_str
+                     else
+                       Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
+                     end
+          if @current_token.type == :comma
+            consume(:comma)
+          elsif should_end_command_args?(@current_token)
+            break
+            # TODO: Would be nice to test this somehow?
+            # else
+            #   raise Error, "Unexpected token in command arguments: #{@current_token.type} at #{@current_token.at}"
+          end
+        end
+      end
+    end
+
     # Parses a command or function call: id arg1 arg2 ...
     def parse_command
       return unless @current_token.type == :id
 
       id_token = @current_token
-      info "Parsing command with ID: #{id_token.value}"
-      args = [] # : Array[AST::Node]
       save_token = @current_token
       save_buffer = @buffer.dup
       consume(:id)
       info " - Consumed command ID: #{id_token.value}"
-
-      # Accept one or more primary expressions as arguments (space-separated)
-      while PRIMARY_NAMES.key?(@current_token.type)
-        # Special case: if the token is :str_part, parse the whole structured string
-        arg = if @current_token.type == :str_part
-                parse_structured_str
-              else
-                Primitives.new(self).send("parse_#{PRIMARY_NAMES[@current_token.type]}")
-              end
-        args << arg
-        info " - Parsed argument: #{arg.inspect}"
-        if @current_token.type == :comma
-          consume(:comma)
-          # info " - Consumed comma, expecting more args"
-        elsif %i[eos eof interpolation_end str_end].include?(@current_token.type)
-          # info " - End of arguments reached"
-          break
-        else
-          # If the next token is a valid statement starter, break out of the argument loop
-          # break if %i[id keyword eof eos].include?(@current_token.type)
-
-          raise Error, "Unexpected token while parsing arguments: \\#{@current_token.type}"
-        end
-      end
-
-      args.compact!
-
+      args = command_argument_enumerator.to_a
       info " - Parsed arguments: #{args.inspect}"
       if args.empty?
-        # Not a call, restore state and return nil
         @current_token = save_token
         @buffer = save_buffer
-        # info " - No arguments found, restoring state and returning nil.."
         return nil
       end
       info " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}"
@@ -229,63 +266,24 @@ module Aua
 
     def parse_primary
       raise Aua::Error, "Unexpected end of input while parsing primary expression" if @current_token.type == :eos
-
-      # Aua.logger.info("parse:pri") { "expression with token: #{@current_token.type} (#{@current_token.value})" }
-
-      # Handle structured/interpolated strings
       return parse_structured_str if @current_token.type == :str_part
 
-      # Detect triple-quoted string start
       if @current_token.type == :prompt
         advance
         return parse_primary
       end
 
-      # primitives = Primitives.new(self)
       return primitives.send "parse_#{PRIMARY_NAMES[@current_token.type]}" if PRIMARY_NAMES.key?(@current_token.type)
 
       raise Error, "Unexpected token type: #{@current_token.type}"
     end
 
     def primitives = @primitives ||= Primitives.new(self)
-
-    # (update_token_type)
-    def structured_string_enumerator
-      Enumerator.new do |yielder|
-        loop do
-          case @current_token.type
-          when :str_part
-            yielder << s(:str, @current_token.value)
-            advance
-          when :interpolation_start
-            advance
-            yielder << parse_expression
-            unless @current_token.type == :interpolation_end
-              raise Error, "Expected interpolation_end, got #{@current_token.type}"
-            end
-
-            advance
-          when :gen_end, :gen_lit
-            @current_string_quote = "\"\"\""
-
-            advance
-            break
-          when :str_end
-            advance
-            break
-          else
-            raise Error, "Unterminated string literal #{current_token.at}" if current_token.type == :eof
-
-            raise Error, "Unexpected token in structured string: #{current_token.type} #{current_token.at}"
-          end
-        end
-      end
-    end
+    def structured_string_enumerator = Enumerators.structured_string(self)
 
     # Parses a structured/interpolated string
-    # (triple_quoted = @current_string_quote == '"""')
     def parse_structured_str
-      parts = structured_string_enumerator.to_a # (->(type) { token_type = type }).to_a
+      parts = structured_string_enumerator.to_a
       token_type = @current_string_quote == "\"\"\"" ? :structured_gen_lit : :structured_str
       return s(:str, parts.first.value) if parts.size == 1 && parts.first.type == :str
 

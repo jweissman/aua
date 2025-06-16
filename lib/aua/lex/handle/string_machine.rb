@@ -73,7 +73,6 @@ module Aua
         def spindown? = @buffer&.length.to_i >= @max_len || @mode.nil?
 
         def perform(state)
-          # Aua.logger.debug "[StringMachine#perform] Performing state: #{state.inspect} at position #{current_pos}"
           raise Error, "Invalid string machine state: #{state.inspect}" unless %i[start body end none].include?(state)
 
           send state # unless @mode == :none
@@ -83,16 +82,9 @@ module Aua
           @buffer = ""
           @mode = :body
           advance @quote.length
-          # if @quote == '"""'
-          #   advance(3)
-          # else
-          #   advance
-          # end
         end
 
         def end
-          # str_kind = :str_end
-          # str_kind = :gen_end if (@quote = @saw_interpolation)
           str_kind = @quote == '"""' ? :gen_end : :str_end
           advance
           @mode = nil
@@ -101,84 +93,88 @@ module Aua
         end
 
         def body
-          max_len = @max_len || 24
-
-          # End triple-quoted string
-          if @quote == '"""' && current_char == '"' && next_char == '"' && next_next_char == '"'
-            Aua.logger.debug("string_machine#body") do
-              "close str -- mode=body, gen=#{@quote == '"""'}, \
-              saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@buffer.inspect}"
-            end
-
-            if @saw_interpolation
-              token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
-              @buffer = nil
-              @mode = :end
-              advance(3)
-              Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type}" }
-              return token if token
-
-              return :continue
-            else
-              token = t(:gen_lit, @buffer)
-              @buffer = nil
-              @mode = nil
-              advance(3)
-              reset!
-              Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type} (reset after gen_lit)" }
-              return token
-            end
-          end
-
-          # End single/double-quoted string
-          if ["", '"'].include?(current_char)
-            token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
-            @buffer = nil
-            @mode = :end
-            return token if token
-
-            return :continue
-          end
-
-          # Escape sequence
-          if current_char == "\\" && next_char == '"'
-            @buffer << '"'
-            advance(2)
-            return :continue
-          end
-
-          # Interpolation
-          if current_char == "$" && next_char == "{"
-            @saw_interpolation = true if @quote == '"""'
-            Aua.logger.debug("string_machine#body") do
-              "Found interpolation start at pos=#{current_pos}, buffer=#{@buffer.inspect}"
-            end
-            advance(2)
-            token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
-            @buffer = ""
-            # Place interpolation_start token at the END of pending_tokens, so it is yielded AFTER any str_part
-            if token
-              @pending_tokens.unshift(t(:interpolation_start, "${"))
-              return token
-            end
-            return t(:interpolation_start, "${")
-          end
+          tx = body_transition
+          return tx if tx
 
           # Normal character
           @buffer << current_char
           advance
-          if @buffer && @buffer.length >= max_len
+          if @buffer && @buffer.length >= @max_len
             raise Error,
                   "Unterminated string literal (of length #{@buffer.length}) at " + @lexer.lens.describe
           end
           :continue
         end
 
-        # never
-        def none
-          raise Error, "StringMachine is in an invalid state: none"
-          # advance
+        def body_transition
+          body_transition_triple_quote          ||
+            body_transition_single_double_quote ||
+            body_transition_escape              ||
+            body_transition_interpolation
         end
+
+        # End triple-quoted string
+        def body_transition_triple_quote
+          return unless @quote == '"""' && current_char == '"' && next_char == '"' && next_next_char == '"'
+
+          Aua.logger.debug("string_machine#body") do
+            "close str -- mode=body, gen=#{@quote == '"""'}, \
+              saw_interpolation=#{@saw_interpolation.inspect}, buffer=#{@buffer.inspect}"
+          end
+
+          token = t(:gen_lit, @buffer)
+          @buffer = nil
+          @mode = nil
+          advance(3)
+          reset!
+          Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type} (reset after gen_lit)" }
+          token
+        end
+
+        # End single/double-quoted string
+        def body_transition_single_double_quote
+          # if ["'", '"'].include?(current_char)
+          return unless @quote.include?(current_char) && at_str_end?(quote: @quote)
+
+          token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
+          @buffer = nil
+          @mode = :end
+          return token if token
+
+          :continue
+        end
+
+        # Escape sequence
+        def body_transition_escape
+          return unless current_char == "\\" && next_char == '"'
+
+          @buffer << '"'
+          advance(2)
+          :continue
+        end
+
+        # Interpolation
+        def body_transition_interpolation
+          return unless current_char == "$" && next_char == "{"
+
+          @saw_interpolation = true if @quote == '"""'
+          Aua.logger.debug("string_machine#body") do
+            "Found interpolation start at pos=#{current_pos}, buffer=#{@buffer.inspect}"
+          end
+          advance(2)
+          token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
+          @buffer = ""
+
+          # Place interpolation_start token at the END of pending_tokens, so it is yielded AFTER any str_part
+          if token
+            @pending_tokens.unshift(t(:interpolation_start, "${"))
+            return token
+          end
+          t(:interpolation_start, "${")
+        end
+
+        # never
+        def none = raise Error, "StringMachine is in an invalid state: none"
       end
     end
   end

@@ -87,15 +87,22 @@ module Aua
         has_dot ? t(:float, str.to_f) : t(:int, str.to_i)
       end
 
-      def consume_string_chars(quote)
-        chars = [] # : Array[String]
+      def string_character_enumerator(quote)
         test_end = -> { quote.chars.count == 1 ? current_char == quote.chars.first : string_end?(quote.chars) }
-        while current_char != "" && chars.length < MAX_STRING_LENGTH
-          break if test_end.call
+        Enumerator.new do |yielder|
+          yielded = 0
+          while current_char != "" && yielded < MAX_STRING_LENGTH
+            break if test_end.call
 
-          chars << current_char
-          advance
+            yielder << current_char
+            advance
+            yielded += 1
+          end
         end
+      end
+
+      def consume_string_chars(quote)
+        chars = string_character_enumerator(quote).to_a
         return chars.join if current_char == quote.chars.last
 
         raise Error, "Unterminated string literal (expected closing quote '#{quote}') at " + @lexer.lens.describe

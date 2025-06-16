@@ -144,8 +144,6 @@ module Aua
 
             file.puts(entry_json)
           end
-
-          # Aua.logger.info "Appended to cache file (#{file_path}) #{key} => #{val.is_a?(Hash) ? val.fetch(:message, val)[..80] : val}..."
           val
         rescue StandardError => e
           Aua.logger.info "Failed to append to cache file: #{e.message}"

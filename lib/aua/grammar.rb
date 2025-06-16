@@ -12,6 +12,7 @@ module Aua
       nihil: :nihil,
       gen_lit: :generative_lit,
       simple_str: :simple_str,
+      str_start: :str_start,
       str_part: :str_part,
       str_end: :str_end
     }.freeze
@@ -55,6 +56,15 @@ module Aua
 
       def parse_nihil = parse_one(:nihil)
       def parse_simple_str = parse_one(:simple_str)
+
+      def parse_str_start
+        val = @parse.current_token.value
+        @parse.consume(:str_start)
+        Aua.logger.debug("Primitives#parse_str_start") do
+          "Starting string parsing with value: #{val.inspect}"
+        end
+        nil
+      end
 
       def parse_str_part
         @str_parts ||= [] # : Array[AST::Node]
