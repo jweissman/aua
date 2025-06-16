@@ -53,6 +53,7 @@ module Aua
           when :call then translate_call(ast)
           when :seq then translate_sequence(ast)
           when :structured_str, :structured_gen_lit then translate_structured_str(ast)
+          when :type_declaration then translate_type_declaration(ast)
           else
             raise Error, "Unknown AST node type: \\#{ast.type}"
           end
@@ -82,6 +83,11 @@ module Aua
         def translate_call(node)
           fn_name, args = node.value
           [Semantics.inst(:call, fn_name, *args.map { |a| translate(a) })]
+        end
+
+        def translate_type_declaration(node)
+          type_name, type_definition = node.value
+          [Semantics.inst(:type_declaration, type_name, type_definition)]
         end
 
         def translate_sequence(node)
@@ -185,22 +191,13 @@ module Aua
                   if right.is_a?(Klass)
                     right
                   elsif right.is_a?(Statement) && right.type == :id
-                    # right.value is ["Word"]
-                    name = right.value.first
-                    env = Aua.vm.instance_variable_get(:@env)
-                    k = env[name]
-                    raise Error, "Type cast rhs must be a Klass (got \\#{k.class} for '#{name}')" unless k.is_a?(Klass)
-
-                    k
+                    # Defer type lookup to execution time by creating a special statement
+                    Statement.new(type: :type_lookup, value: right.value.first)
                   else
-                    # raise Error, "Type cast rhs must be a Klass or identifier (got \\#{right.class})"
-                    Str.klass
+                    Aua::Str.klass
                   end
 
-                # right = Str.klass
-                # raise Error, "Type cast rhs must be klass (got #{right.class})" unless right.is_a?(Klass)
-
-                CAST[left, klass] # : Str
+                CAST[left, klass]
               else
                 raise Error, "Unknown binary operator: #{operator}"
               end
@@ -292,6 +289,7 @@ module Aua
       def initialize(env = {})
         @env = env
         @tx = Translator.new(self)
+        @type_registry = TypeRegistry.new
       end
 
       def builtins
@@ -313,12 +311,29 @@ module Aua
         raise Error, "cast requires two arguments" unless obj.is_a?(Obj) && klass.is_a?(Klass)
         raise Error, "Cannot cast to non-Klass: \\#{klass.inspect}" unless klass.is_a?(Klass)
 
-        # use chat provider + json schema to produce structured output
+        # Generic casting using LLM + JSON schema
         Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
-        # debugger
+
+        warn "Casting with schema: \\#{obj.introspect} (#{obj.class}) => \\#{klass.introspect} (#{klass.class})"
+
+        chat = Aua::LLM.chat
+        ret = chat.with_json_guidance(schema_for(klass)) do
+          chat.ask(build_cast_prompt(obj, klass))
+        end
+        warn "Response from LLM: \\#{ret.inspect}"
+
+        value = JSON.parse(ret).dig("value")
+        result = klass.construct(value)
+        Aua.logger.info "Cast result: \\#{result.inspect} (\\#{result.class})"
+        result
+      end
+
+      private
+
+      def schema_for(klass)
+        # All Klass objects should provide json_schema and construct methods
         schema = {
           name: klass.name,
-          # description: "Please cast the object to a type in the Aura runtime (#{klass.introspect})",
           strict: "true",
           schema: {
             **klass.json_schema,
@@ -326,23 +341,33 @@ module Aua
           }
         }
 
-        chat = Aua::LLM.chat
-        ret = chat.with_json_guidance(schema) do
-          chat.ask(
-            <<~PROMPT
-              You are an English-language runtime.
-              Please provide a 'translation' of the given object in the requested type (#{klass.introspect}).
-              This should be a forgiving and humanizing cast into the spirit of the target type.
+        warn "Using schema: \\#{schema.inspect} for class: \\#{klass.name}"
 
-              The object is '#{obj.introspect}'.
-            PROMPT
-          )
-        end
+        schema
+      end
 
-        value = JSON.parse(ret).dig("value") # || ret
-        obj = klass.construct(value)
-        Aua.logger.info "Cast result: \\#{obj.inspect} (\\#{obj.class})"
-        obj
+      def build_cast_prompt(obj, klass)
+        _base_prompt = <<~PROMPT
+          You are an English-language runtime.
+          Please provide a 'translation' of the given object in the requested type (#{klass.introspect}).
+          This should be a forgiving and humanizing cast into the spirit of the target type.
+
+          The object is '#{obj.introspect}'.
+        PROMPT
+
+        # Add context for union types
+        # if klass.respond_to?(:union_values)
+        #   possible_values = klass.union_values
+        #   base_prompt + <<~ADDITIONAL
+
+        #     This is a union type with these possible values:
+        #     #{possible_values.map { |v| "- '#{v}'" }.join("\n")}
+
+        #     Please select the most appropriate value from this list.
+        #   ADDITIONAL
+        # else
+        #   base_prompt
+        # end
       end
 
       def builtin_inspect(obj)
@@ -443,6 +468,8 @@ module Aua
 
         case stmt.type
         when :id, :let, :send then evaluate_simple(stmt)
+        when :type_declaration then eval_type_declaration(val[0], val[1])
+        when :type_lookup then eval_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
         when :cat then eval_cat(val)
@@ -528,9 +555,29 @@ module Aua
       end
 
       def eval_let(name, value)
-        Aua.logger.info "Setting variable #{name} to #{value.inspect}"
-        @env[name] = value
+        value = evaluate_one(value) if value.is_a?(AST::Node)
+        @env[name] = resolve(value)
         value
+      end
+
+      def eval_type_declaration(name, type_definition)
+        # Register the type in our type registry
+        @type_registry.register(name, type_definition)
+
+        # Also add it to the environment so it can be referenced
+        type_obj = @type_registry.lookup(name)
+        @env[name] = type_obj
+
+        # Return the type object
+        type_obj
+      end
+
+      def eval_type_lookup(type_name)
+        # Look up the type in the environment
+        type_obj = @env[type_name]
+        raise Error, "Unknown type: #{type_name}" unless type_obj.is_a?(Klass)
+
+        type_obj
       end
 
       def eval_if(condition, true_branch, false_branch)

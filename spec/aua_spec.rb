@@ -354,28 +354,34 @@ RSpec.describe Aua do
   end
 
   describe "Universal Generative Typecasting" do
-    context "when generates an appropriate representation for various types" do
-      it "strings" do
-        expect("1 as Str").to be_aua("One")
-        expect("3.14 as Str").to be_aua("three point one four")
+    context "when casting between types" do
+      describe "generates an appropriate representation for various types" do
+        it "strings" do
+          expect("1 as Str").to be_aua("one")
+          expect("3.14 as Str").to be_aua("π") # three point one four
+        end
+
+        it "booleans" do
+          expect('"yep" as Bool').to be_aua(true)
+          expect('"nope" as Bool').to be_aua(false)
+        end
+
+        it "nihil" do
+          expect("nihil as Str").to be_aua("")
+          expect("nihil as Bool").to be_aua(false)
+        end
+
+        it "integers" do
+          expect("'forty two' as Int").to be_aua(42)
+          expect("'negative seven' as Int").to be_aua(-7)
+        end
+
+        it "enums" do
+          expect("type YesNo = 'yes' | 'no'; 'ok' as YesNo").to be_aua("yes")
+          expect("'nope' as YesNo").to be_aua("no")
+        end
       end
 
-      it "booleans" do
-        expect('"yep" as Bool').to be_aua(true)
-        expect('"nope" as Bool').to be_aua(false)
-      end
-
-      it "nihil" do
-        expect("nihil as Str").to be_aua("")
-        expect("nihil as Bool").to be_aua(false)
-      end
-
-      it "integers" do
-        expect("'forty two' as Int").to be_aua(42)
-        expect("'negative seven' as Int").to be_aua(-7)
-      end
-
-      # enums
       # expect("true as 'yes' | 'no'").to be_aua("'yes'")
     end
   end

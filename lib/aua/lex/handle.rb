@@ -6,7 +6,7 @@ module Aua
   class Lex
     # Dispatch manager (lexing entrypoints / first-level Handles).
     class Handle
-      # Initializes the Handle with the lexer instance.
+      using Rainbow
 
       def initialize(lexer)
         @lexer = lexer
@@ -19,13 +19,13 @@ module Aua
         t(:eos)
       end
 
-      def identifier(_) = recognize.identifier
-      using Rainbow
-
-      def interpolative_quote?(quote)
-        # Aua.logger.debug "[Handle#interpolative_quote?] Checking if quote #{quote.inspect} is interpolative"
-        ['"""', '"'].include?(quote)
+      def comment(_chars)
+        advance while lens.current_char != "\n" && !lens.eof?
+        advance if lens.current_char == "\n"
+        nil
       end
+
+      def identifier(_) = recognize.identifier
 
       def string(quote)
         Aua.logger.debug("Handle#string") do
@@ -106,10 +106,9 @@ module Aua
          t(:pow))
       end
 
-      def comment(_chars)
-        advance while lens.current_char != "\n" && !lens.eof?
-        advance if lens.current_char == "\n"
-        nil
+      def pipe(_)
+        advance
+        t(:pipe)
       end
 
       def eos(_)
@@ -147,6 +146,13 @@ module Aua
       def next_char = lens.peek
       def next_next_char = lens.peek_n(2).last
       def eof? = lens.eof?
+
+      private
+
+      def interpolative_quote?(quote)
+        # Aua.logger.debug "[Handle#interpolative_quote?] Checking if quote #{quote.inspect} is interpolative"
+        ['"""', '"'].include?(quote)
+      end
     end
   end
 end

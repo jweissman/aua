@@ -348,6 +348,9 @@ module Aua
     def parse_condition_body: () -> [AST::Node, AST::Node?]
     def parse_structured_str: () -> AST::Node
     def parse_statements: () -> AST::Node
+    def parse_typedef: () -> AST::Node
+    def parse_type_expr: () -> AST::Node
+    def parse_type_atom: () -> AST::Node
     def unexpected_tokens?: () -> bool
     def unexpected_token: () -> untyped
     def self.ast: (Array[token]) -> AST::Node

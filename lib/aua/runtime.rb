@@ -1,6 +1,7 @@
 require "aua/runtime/statement"
 require "aua/runtime/semantics"
 require "aua/runtime/vm"
+require "aua/runtime/type_registry"
 
 module Aua
   module Runtime

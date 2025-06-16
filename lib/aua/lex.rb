@@ -142,7 +142,7 @@ module Aua
       chars = [current_char, peek_char, next_peek_char]
       (1..chars.size).map { |n| chars.take(n).compact }.reverse
                      .each do |characters|
-        accepted = accept_n(characters)
+        accepted = accept!(characters)
         return accepted if accepted
       end
       nil
@@ -152,7 +152,7 @@ module Aua
       [ONE_CHAR_TOKEN_NAMES, TWO_CHAR_TOKEN_NAMES, THREE_CHAR_TOKEN_NAMES][len - 1]
     end
 
-    def accept_n(chars)
+    def accept!(chars)
       matched_handle = token_names(chars.count).find do |pattern, _token_name|
         pattern_match?(pattern, chars.join)
       end

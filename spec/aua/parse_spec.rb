@@ -208,4 +208,35 @@ RSpec.describe Aua::Parse do
                                            "Please invent a short profession for a character")]))
     end
   end
+
+  describe "typedef", skip: false do
+    let(:input) do
+      <<~AUA
+        type YesNo = 'yes' | 'no'
+        result = true as YesNo
+      AUA
+    end
+
+    it "allows defining and using a simple enum type" do
+      extend Aua::Grammar
+      expect(ast.type).to eq(:seq)
+      # expect(ast.value.size).to eq(3)
+
+      lines = ast.value
+      expect(lines[0].type).to eq(:type_declaration)
+      expect(lines[0].value[0]).to eq("YesNo")
+      expect(lines[0].value[1].type).to eq(:union_type)
+      expect(lines[0].value[1].value).to eq([
+                                              s(:type_constant, s(:simple_str, "yes")),
+                                              s(:type_constant, s(:simple_str, "no"))
+                                            ])
+
+      expect(lines[1].type).to eq(:assign)
+      expect(lines[1].value[0]).to eq("result")
+      expect(lines[1].value[1].type).to eq(:binop)
+      expect(lines[1].value[1].value[0]).to eq(:as)
+      expect(lines[1].value[1].value[1]).to eq(s(:bool, true))
+      expect(lines[1].value[1].value[2]).to eq(s(:id, "YesNo"))
+    end
+  end
 end

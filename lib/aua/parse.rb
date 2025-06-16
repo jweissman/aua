@@ -141,6 +141,10 @@ module Aua
     # Parses an expression
     def parse_expression
       info "parse-expr | Current token: #{@current_token.type} (#{@current_token.value})"
+
+      maybe_type_declaration = parse_type_declaration
+      return maybe_type_declaration if maybe_type_declaration
+
       maybe_assignment = parse_assignment
       return maybe_assignment if maybe_assignment
 
@@ -151,6 +155,78 @@ module Aua
       return maybe_command if maybe_command
 
       parse_binop
+    end
+
+    # Parses a type declaration: type TypeName = type_expression
+    def parse_type_declaration
+      return unless @current_token.type == :keyword && @current_token.value == "type"
+
+      consume(:keyword, "type")
+      unless @current_token.type == :id
+        raise Error, "Expected type name after 'type' keyword, got #{@current_token.type}"
+      end
+
+      type_name = @current_token.value
+      consume(:id)
+      consume(:equals)
+
+      type_expr = parse_type_expression
+      s(:type_declaration, type_name, type_expr)
+    end
+
+    # Parses type expressions: 'literal' | AnotherType | { field: Type }
+    def parse_type_expression
+      case @current_token.type
+      when :simple_str
+        # String literal type like 'yes' -> type_constant containing simple_str
+        value = @current_token.value
+        consume(:simple_str)
+        literal_type = s(:type_constant, s(:simple_str, value))
+
+        # Check for union (|)
+        if @current_token.type == :pipe
+          parse_union_type(literal_type)
+        else
+          literal_type
+        end
+      when :id
+        # Reference to another type
+        type_name = @current_token.value
+        consume(:id)
+        ref_type = s(:type_reference, type_name)
+
+        # Check for union (|)
+        if @current_token.type == :pipe
+          parse_union_type(ref_type)
+        else
+          ref_type
+        end
+      else
+        raise Error, "Expected type expression, got #{@current_token.type}"
+      end
+    end
+
+    # Parses union types: left_type | right_type | ...
+    def parse_union_type(left_type)
+      types = [left_type]
+
+      while @current_token.type == :pipe
+        consume(:pipe)
+        case @current_token.type
+        when :simple_str
+          value = @current_token.value
+          consume(:simple_str)
+          types << s(:type_constant, s(:simple_str, value))
+        when :id
+          type_name = @current_token.value
+          consume(:id)
+          types << s(:type_reference, type_name)
+        else
+          raise Error, "Expected type after '|', got #{@current_token.type}"
+        end
+      end
+
+      s(:union_type, types)
     end
 
     def should_end_command_args?(token)

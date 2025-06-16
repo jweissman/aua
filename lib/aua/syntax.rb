@@ -26,11 +26,12 @@ module Aua
       "#" => :comment,
       ";" => :eos,
       "\n" => :eos,
-      "}" => :interpolation_end
+      "}" => :interpolation_end,
+      "|" => :pipe
     }.freeze
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
     THREE_CHAR_TOKEN_NAMES = { "\"\"\"" => :prompt }.freeze
-    KEYWORDS = Set.new(%i[if then else elif as]).freeze
+    KEYWORDS = Set.new(%i[if then else elif as type]).freeze
   end
 end
