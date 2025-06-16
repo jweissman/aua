@@ -20,16 +20,23 @@ module Aua
     class Interpreter
       attr_reader :env
 
-      def initialize(env = {
-        # hi: Aua::Str.new("Hello, world!")
-      })
+      def initialize(env = {})
         Aua.logger.debug "Initializing Aua interpreter with env: #{env.inspect}"
-        @env = env
+        @env = env.merge(self.class.prelude_env)
       end
 
       def lex(_ctx, code) = Lex.new(code).enum_for(:tokenize)
       def parse(_ctx, tokens) = Parse.new(tokens).tree
       def vm = @vm ||= Aua.vm(@env) || VM.new(@env)
+
+      def self.prelude_env
+        {
+          "Str" => Aua::Str.klass,
+          "Bool" => Aua::Bool.klass,
+          "Nihil" => Aua::Nihil.klass,
+          "Int" => Aua::Int.klass
+        }
+      end
 
       # Runs the Aua interpreter pipeline: lexing, parsing, and evaluation.
       # Something like the following:

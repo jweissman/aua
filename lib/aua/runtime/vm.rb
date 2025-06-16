@@ -173,25 +173,25 @@ module Aua
               when :as
                 Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
                 # Type casting operation
-                raise Error, "Type cast lhs must be obj (got #{left.class})" unless left.is_a?(Obj)
+                # raise Error, "Type cast lhs must be obj (got #{left.class})" unless left.is_a?(Obj)
 
                 # Unwrap rhs until we get a single value
                 right = right.first while right.is_a?(Array) && right.size == 1
 
-                Aua.logger.info "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}"
+                Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
 
                 # Resolve right-hand side to a Klass object
                 klass =
                   if right.is_a?(Klass)
                     right
-                  # elsif right.is_a?(Statement) && right.type == :id
-                  #   # right.value is ["Word"]
-                  #   name = right.value.first
-                  #   env = Aua.vm.instance_variable_get(:@env)
-                  #   k = env[name]
-                  #   raise Error, "Type cast rhs must be a Klass (got \\#{k.class} for '#{name}')" unless k.is_a?(Klass)
+                  elsif right.is_a?(Statement) && right.type == :id
+                    # right.value is ["Word"]
+                    name = right.value.first
+                    env = Aua.vm.instance_variable_get(:@env)
+                    k = env[name]
+                    raise Error, "Type cast rhs must be a Klass (got \\#{k.class} for '#{name}')" unless k.is_a?(Klass)
 
-                  #   k
+                    k
                   else
                     # raise Error, "Type cast rhs must be a Klass or identifier (got \\#{right.class})"
                     Str.klass

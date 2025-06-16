@@ -354,18 +354,25 @@ RSpec.describe Aua do
   end
 
   describe "Universal Generative Typecasting" do
-    context "when generates an appropriate representation for various types", skip: false do
+    context "when generates an appropriate representation for various types" do
       it "strings" do
-        expect("1 as Word").to be_aua("One")
-        expect("3.14 as Word").to be_aua("three point one four")
-      end
-      it "booleans", skip: true do
-        expect('"yep" as Bool').to be_aua("true")
-        expect('"ok" as Bool').to be_aua("false")
+        expect("1 as Str").to be_aua("One")
+        expect("3.14 as Str").to be_aua("three point one four")
       end
 
-      it "nihil", skip: true do
-        expect("nihil as String").to be_aua("'nothing'")
+      it "booleans" do
+        expect('"yep" as Bool').to be_aua(true)
+        expect('"nope" as Bool').to be_aua(false)
+      end
+
+      it "nihil" do
+        expect("nihil as Str").to be_aua("")
+        expect("nihil as Bool").to be_aua(false)
+      end
+
+      it "integers" do
+        expect("'forty two' as Int").to be_aua(42)
+        expect("'negative seven' as Int").to be_aua(-7)
       end
 
       # enums
