@@ -16,8 +16,11 @@ module Aua
   # Global state aggregator for Aua runtime metadata
   Methods = Registry::Store.new
 
+  class Base
+  end
+
   # The base object for all Aua values.
-  class Obj
+  class Obj < Base
     def klass = Klass.klass
     def inspect = "<#{self.class.name} #{introspect}>"
     def introspect = ""
@@ -64,6 +67,9 @@ module Aua
       aura_methods[name] = block # : aura_meth
       print "#{self.name.split("::").last}##{name} "
     end
+
+    def klass = self.class.klass
+    # def self.klass   = @klass_obj ||= Klass.new("Obj", klass)
   end
 
   # The class object for Aua types.
@@ -74,10 +80,10 @@ module Aua
       @parent = parent
     end
 
-    def klass = send :itself
+    def klass = self.class.klass
 
-    def self.klass = Klass.new("Klass", klass)
-    def self.obj = Klass.new("Obj", klass)
+    def self.klass = @klass ||= Klass.new("Klass", nil)
+    def self.obj   = @klass_obj ||= Klass.new("Obj", klass)
 
     def introspect = @name
   end
@@ -90,6 +96,7 @@ module Aua
 
     def name = "nothing"
     def value = nil
+    def self.klass = @klass ||= Klass.new("Nihil", nil)
   end
 
   # Integer value in Aua.
@@ -99,9 +106,10 @@ module Aua
       @value = value
     end
 
-    def klass = Klass.new("Int", Klass.obj)
+    # def klass = Klass.new("Int", Klass.obj)
     def name = "int"
     def introspect = @value.inspect
+    def self.klass = @klass ||= Klass.new("Int", Klass.obj)
 
     attr_reader :value
 
@@ -121,9 +129,9 @@ module Aua
       @value = value
     end
 
-    def klass = Klass.new("Float", Klass.obj)
     def name = "float"
     def introspect = @value.inspect
+    def self.klass = @klass ||= Klass.new("Float", Klass.obj)
 
     attr_reader :value
   end
@@ -135,9 +143,10 @@ module Aua
       @value = value
     end
 
-    def klass = Klass.new("Bool", Klass.obj)
+    # def klass = Klass.new("Bool", Klass.obj)
     def name = "bool"
     def introspect = @value.inspect ? "true" : "false"
+    def self.klass = @klass ||= Klass.new("Bool", Klass.obj)
 
     attr_reader :value
 
@@ -153,9 +162,11 @@ module Aua
       @value = value
     end
 
-    def klass = Klass.new("Str", Klass.obj)
+    # def self.klass = @klass ||= Klass.new("Str", Klass.obj)
+    # def klass = self.class.klass
     def name = "str"
     def introspect = @value.inspect[1..80]&.concat(@value.length > 80 ? "..." : "") || ""
+    def self.klass = @klass ||= Klass.new("Str", Klass.obj)
 
     attr_reader :value
   end
@@ -170,6 +181,7 @@ module Aua
     def klass = Klass.new("Time", Klass.obj)
     def name = "time"
     def introspect = @value.strftime("%Y-%m-%d %H:%M:%S")
+    def self.klass = @klass ||= Klass.new("Time", Klass.obj)
 
     def self.now = new(::Time.now)
 

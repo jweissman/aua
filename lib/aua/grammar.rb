@@ -19,6 +19,7 @@ module Aua
 
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
+      as: 0, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
       plus: 1, minus: 1,
       star: 2, slash: 2,
       pow: 3

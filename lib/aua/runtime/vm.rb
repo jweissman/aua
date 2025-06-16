@@ -4,26 +4,34 @@ module Aua
     class VM
       module Commands
         include Semantics
+        # Recall a local variable by its value.
         RECALL = lambda do |item|
           Semantics.inst(:let, Semantics::MEMO, item)
         end
 
+        # Retrieve the value of a local variable by name.
         LOCAL_VARIABLE_GET = lambda do |name|
           Semantics.inst(:id, name)
         end
 
+        # Aura send command to invoke a method on an object.
         SEND = lambda do |receiver, method, *args|
           Semantics.inst(:send, receiver, method, *args)
         end
 
+        # Concatenate an array of parts into a single string.
         CONCATENATE = lambda do |parts|
-          # Concatenate an array of parts into a single string.
-          # This is used for structured strings.
           Semantics.inst(:cat, *parts)
         end
 
+        # Generate a new object from a prompt.
         GEN = lambda do |prompt|
           Semantics.inst(:gen, prompt)
+        end
+
+        # Cast an object to a specific type.
+        CAST = lambda do |obj, type|
+          Semantics.inst(:cast, obj, type)
         end
       end
 
@@ -78,7 +86,7 @@ module Aua
 
         def translate_sequence(node)
           stmts = node.value
-          Aua.logger.info "Translating sequence: #{stmts.inspect}"
+          Aua.logger.info("vm:tx") { "Translating sequence: #{stmts.inspect}" }
           raise Error, "Empty sequence" if stmts.empty?
           raise Error, "Sequence must be an array" unless stmts.is_a?(Array)
           raise Error, "Sequence must contain only AST nodes" unless stmts.all? { |s| s.is_a?(AST::Node) }
@@ -162,6 +170,32 @@ module Aua
               when :star then Binop.binop_star(left, right)
               when :slash then Binop.binop_slash(left, right)
               when :pow then Binop.binop_pow(left, right)
+              when :as
+                Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
+                # Type casting operation
+                raise Error, "Type cast lhs must be obj (got #{left.class})" unless left.is_a?(Obj)
+
+                # Resolve right-hand side to a Klass object
+                klass =
+                  if right.is_a?(Klass)
+                    right
+                  elsif right.is_a?(Statement) && right.type == :id
+                    # right.value is ["Word"]
+                    name = right.value.first
+                    env = Aua.vm.instance_variable_get(:@env)
+                    k = env[name]
+                    raise Error, "Type cast rhs must be a Klass (got \\#{k.class} for '#{name}')" unless k.is_a?(Klass)
+
+                    k
+                  else
+                    # raise Error, "Type cast rhs must be a Klass or identifier (got \\#{right.class})"
+                    Str.klass
+                  end
+
+                # right = Str.klass
+                # raise Error, "Type cast rhs must be klass (got #{right.class})" unless right.is_a?(Klass)
+
+                CAST[left, klass] # : Str
               else
                 raise Error, "Unknown binary operator: #{operator}"
               end
@@ -263,11 +297,38 @@ module Aua
           say: method(:builtin_say),
           ask: method(:builtin_ask),
           chat: method(:builtin_chat),
-          see_url: method(:builtin_see_url)
+          see_url: method(:builtin_see_url),
+          cast: method(:builtin_cast)
         }
       end
 
       private
+
+      def builtin_cast(obj, klass)
+        raise Error, "cast requires two arguments" unless obj.is_a?(Obj) && klass.is_a?(Klass)
+        raise Error, "Cannot cast to non-Klass: \\#{klass.inspect}" unless klass.is_a?(Klass)
+
+        # use chat provider + json schema to produce structured output
+        Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
+        schema = {
+          name: "joke_response",
+          strict: "true",
+          schema: {
+            type: "object",
+            properties: {
+              joke: {
+                type: "string"
+              }
+            },
+            required: ["joke"]
+          } # klass.json_schema
+        }
+
+        chat = Aua::LLM.chat
+        chat.with_json_guidance(schema) do
+          chat.ask("Cast the object #{obj.introspect} to the type #{klass.introspect}")
+        end
+      end
 
       def builtin_inspect(obj)
         Aua.logger.info "Inspecting object: \\#{obj.inspect}"
@@ -367,6 +428,7 @@ module Aua
 
         case stmt.type
         when :id, :let, :send then evaluate_simple(stmt)
+        when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
         when :cat then eval_cat(val)
         when :call
@@ -444,7 +506,7 @@ module Aua
 
       def eval_id(identifier)
         identifier = identifier.first if identifier.is_a?(Array)
-        Aua.logger.info "Getting variable #{identifier}"
+        Aua.logger.info("vm:eval_id") { "Getting variable #{identifier}" }
         raise Error, "Undefined variable: #{identifier}" unless @env.key?(identifier)
 
         @env[identifier]

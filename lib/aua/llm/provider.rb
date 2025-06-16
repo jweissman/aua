@@ -245,7 +245,7 @@ module Aua
         def initialize(
           prompt:,
           model: Aua.configuration.model,
-          generation: {},
+          generation: Completion.default_generation_parameters,
           base_uri: Aua.configuration.base_uri
         )
           @prompt = prompt
@@ -310,13 +310,26 @@ module Aua
           request = Net::HTTP::Post.new(uri)
           request.content_type = "application/json"
           request.body = body
+          Aua.logger.info("llm") do
+            <<~REQUEST
+              Sending request to LLM provider:
+              URI: #{uri}
+              Body: #{request.body}
+            REQUEST
+          end
           Net::HTTP.start(uri.hostname, uri.port, read_timeout: 10) do |http|
             http.request(request)
           end
         end
       end
 
-      def generation_parameters
+      attr_accessor :generation
+
+      def initialize
+        @generation = self.class.default_generation_parameters
+      end
+
+      def self.default_generation_parameters
         fetch_meta = ->(key) { Aua.configuration.send(key) }
         {
           temperature: fetch_meta[:temperature],
@@ -330,7 +343,7 @@ module Aua
       def chat_completion(
         prompt:,
         model: Aua.configuration.model,
-        generation: generation_parameters
+        generation: @generation # generation_parameters
       )
         completion = Completion.new(prompt:, model:, generation:)
         rsp = completion.generate
@@ -360,6 +373,21 @@ module Aua
         Aua.logger.info "<<< #{resp.message[..80]} #{resp.metadata.timing}"
 
         resp.message
+      end
+
+      def with_json_guidance(json_schema)
+        @provider.generation[:response_format] = {
+          type: "json_schema",
+          json_schema:
+        }
+        Aua.logger.info "Using JSON schema for guidance: #{json_schema}"
+        yield if block_given?
+      rescue StandardError => e
+        Aua.logger.error "Error while setting JSON schema guidance: #{e.message}"
+        raise e
+      ensure
+        @provider.generation.delete(:response_format)
+        Aua.logger.info "JSON schema guidance cleared"
       end
     end
 

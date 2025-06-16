@@ -31,6 +31,6 @@ module Aua
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
     THREE_CHAR_TOKEN_NAMES = { "\"\"\"" => :prompt }.freeze
-    KEYWORDS = Set.new(%i[if then else elif]).freeze
+    KEYWORDS = Set.new(%i[if then else elif as]).freeze
   end
 end

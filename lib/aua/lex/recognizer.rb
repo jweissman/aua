@@ -28,6 +28,7 @@ module Aua
         start_pos = current_pos
         advance while current_char&.match?(/[a-zA-Z0-9_]/)
         value = @lexer.slice_from(start_pos)
+        return t(:as, value) if value == "as"
         return t(:keyword, value) if KEYWORDS.include?(value.to_sym)
 
         case value
