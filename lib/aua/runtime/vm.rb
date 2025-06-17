@@ -312,7 +312,14 @@ module Aua
 
             def binop_pow(left, right)
               if left.is_a?(Int) && right.is_a?(Int)
-                Int.new(left.value**right.value)
+                # Convert to float to handle potential precision issues
+                result = left.value.to_f**right.value.to_f
+                # Return as Int if it's a whole number, Float otherwise
+                if result == result.to_i.to_f
+                  Int.new(result.to_i)
+                else
+                  Float.new(result)
+                end
               elsif left.is_a?(Float) && right.is_a?(Float)
                 Float.new(left.value**right.value)
               else
@@ -327,7 +334,7 @@ module Aua
                 raise Error, "Right side of member access must be a field name, got #{right.inspect}"
               end
 
-              field_name = right
+              field_name = right # : String
               access_field(left, field_name)
             end
 
@@ -338,14 +345,15 @@ module Aua
                 obj.get_field(field_name)
               when RecordObject
                 obj.get_field(field_name)
-              else
+              when Obj
                 # Try to access field via Aura method dispatch
                 unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
                   raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
                 end
 
                 obj.aura_send(field_name.to_sym)
-
+              else
+                raise Error, "Expected an object for member access, got: #{obj.inspect} (#{obj.class})"
               end
             end
           end
@@ -507,7 +515,9 @@ module Aua
 
       def reduce(ast) = @tx.translate(ast)
 
-      def evaluate(_ctx, ast)
+      def evaluate(_ctx, ast) = evaluate!(ast)
+
+      def evaluate!(ast)
         ret = Nihil.new
         stmts = reduce(ast)
         stmts = [stmts] unless stmts.is_a? Array
@@ -517,6 +527,8 @@ module Aua
         evaluate_one Commands::RECALL[ret]
         ret
       end
+
+      private
 
       # Evaluates a single statement in the VM.
       # - Unwrap arrays of length 1 until we get a Statement
@@ -631,7 +643,10 @@ module Aua
       end
 
       def eval_let(name, value)
-        value = evaluate_one(value) if value.is_a?(AST::Node)
+        if value.is_a?(AST::Node)
+          val = value # : AST::Node
+          value = evaluate!(val)
+        end
         @env[name] = resolve(value)
         value
       end

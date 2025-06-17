@@ -193,7 +193,7 @@ module Aua
         # Add JSON schema support for LLM casting
         registry = self # Capture registry reference for closure
         klass.define_singleton_method(:json_schema) do
-          properties = {} # : Hash[String, Hash]
+          properties = {} # : Hash[String, Hash[untyped, untyped]]
           required = [] # : Array[String]
 
           @field_definitions.each do |field_def|

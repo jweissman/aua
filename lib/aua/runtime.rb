@@ -49,11 +49,11 @@ module Aua
       #   vm.evaluate ast
       #
       # @param code [String] The source code to interpret.
-      def run(ctx, code)
+      def run(_ctx, code)
         # Aua.logger.warn "Running Aua interpreter with code: #{code.inspect}"
         pipeline = [method(:lex), method(:parse), vm.method(:evaluate)]
         pipeline.reduce(code) do |input, step|
-          out = step.call(ctx, input)
+          out = step.call(_ctx, input)
           Aua.logger.debug "#{step.name}: #{input.inspect} -> #{out.inspect}"
           out
         rescue Aua::Error => e

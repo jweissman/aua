@@ -1,8 +1,4 @@
-# frozen_string_literal: true
-
-require "spec_helper"
-
-RSpec.describe "Aura typedef/type system", skip: true do
+RSpec.describe "Aura typedef/type system", skip: false do
   it "allows defining and using a simple enum type" do
     code = <<~AUA
       type YesNo = 'yes' | 'no'
@@ -25,7 +21,7 @@ RSpec.describe "Aura typedef/type system", skip: true do
     expect(result.value).to eq(7)
   end
 
-  it "allows casting to a union of primitives" do
+  it "allows casting to a union of primitives", skip: true do
     code = <<~AUA
       type NumOrStr = Int | Str
       result = 42 as NumOrStr

@@ -193,6 +193,8 @@ module Aua
           # This might be a decimal number like .42, which should be an error
           # Let the number lexer handle this and potentially error
           unexpected(".")
+          # This line never executes, but Steep needs a return path
+          t(:dot, ".")
         else
           # This is likely member access, allow it
           advance

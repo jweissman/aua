@@ -109,7 +109,7 @@ module Aua
       def parse_object_literal
         @parse.consume(:lbrace)
 
-        fields = []
+        fields = [] # : Array[AST::Node]
 
         # Handle empty object
         if @parse.current_token.type == :rbrace
@@ -156,7 +156,7 @@ module Aua
       def parse_array_literal
         @parse.consume(:lbracket)
 
-        elements = []
+        elements = [] # : Array[AST::Node]
 
         # Handle empty array
         if @parse.current_token.type == :rbracket

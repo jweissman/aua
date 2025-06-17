@@ -2,7 +2,7 @@
 
 require "aua/lex"
 
-RSpec.describe Aua::Lex, skip: true do
+RSpec.describe Aua::Lex do
   subject(:lex) { described_class.new(input) }
   let(:tokens) { lex.tokens.to_a }
 

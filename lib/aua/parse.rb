@@ -225,7 +225,7 @@ module Aua
     def parse_record_type
       consume(:lbrace)
 
-      fields = []
+      fields = [] # : Array[AST::Node]
 
       # Skip any whitespace/newlines after opening brace
       advance while @current_token.type == :eos

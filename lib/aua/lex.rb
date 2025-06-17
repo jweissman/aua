@@ -27,7 +27,7 @@ module Aua
     def initialize(code)
       @doc = Text::Document.new(code)
       @lens = Lens.new(@doc)
-      @context_stack = [] # Stack to track brace contexts: :interpolation, :object_literal
+      @context_stack = [] # : Array[Symbol] # Stack to track brace contexts: :interpolation, :object_literal
     end
 
     def tokens = enum_for(:tokenize).lazy
