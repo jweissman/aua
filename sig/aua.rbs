@@ -81,7 +81,6 @@ module Aua
   type tkn = token | Array[token]
 
   class Lex
-
     class Handle
       class StringMachine
         @lexer: Lex
@@ -319,6 +318,12 @@ module Aua
       private
 
       def parse_one: (Symbol) -> AST::Node
+      def parse_empty_object: () -> AST::Node
+      def skip_whitespace: () -> void
+      def parse_object_field: () -> AST::Node
+      def continue_object_parsing?: () -> bool
+      def parse_empty_array: () -> AST::Node
+      def continue_array_parsing?: () -> bool
     end
   end
   def self.s: (Symbol, *untyped) -> AST::Node
@@ -388,6 +393,15 @@ module Aua
     def should_end_command_args?: (token) -> bool
 
     def info: (String) -> void
+
+    private
+
+    def parse_string_literal_type: () -> AST::Node
+    def parse_quoted_string_literal_type: () -> AST::Node
+    def parse_type_reference: () -> AST::Node
+    def parse_empty_record: () -> AST::Node
+    def parse_record_field: () -> AST::Node
+    def continue_record_parsing?: () -> bool
   end
 
   module Registry
@@ -511,11 +525,13 @@ module Aua
     def self.json_schema: () -> untyped
   end
 
+  type fields = Array[Hash[Symbol, untyped]]
+
   class RecordObject < Obj
     attr_reader type_name: String
-    attr_reader field_definitions: Hash[String, untyped]
+    attr_reader field_definitions: fields
     attr_reader values: Hash[String, Obj]
-    def initialize: (String, Hash[String, untyped], Hash[String, Obj]) -> void
+    def initialize: (String, fields, Hash[String, Obj]) -> void
     def get_field: (String) -> Obj
     def set_field: (String, Obj) -> void
     def introspect: () -> String
@@ -556,15 +572,68 @@ module Aua
       def initialize: () -> void
       def register: (String, untyped) -> void
       def register_type: (String, untyped) -> void
-      def has_type?: (String) -> bool
+      def type?: (String) -> bool
       def lookup: (String) -> untyped
       def wrap_value: (untyped) -> Obj
       def type_names: () -> Array[String]
       def create_type_object: (String, untyped) -> untyped
-      def create_union_type: (String, untyped) -> untyped
-      def create_constant_type: (String, untyped) -> untyped
-      def create_reference_type: (String, untyped) -> untyped
-      def create_record_type: (String, untyped) -> untyped
+      def create_union_type: (String, untyped) -> Runtime::Union
+      def create_constant_type: (String, untyped) -> Runtime::Constant
+      def create_reference_type: (String, untyped) -> Runtime::Reference
+      def create_record_type: (String, untyped) -> Runtime::RecordType
+      def extract_field_definitions: (Array[untyped]) -> Array[Hash[Symbol, untyped]]
+    end
+
+    module JsonSchema
+      def self.for_record_type: (fields, TypeRegistry) -> Hash[untyped, untyped]
+      def self.for_union_type: (Array[untyped], TypeRegistry) -> Hash[untyped, untyped]
+
+      def self.schema_for_type: (untyped, TypeRegistry) -> Hash[untyped, untyped]
+      def self.schema_for_type_reference: (String, TypeRegistry) -> Hash[untyped, untyped]
+      def self.extract_inner_schema: (Hash[untyped, untyped]) -> Hash[untyped, untyped]
+    end
+
+    class RecordType < Klass
+      attr_reader field_definitions: fields
+      attr_reader type_registry: TypeRegistry
+
+      def initialize: (String, fields, TypeRegistry) -> void
+      def json_schema: () -> Hash[untyped, untyped]
+      def construct: (Hash[String, untyped]) -> Aua::RecordObject
+
+      private
+
+      def wrap_field_value: (String, untyped) -> Obj
+    end
+
+    class Union < Klass
+      attr_reader variants: Array[untyped]
+      attr_reader type_registry: TypeRegistry
+
+      def initialize: (String, Array[untyped], TypeRegistry) -> void
+      def json_schema: () -> Hash[untyped, untyped]
+      def construct: (untyped) -> Aua::Str
+      def union_values: () -> Array[untyped]
+
+      private
+
+      def extract_union_values: (Array[untyped]) -> Array[untyped]
+    end
+
+    class Constant < Klass
+      attr_reader constant_value: untyped
+
+      def initialize: (String, untyped) -> void
+      def json_schema: () -> Hash[untyped, untyped]
+      def construct: (untyped) -> Aua::Str
+    end
+
+    class Reference < Klass
+      attr_reader referenced_type: String
+
+      def initialize: (String, String) -> void
+      def json_schema: () -> Hash[untyped, untyped]
+      def construct: (untyped) -> Aua::Str
     end
 
     type primary = Int | Float | Str | Bool | Nihil

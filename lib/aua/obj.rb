@@ -16,7 +16,12 @@ module Aua
   # Global state aggregator for Aua runtime metadata
   Methods = Registry::Store.new
 
+  # Base class for all Aua objects - provides common interface
   class Base
+    # Common initialization for all Aua objects
+    def initialize
+      # Base initialization - can be extended by subclasses
+    end
   end
 
   # The base object for all Aua values.
@@ -68,7 +73,6 @@ module Aua
       # print "#{self.name.split("::").last}##{name} "
     end
 
-    def klass = self.class.klass
     # def self.klass   = @klass_obj ||= Klass.new("Obj", klass)
   end
 

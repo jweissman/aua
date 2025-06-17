@@ -2,6 +2,9 @@ require "aua/runtime/statement"
 require "aua/runtime/semantics"
 require "aua/runtime/vm"
 require "aua/runtime/type_registry"
+require "aua/runtime/json_schema"
+require "aua/runtime/record_type"
+require "aua/runtime/type_classes"
 
 module Aua
   module Runtime
@@ -49,11 +52,11 @@ module Aua
       #   vm.evaluate ast
       #
       # @param code [String] The source code to interpret.
-      def run(_ctx, code)
+      def run(ctx, code)
         # Aua.logger.warn "Running Aua interpreter with code: #{code.inspect}"
         pipeline = [method(:lex), method(:parse), vm.method(:evaluate)]
         pipeline.reduce(code) do |input, step|
-          out = step.call(_ctx, input)
+          out = step.call(ctx, input)
           Aua.logger.debug "#{step.name}: #{input.inspect} -> #{out.inspect}"
           out
         rescue Aua::Error => e

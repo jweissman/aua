@@ -30,14 +30,6 @@ RSpec::Matchers.define :be_aua do |expected_value|
     @expected_type = expected_type
   end
 
-  # def matches?(code)
-  #   @code = code
-  #   @result = Aua.run(code)
-  #   value_matches = @result.value == expected_value
-  #   type_matches = @expected_type.nil? || @result.is_a?(@expected_type)
-  #   value_matches && type_matches
-  # end
-
   private
 
   attr_reader :code, :result, :expected_type

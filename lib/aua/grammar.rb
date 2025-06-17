@@ -112,41 +112,16 @@ module Aua
         fields = [] # : Array[AST::Node]
 
         # Handle empty object
-        if @parse.current_token.type == :rbrace
-          @parse.consume(:rbrace)
-          return s(:object_literal, fields)
-        end
+        return parse_empty_object if @parse.current_token.type == :rbrace
 
+        # Parse fields
         loop do
-          # Skip newlines/whitespace
-          @parse.advance while @parse.current_token.type == :eos
+          skip_whitespace
+          field = parse_object_field
+          fields << field
+          skip_whitespace
 
-          # Parse field name
-          unless @parse.current_token.type == :id
-            raise Error, "Expected field name in object literal, got #{@parse.current_token.type}"
-          end
-
-          field_name = @parse.current_token.value
-          @parse.consume(:id)
-          @parse.consume(:colon)
-
-          # Parse field value (expression)
-          field_value = @parse.send :parse_expression
-          fields << s(:field, field_name, field_value)
-
-          # Skip newlines after expression
-          @parse.advance while @parse.current_token.type == :eos
-
-          # Check for continuation
-          if @parse.current_token.type == :comma
-            @parse.consume(:comma)
-            # Skip newlines after comma
-            @parse.advance while @parse.current_token.type == :eos
-          elsif @parse.current_token.type == :rbrace
-            break
-          else
-            raise Error, "Expected ',' or '}' in object literal, got #{@parse.current_token.type}"
-          end
+          break unless continue_object_parsing?
         end
 
         @parse.consume(:rbrace)
@@ -159,35 +134,18 @@ module Aua
         elements = [] # : Array[AST::Node]
 
         # Handle empty array
-        if @parse.current_token.type == :rbracket
-          @parse.consume(:rbracket)
-          return s(:array_literal, elements)
-        end
+        return parse_empty_array if @parse.current_token.type == :rbracket
 
+        # Parse elements
         loop do
-          # Skip newlines/whitespace
-          @parse.advance while @parse.current_token.type == :eos
-
-          # Check if we've reached the end
+          skip_whitespace
           break if @parse.current_token.type == :rbracket
 
-          # Parse array element (expression)
           element = @parse.send :parse_expression
           elements << element
+          skip_whitespace
 
-          # Skip newlines after element
-          @parse.advance while @parse.current_token.type == :eos
-
-          # Check for continuation
-          if @parse.current_token.type == :comma
-            @parse.consume(:comma)
-            # Skip newlines after comma
-            @parse.advance while @parse.current_token.type == :eos
-          elsif @parse.current_token.type == :rbracket
-            break
-          else
-            raise Error, "Expected ',' or ']' in array literal, got #{@parse.current_token.type}"
-          end
+          break unless continue_array_parsing?
         end
 
         @parse.consume(:rbracket)
@@ -200,6 +158,59 @@ module Aua
         value = @parse.current_token.value
         @parse.consume(type)
         s(type, value)
+      end
+
+      def parse_empty_object
+        @parse.consume(:rbrace)
+        s(:object_literal, [])
+      end
+
+      def skip_whitespace
+        @parse.advance while @parse.current_token.type == :eos
+      end
+
+      def parse_object_field
+        unless @parse.current_token.type == :id
+          raise Error, "Expected field name in object literal, got #{@parse.current_token.type}"
+        end
+
+        field_name = @parse.current_token.value
+        @parse.consume(:id)
+        @parse.consume(:colon)
+
+        field_value = @parse.send :parse_expression
+        s(:field, field_name, field_value)
+      end
+
+      def continue_object_parsing?
+        case @parse.current_token.type
+        when :comma
+          @parse.consume(:comma)
+          skip_whitespace
+          true
+        when :rbrace
+          false
+        else
+          raise Error, "Expected ',' or '}' in object literal, got #{@parse.current_token.type}"
+        end
+      end
+
+      def parse_empty_array
+        @parse.consume(:rbracket)
+        s(:array_literal, [])
+      end
+
+      def continue_array_parsing?
+        case @parse.current_token.type
+        when :comma
+          @parse.consume(:comma)
+          skip_whitespace
+          true
+        when :rbracket
+          false
+        else
+          raise Error, "Expected ',' or ']' in array literal, got #{@parse.current_token.type}"
+        end
       end
     end
   end

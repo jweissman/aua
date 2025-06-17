@@ -175,49 +175,24 @@ module Aua
     end
 
     def parse_type_expression
-      case @current_token.type
-      when :simple_str
-        # String literal type like 'yes' -> type_constant containing simple_str
-        value = @current_token.value
-        consume(:simple_str)
-        literal_type = s(:type_constant, s(:simple_str, value))
+      base_type = case @current_token.type
+                  when :simple_str
+                    parse_string_literal_type
+                  when :str_part
+                    parse_quoted_string_literal_type
+                  when :id
+                    parse_type_reference
+                  when :lbrace
+                    parse_record_type
+                  else
+                    raise Error, "Expected type expression, got #{@current_token.type}"
+                  end
 
-        # Check for union (|)
-        if @current_token.type == :pipe
-          parse_union_type(literal_type)
-        else
-          literal_type
-        end
-      when :str_part
-        # Double-quoted string literal type like "active"
-        value = @current_token.value
-        consume(:str_part)
-        consume(:str_end) # Consume the closing quote
-        literal_type = s(:type_constant, s(:simple_str, value))
-
-        # Check for union (|)
-        if @current_token.type == :pipe
-          parse_union_type(literal_type)
-        else
-          literal_type
-        end
-      when :id
-        # Reference to another type
-        type_name = @current_token.value
-        consume(:id)
-        ref_type = s(:type_reference, type_name)
-
-        # Check for union (|)
-        if @current_token.type == :pipe
-          parse_union_type(ref_type)
-        else
-          ref_type
-        end
-      when :lbrace
-        # Record type like { x: Int, y: Int }
-        parse_record_type
+      # Check for union (|) after parsing base type
+      if @current_token.type == :pipe
+        parse_union_type(base_type)
       else
-        raise Error, "Expected type expression, got #{@current_token.type}"
+        base_type
       end
     end
 
@@ -231,42 +206,16 @@ module Aua
       advance while @current_token.type == :eos
 
       # Handle empty record
-      if @current_token.type == :rbrace
-        consume(:rbrace)
-        return s(:record_type, fields)
-      end
+      return parse_empty_record if @current_token.type == :rbrace
 
+      # Parse fields
       loop do
-        # Skip any whitespace/newlines before field name
+        advance while @current_token.type == :eos
+        field = parse_record_field
+        fields << field
         advance while @current_token.type == :eos
 
-        # Parse field name
-        raise Error, "Expected field name, got #{@current_token.type}" unless @current_token.type == :id
-
-        field_name = @current_token.value
-        consume(:id)
-        consume(:colon)
-
-        # Skip any whitespace/newlines after colon
-        advance while @current_token.type == :eos
-
-        # Parse field type
-        field_type = parse_type_expression
-        fields << s(:field, field_name, field_type)
-
-        # Skip any whitespace/newlines after field type
-        advance while @current_token.type == :eos
-
-        # Check for continuation
-        if @current_token.type == :comma
-          consume(:comma)
-          # Skip any whitespace/newlines after comma
-          advance while @current_token.type == :eos
-        elsif @current_token.type == :rbrace
-          break
-        else
-          raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
-        end
+        break unless continue_record_parsing?
       end
 
       consume(:rbrace)
@@ -436,6 +385,62 @@ module Aua
       return s(:str, parts.first.value) if parts.size == 1 && parts.first.type == :str
 
       s(token_type, parts)
+    end
+
+    def parse_string_literal_type
+      # String literal type like 'yes' -> type_constant containing simple_str
+      value = @current_token.value
+      consume(:simple_str)
+      s(:type_constant, s(:simple_str, value))
+    end
+
+    def parse_quoted_string_literal_type
+      # Double-quoted string literal type like "active"
+      value = @current_token.value
+      consume(:str_part)
+      consume(:str_end) # Consume the closing quote
+      s(:type_constant, s(:simple_str, value))
+    end
+
+    def parse_type_reference
+      # Reference to another type
+      type_name = @current_token.value
+      consume(:id)
+      s(:type_reference, type_name)
+    end
+
+    def parse_empty_record
+      consume(:rbrace)
+      s(:record_type, [])
+    end
+
+    def parse_record_field
+      raise Error, "Expected field name, got #{@current_token.type}" unless @current_token.type == :id
+
+      field_name = @current_token.value
+      consume(:id)
+      consume(:colon)
+
+      # Skip any whitespace/newlines after colon
+      advance while @current_token.type == :eos
+
+      # Parse field type
+      field_type = parse_type_expression
+      s(:field, field_name, field_type)
+    end
+
+    def continue_record_parsing?
+      case @current_token.type
+      when :comma
+        consume(:comma)
+        # Skip any whitespace/newlines after comma
+        advance while @current_token.type == :eos
+        true
+      when :rbrace
+        false
+      else
+        raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
+      end
     end
   end
 end

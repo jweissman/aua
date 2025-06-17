@@ -315,7 +315,7 @@ module Aua
                 # Convert to float to handle potential precision issues
                 result = left.value.to_f**right.value.to_f
                 # Return as Int if it's a whole number, Float otherwise
-                if result == result.to_i.to_f
+                if result.finite? && result == result.round
                   Int.new(result.to_i)
                 else
                   Float.new(result)
@@ -341,9 +341,7 @@ module Aua
             # Helper method for field access
             def access_field(obj, field_name)
               case obj
-              when ObjectLiteral
-                obj.get_field(field_name)
-              when RecordObject
+              when ObjectLiteral, RecordObject
                 obj.get_field(field_name)
               when Obj
                 # Try to access field via Aura method dispatch
@@ -527,8 +525,6 @@ module Aua
         evaluate_one Commands::RECALL[ret]
         ret
       end
-
-      private
 
       # Evaluates a single statement in the VM.
       # - Unwrap arrays of length 1 until we get a Statement
