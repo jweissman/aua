@@ -68,28 +68,7 @@ puts "#{"~".blue}|#{"-".green}"
 if ARGV.empty?
   repl!
 else
-  # We want to parse options, something like:
-  # opts = ARGV.getopts("r", "rerun", "reenter-constantly")
-  # puts "Running in file mode with options: #{opts.inspect}"
-
-  # Using optparse:
-  options = {}
-  opt_parser = OptionParser.new do |opts|
-    opts.banner = "Usage: aura [options] [file1 file2 ...]"
-    opts.on("-r", "--reenter-constantly", "Continuously reenter the file until stopped") do
-      options[:rerun] = true
-    end
-  end
-  begin
-    opt_parser.parse!(ARGV)
-  rescue OptionParser::ParseError => e
-    warn "Error parsing options: #{e.message}"
-    puts opts
-    exit(1)
-  end
-
   files = ARGV.empty? ? nil : ARGV
-  puts "Running in file mode with options: #{options.inspect}"
   puts "Processing files: #{files.inspect}" if files
 
   files.each do |file|

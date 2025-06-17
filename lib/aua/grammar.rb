@@ -5,6 +5,7 @@ module Aua
     PRIMARY_NAMES = {
       lparen: :parens,
       lbrace: :object_literal,
+      lbracket: :array_literal,
       id: :id,
       int: :int,
       float: :float,
@@ -117,6 +118,11 @@ module Aua
         end
 
         loop do
+          # Skip newlines/whitespace
+          while @parse.current_token.type == :eos
+            @parse.advance
+          end
+
           # Parse field name
           unless @parse.current_token.type == :id
             raise Error, "Expected field name in object literal, got #{@parse.current_token.type}"
@@ -130,9 +136,18 @@ module Aua
           field_value = @parse.send :parse_expression
           fields << s(:field, field_name, field_value)
 
+          # Skip newlines after expression
+          while @parse.current_token.type == :eos
+            @parse.advance
+          end
+
           # Check for continuation
           if @parse.current_token.type == :comma
             @parse.consume(:comma)
+            # Skip newlines after comma
+            while @parse.current_token.type == :eos
+              @parse.advance
+            end
           elsif @parse.current_token.type == :rbrace
             break
           else
@@ -142,6 +157,45 @@ module Aua
 
         @parse.consume(:rbrace)
         s(:object_literal, fields)
+      end
+
+      def parse_array_literal
+        @parse.consume(:lbracket)
+
+        elements = []
+
+        # Handle empty array
+        if @parse.current_token.type == :rbracket
+          @parse.consume(:rbracket)
+          return s(:array_literal, elements)
+        end
+
+        loop do
+          # Skip newlines/whitespace
+          while @parse.current_token.type == :eos
+            @parse.advance
+          end
+
+          # Parse array element (expression)
+          element = @parse.send :parse_expression
+          elements << element
+
+          # Check for continuation
+          if @parse.current_token.type == :comma
+            @parse.consume(:comma)
+            # Skip newlines after comma
+            while @parse.current_token.type == :eos
+              @parse.advance
+            end
+          elsif @parse.current_token.type == :rbracket
+            break
+          else
+            raise Error, "Expected ',' or ']' in array literal, got #{@parse.current_token.type}"
+          end
+        end
+
+        @parse.consume(:rbracket)
+        s(:array_literal, elements)
       end
 
       private

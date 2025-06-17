@@ -213,6 +213,8 @@ module Aua
                                          { type: "string" }
                                        when "Bool"
                                          { type: "boolean" }
+                                       when "List"
+                                         { type: "array", items: { type: "string" } }
                                        else
                                          # Check if this is a user-defined type
                                          if registry.has_type?(field_type.value)
@@ -252,7 +254,7 @@ module Aua
               }
             }
           }
-        end # Construct method creates record instances
+        end
         type_registry = self
         klass.define_singleton_method(:construct) do |value|
           # Value should be a hash with the field values
@@ -318,8 +320,9 @@ module Aua
           value.each { |k, v| wrapped_hash[k] = wrap_value(v) }
           Aua::ObjectLiteral.new(wrapped_hash)
         when Array
-          # For arrays, wrap each element
-          value.map { |v| wrap_value(v) }
+          # For arrays, wrap each element and create an Aua::List
+          wrapped_elements = value.map { |v| wrap_value(v) }
+          Aua::List.new(wrapped_elements)
         else
           # For unknown types, pass through as-is
           value

@@ -1,5 +1,4 @@
 #!/usr/bin/env aura
 name = ask "what is your name?"
 say "Hello ${name}"
-profession = """Please invent a short profession for a character. One word only. No spaces"""
-say "You are a ${profession}"
+profession = """Provide a short profession for a fantasy character, ${name}. Give your answer as one word only with no spaces"""

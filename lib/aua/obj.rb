@@ -65,7 +65,7 @@ module Aua
     #
     def self.define_aura_method(name, &block)
       aura_methods[name] = block # : aura_meth
-      print "#{self.name.split("::").last}##{name} "
+      # print "#{self.name.split("::").last}##{name} "
     end
 
     def klass = self.class.klass
@@ -103,6 +103,8 @@ module Aua
         Str.json_schema
       when "Time"
         Time.json_schema
+      when "List"
+        List.json_schema
       else
         raise "Not a primitive type: #{@name}" unless @parent.nil?
       end
@@ -122,6 +124,8 @@ module Aua
         Str.new(val)
       when "Time"
         Time.new(val)
+      when "List"
+        List.new(val)
       else
         raise "Not a primitive type: #{@name}" unless @parent.nil?
       end
@@ -251,6 +255,24 @@ module Aua
 
     def self.json_schema
       { type: "object", properties: { value: { type: "string", format: "date-time" } }, required: ["value"] }
+    end
+  end
+
+  # Array value in Aua.
+  class List < Obj
+    def initialize(values = [])
+      super()
+      @values = values
+    end
+
+    def name = "list"
+    def introspect = "[#{@values.map(&:introspect).join(", ")}]"
+    def self.klass = @klass ||= Klass.new("List", Klass.obj)
+
+    attr_reader :values
+
+    def self.json_schema
+      { type: "array", items: { type: "string" } }
     end
   end
 

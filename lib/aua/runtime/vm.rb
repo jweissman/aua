@@ -33,6 +33,11 @@ module Aua
         CAST = lambda do |obj, type|
           Semantics.inst(:cast, obj, type)
         end
+
+        # Construct a list/array from elements.
+        CONS = lambda do |elements|
+          Semantics.inst(:cons, *elements)
+        end
       end
 
       # The translator class that converts Aua AST nodes into VM instructions.
@@ -55,6 +60,7 @@ module Aua
           when :structured_str, :structured_gen_lit then translate_structured_str(ast)
           when :type_declaration then translate_type_declaration(ast)
           when :object_literal then translate_object_literal(ast)
+          when :array_literal then translate_array_literal(ast)
           else
             raise Error, "Unknown AST node type: \\#{ast.type}"
           end
@@ -104,6 +110,12 @@ module Aua
           end
 
           [Statement.new(type: :object_literal, value: translated_fields)]
+        end
+
+        def translate_array_literal(node)
+          # Translate each element in the array
+          translated_elements = node.value.map { |element| translate(element) }
+          [CONS[translated_elements]]
         end
 
         def translate_sequence(node)
@@ -528,6 +540,7 @@ module Aua
         when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
         when :cat then eval_cat(val)
+        when :cons then eval_cons(val)
         when :call
           fn_name, *args = val
           eval_call(fn_name, args.map { |a| evaluate_one(a) })
@@ -592,6 +605,12 @@ module Aua
 
         # Concatenate all parts into a single string
         Str.new(parts.join)
+      end
+
+      def eval_cons(elements)
+        # Evaluate each element and create a List object
+        evaluated_elements = elements.map { |element| evaluate_one(element) }
+        List.new(evaluated_elements)
       end
 
       def eval_call(fn_name, args)

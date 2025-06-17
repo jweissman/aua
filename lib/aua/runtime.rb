@@ -35,7 +35,8 @@ module Aua
           "Str" => Aua::Str.klass,
           "Bool" => Aua::Bool.klass,
           "Nihil" => Aua::Nihil.klass,
-          "Int" => Aua::Int.klass
+          "Int" => Aua::Int.klass,
+          "List" => Aua::List.klass
         }
       end
 

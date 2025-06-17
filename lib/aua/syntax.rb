@@ -23,14 +23,18 @@ module Aua
       "(" => :lparen,
       ")" => :rparen,
       "{" => :lbrace,
+      "}" => :rbrace,
+      "[" => :lbracket,
+      "]" => :rbracket,
       ":" => :colon,
       "," => :comma,
       "." => :dot,
       "=" => :equals,
+      "<" => :lt,
+      ">" => :gt,
       "#" => :comment,
       ";" => :eos,
       "\n" => :eos,
-      "}" => :interpolation_end,
       "|" => :pipe
     }.freeze
 

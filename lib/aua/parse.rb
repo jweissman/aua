@@ -227,6 +227,11 @@ module Aua
 
       fields = []
 
+      # Skip any whitespace/newlines after opening brace
+      while @current_token.type == :eos
+        advance
+      end
+
       # Handle empty record
       if @current_token.type == :rbrace
         consume(:rbrace)
@@ -234,6 +239,11 @@ module Aua
       end
 
       loop do
+        # Skip any whitespace/newlines before field name
+        while @current_token.type == :eos
+          advance
+        end
+
         # Parse field name
         raise Error, "Expected field name, got #{@current_token.type}" unless @current_token.type == :id
 
@@ -241,13 +251,27 @@ module Aua
         consume(:id)
         consume(:colon)
 
+        # Skip any whitespace/newlines after colon
+        while @current_token.type == :eos
+          advance
+        end
+
         # Parse field type
         field_type = parse_type_expression
         fields << s(:field, field_name, field_type)
 
+        # Skip any whitespace/newlines after field type
+        while @current_token.type == :eos
+          advance
+        end
+
         # Check for continuation
         if @current_token.type == :comma
           consume(:comma)
+          # Skip any whitespace/newlines after comma
+          while @current_token.type == :eos
+            advance
+          end
         elsif @current_token.type == :rbrace
           break
         else

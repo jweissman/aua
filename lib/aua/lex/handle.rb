@@ -179,6 +179,16 @@ module Aua
         t(:comma, ",")
       end
 
+      def lbracket(_)
+        advance
+        t(:lbracket, "[")
+      end
+
+      def rbracket(_)
+        advance
+        t(:rbracket, "]")
+      end
+
       def dot(_)
         # Check if this is a valid context for a dot
         # Valid contexts: after identifier/value (member access) or before digit (decimal)
