@@ -146,24 +146,18 @@ module Aua
       def rbrace(_)
         # Context-aware brace handling
         context = @lexer.pop_context
-        puts "DEBUG: rbrace context=#{context.inspect}, stack=#{@lexer.instance_variable_get(:@context_stack).inspect}"
         advance
 
         case context
         when :interpolation
-          puts "DEBUG: Emitting interpolation_end"
           t(:interpolation_end, "}")
         when :object_literal
-          puts "DEBUG: Emitting rbrace for object_literal"
           t(:rbrace, "}")
         else
-          puts "DEBUG: Fallback case, context=#{context.inspect}"
           # Fallback: check the old string machine approach
           if string_machine.saw_interpolation && string_machine.inside_string
-            puts "DEBUG: Fallback to interpolation_end via string machine"
             t(:interpolation_end, "}")
           else
-            puts "DEBUG: Fallback to rbrace"
             t(:rbrace, "}")
           end
         end

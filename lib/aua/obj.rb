@@ -125,7 +125,9 @@ module Aua
       when "Time"
         Time.new(val)
       when "List"
-        List.new(val)
+        # Convert raw strings to Aua::Str objects
+        aua_values = val.map { |item| Aua::Str.new(item.to_s) }
+        Aua::List.new(aua_values)
       else
         raise "Not a primitive type: #{@name}" unless @parent.nil?
       end
@@ -272,7 +274,7 @@ module Aua
     attr_reader :values
 
     def self.json_schema
-      { type: "array", items: { type: "string" } }
+      { type: "object", properties: { value: { type: "array", items: { type: "string" } } }, required: ["value"] }
     end
   end
 

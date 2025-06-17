@@ -261,8 +261,6 @@ module Aua
           # Wrap raw values in appropriate Aua objects, with recursive casting for record types
           wrapped_values = {} # : Hash[String, Obj]
           value.each do |field_name, field_value|
-            puts "DEBUG: Processing field #{field_name}: #{field_value.inspect} (#{field_value.class})"
-
             # Find the field definition for this field
             field_def = @field_definitions.find { |fd| fd[:name] == field_name }
             if field_def && field_def[:type].type == :type_reference
@@ -273,13 +271,12 @@ module Aua
                 field_type = type_registry.lookup(field_type_name)
 
                 # If it's a record type and we have a hash, recursively cast it
-                if field_type.respond_to?(:field_definitions) && field_value.is_a?(Hash)
-                  puts "DEBUG: Recursively casting #{field_name} to #{field_type_name}"
-                  wrapped_values[field_name] = field_type.construct(field_value)
-                else
-                  # For non-record types or non-hash values, use regular wrapping
-                  wrapped_values[field_name] = type_registry.wrap_value(field_value)
-                end
+                wrapped_values[field_name] = if field_type.respond_to?(:field_definitions) && field_value.is_a?(Hash)
+                                               field_type.construct(field_value)
+                                             else
+                                               # For non-record types or non-hash values, use regular wrapping
+                                               type_registry.wrap_value(field_value)
+                                             end
               else
                 # For built-in types, use regular wrapping
                 wrapped_values[field_name] = type_registry.wrap_value(field_value)
@@ -288,13 +285,10 @@ module Aua
               # For fields without type info, use regular wrapping
               wrapped_values[field_name] = type_registry.wrap_value(field_value)
             end
-
-            puts "DEBUG: After processing: #{wrapped_values[field_name].inspect}"
           end
 
           # Create a structured object that supports member access
           result = Aua::RecordObject.new(name, @field_definitions, wrapped_values)
-          puts "DEBUG: Final RecordObject: #{result.inspect}"
           result
         end
 

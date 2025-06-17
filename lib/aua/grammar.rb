@@ -119,9 +119,7 @@ module Aua
 
         loop do
           # Skip newlines/whitespace
-          while @parse.current_token.type == :eos
-            @parse.advance
-          end
+          @parse.advance while @parse.current_token.type == :eos
 
           # Parse field name
           unless @parse.current_token.type == :id
@@ -137,17 +135,13 @@ module Aua
           fields << s(:field, field_name, field_value)
 
           # Skip newlines after expression
-          while @parse.current_token.type == :eos
-            @parse.advance
-          end
+          @parse.advance while @parse.current_token.type == :eos
 
           # Check for continuation
           if @parse.current_token.type == :comma
             @parse.consume(:comma)
             # Skip newlines after comma
-            while @parse.current_token.type == :eos
-              @parse.advance
-            end
+            @parse.advance while @parse.current_token.type == :eos
           elsif @parse.current_token.type == :rbrace
             break
           else
@@ -172,21 +166,23 @@ module Aua
 
         loop do
           # Skip newlines/whitespace
-          while @parse.current_token.type == :eos
-            @parse.advance
-          end
+          @parse.advance while @parse.current_token.type == :eos
+
+          # Check if we've reached the end
+          break if @parse.current_token.type == :rbracket
 
           # Parse array element (expression)
           element = @parse.send :parse_expression
           elements << element
 
+          # Skip newlines after element
+          @parse.advance while @parse.current_token.type == :eos
+
           # Check for continuation
           if @parse.current_token.type == :comma
             @parse.consume(:comma)
             # Skip newlines after comma
-            while @parse.current_token.type == :eos
-              @parse.advance
-            end
+            @parse.advance while @parse.current_token.type == :eos
           elsif @parse.current_token.type == :rbracket
             break
           else

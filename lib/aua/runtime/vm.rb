@@ -149,7 +149,7 @@ module Aua
             Aua.logger.info "Reifying string: #{node.inspect}"
             Str.new(node.value)
           else
-            warn "Unknown primary node type: #{node.type.inspect}"
+            Aua.logger.warn "Unknown primary node type: #{node.type.inspect}"
             Nihil.new
           end
         end
@@ -382,13 +382,13 @@ module Aua
         # Generic casting using LLM + JSON schema
         Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
 
-        warn "Casting with schema: \\#{obj.introspect} (#{obj.class}) => \\#{klass.introspect} (#{klass.class})"
+        Aua.logger.debug "Casting with schema: \\#{obj.introspect} (#{obj.class}) => \\#{klass.introspect} (#{klass.class})"
 
         chat = Aua::LLM.chat
         ret = chat.with_json_guidance(schema_for(klass)) do
           chat.ask(build_cast_prompt(obj, klass))
         end
-        warn "Response from LLM: \\#{ret.inspect}"
+        Aua.logger.info "Response from LLM: \\#{ret.inspect}"
 
         value = JSON.parse(ret)["value"]
         result = klass.construct(value)
@@ -407,7 +407,7 @@ module Aua
           }
         }
 
-        warn "Using schema: \\#{schema.inspect} for class: \\#{klass.name}"
+        Aua.logger.warn "Using schema: \\#{schema.inspect} for class: \\#{klass.name}"
 
         schema
       end
@@ -461,7 +461,8 @@ module Aua
         value = arg
         raise Error, "say only accepts Str arguments, got \\#{value.class}" unless value.is_a?(Str)
 
-        puts arg.value
+        $stdout.puts value.value
+
         Aua::Nihil.new
       end
 
