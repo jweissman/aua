@@ -14,7 +14,6 @@ RSpec.describe Aua do
   RSpec::Matchers.define :be_aua do |subj|
     match do |code|
       @result = Aua.run(code)
-      warn "Aua.run(#{code.inspect}) returned #{@result.value.inspect} / subj #{subj.inspect} / actual #{actual.inspect}"
       @result.value == subj
     end
     failure_message do

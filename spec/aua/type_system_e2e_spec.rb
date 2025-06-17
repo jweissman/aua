@@ -30,12 +30,12 @@ RSpec.describe "Type System End-to-End", skip: false do
         at: nil
       )
 
-      result = vm.eval_type_declaration("YesNo", type_ast)
+      result = vm.send :eval_type_declaration, "YesNo", type_ast
       expect(result).to be_a(Aua::Klass)
       expect(result.name).to eq("YesNo")
 
       # Now check that it's in the environment
-      looked_up = vm.eval_type_lookup("YesNo")
+      looked_up = vm.send :eval_type_lookup, "YesNo"
       expect(looked_up).to eq(result)
     end
   end

@@ -4,6 +4,7 @@ module Aua
   module Grammar
     PRIMARY_NAMES = {
       lparen: :parens,
+      lbrace: :object_literal,
       id: :id,
       int: :int,
       float: :float,
@@ -22,7 +23,8 @@ module Aua
       as: 0, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
       plus: 1, minus: 1,
       star: 2, slash: 2,
-      pow: 3
+      pow: 3,
+      dot: 4 # member access has high precedence
     }.freeze
 
     def s(type, *values)
@@ -101,6 +103,45 @@ module Aua
         value = @parse.current_token.value
         @parse.consume(:gen_lit)
         s(:structured_gen_lit, [s(:str, value)])
+      end
+
+      def parse_object_literal
+        @parse.consume(:lbrace)
+
+        fields = []
+
+        # Handle empty object
+        if @parse.current_token.type == :rbrace
+          @parse.consume(:rbrace)
+          return s(:object_literal, fields)
+        end
+
+        loop do
+          # Parse field name
+          unless @parse.current_token.type == :id
+            raise Error, "Expected field name in object literal, got #{@parse.current_token.type}"
+          end
+
+          field_name = @parse.current_token.value
+          @parse.consume(:id)
+          @parse.consume(:colon)
+
+          # Parse field value (expression)
+          field_value = @parse.send :parse_expression
+          fields << s(:field, field_name, field_value)
+
+          # Check for continuation
+          if @parse.current_token.type == :comma
+            @parse.consume(:comma)
+          elsif @parse.current_token.type == :rbrace
+            break
+          else
+            raise Error, "Expected ',' or '}' in object literal, got #{@parse.current_token.type}"
+          end
+        end
+
+        @parse.consume(:rbrace)
+        s(:object_literal, fields)
       end
 
       private

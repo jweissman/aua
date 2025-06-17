@@ -162,6 +162,10 @@ module Aua
             "Found interpolation start at pos=#{current_pos}, buffer=#{@buffer.inspect}"
           end
           advance(2)
+
+          # Push interpolation context to the lexer's context stack
+          @lexer.push_context(:interpolation)
+
           token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
           @buffer = ""
 

@@ -174,13 +174,25 @@ module Aua
       s(:type_declaration, type_name, type_expr)
     end
 
-    # Parses type expressions: 'literal' | AnotherType | { field: Type }
     def parse_type_expression
       case @current_token.type
       when :simple_str
         # String literal type like 'yes' -> type_constant containing simple_str
         value = @current_token.value
         consume(:simple_str)
+        literal_type = s(:type_constant, s(:simple_str, value))
+
+        # Check for union (|)
+        if @current_token.type == :pipe
+          parse_union_type(literal_type)
+        else
+          literal_type
+        end
+      when :str_part
+        # Double-quoted string literal type like "active"
+        value = @current_token.value
+        consume(:str_part)
+        consume(:str_end) # Consume the closing quote
         literal_type = s(:type_constant, s(:simple_str, value))
 
         # Check for union (|)
@@ -201,9 +213,50 @@ module Aua
         else
           ref_type
         end
+      when :lbrace
+        # Record type like { x: Int, y: Int }
+        parse_record_type
       else
         raise Error, "Expected type expression, got #{@current_token.type}"
       end
+    end
+
+    # Parses record types: { field1: Type1, field2: Type2 }
+    def parse_record_type
+      consume(:lbrace)
+
+      fields = []
+
+      # Handle empty record
+      if @current_token.type == :rbrace
+        consume(:rbrace)
+        return s(:record_type, fields)
+      end
+
+      loop do
+        # Parse field name
+        raise Error, "Expected field name, got #{@current_token.type}" unless @current_token.type == :id
+
+        field_name = @current_token.value
+        consume(:id)
+        consume(:colon)
+
+        # Parse field type
+        field_type = parse_type_expression
+        fields << s(:field, field_name, field_type)
+
+        # Check for continuation
+        if @current_token.type == :comma
+          consume(:comma)
+        elsif @current_token.type == :rbrace
+          break
+        else
+          raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
+        end
+      end
+
+      consume(:rbrace)
+      s(:record_type, fields)
     end
 
     # Parses union types: left_type | right_type | ...
@@ -216,6 +269,11 @@ module Aua
         when :simple_str
           value = @current_token.value
           consume(:simple_str)
+          types << s(:type_constant, s(:simple_str, value))
+        when :str_part
+          value = @current_token.value
+          consume(:str_part)
+          consume(:str_end) # Consume the closing quote
           types << s(:type_constant, s(:simple_str, value))
         when :id
           type_name = @current_token.value

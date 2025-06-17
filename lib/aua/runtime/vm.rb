@@ -54,6 +54,7 @@ module Aua
           when :seq then translate_sequence(ast)
           when :structured_str, :structured_gen_lit then translate_structured_str(ast)
           when :type_declaration then translate_type_declaration(ast)
+          when :object_literal then translate_object_literal(ast)
           else
             raise Error, "Unknown AST node type: \\#{ast.type}"
           end
@@ -86,8 +87,23 @@ module Aua
         end
 
         def translate_type_declaration(node)
-          type_name, type_definition = node.value
-          [Semantics.inst(:type_declaration, type_name, type_definition)]
+          # Type declarations return the type declaration statement
+          type_name, type_def = node.value
+          [Statement.new(type: :type_declaration, value: [type_name, type_def])]
+        end
+
+        def translate_object_literal(node)
+          # Translate each field value to statements
+          translated_fields = {} # : Hash[String, untyped]
+
+          # node.value is an array of field nodes
+          node.value.each do |field_node|
+            field_name, field_ast = field_node.value
+            translated_field = translate(field_ast)
+            translated_fields[field_name] = translated_field
+          end
+
+          [Statement.new(type: :object_literal, value: translated_fields)]
         end
 
         def translate_sequence(node)
@@ -160,6 +176,19 @@ module Aua
         def translate_binop(node)
           Aua.logger.info "Translating binop: #{node.inspect}"
           op, left_node, right_node = node.value
+
+          # Special handling for member access - don't translate the right side
+          if op == :dot
+            left = translate(left_node)
+            # Right side should be an ID node representing the field name
+            unless right_node.type == :id
+              raise Error, "Right side of member access must be a field name, got #{right_node.inspect}"
+            end
+
+            field_name = right_node.value
+            return Binop.binary_operation(op, left, field_name)
+          end
+
           left = translate(left_node)
           right = translate(right_node)
           Binop.binary_operation(op, left, right) || SEND[left, op, right]
@@ -176,6 +205,7 @@ module Aua
               when :star then Binop.binop_star(left, right)
               when :slash then Binop.binop_slash(left, right)
               when :pow then Binop.binop_pow(left, right)
+              when :dot then [Statement.new(type: :member_access, value: [left, right])]
               when :as
                 Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
                 # Type casting operation
@@ -270,14 +300,40 @@ module Aua
 
             def binop_pow(left, right)
               if left.is_a?(Int) && right.is_a?(Int)
-                Int.new(
-                  left.value**right.value # : Integer
-                )
+                Int.new(left.value**right.value)
               elsif left.is_a?(Float) && right.is_a?(Float)
                 Float.new(left.value**right.value)
               else
-                # raise Error, "Unsupported operand types for **: #{left.class} and #{right.class}"
                 raise_binop_type_error(:**, left, right)
+              end
+            end
+
+            def binop_dot(left, right)
+              # Member access: object.field
+              # Right side should be a field name (string)
+              unless right.is_a?(String)
+                raise Error, "Right side of member access must be a field name, got #{right.inspect}"
+              end
+
+              field_name = right
+              access_field(left, field_name)
+            end
+
+            # Helper method for field access
+            def access_field(obj, field_name)
+              case obj
+              when ObjectLiteral
+                obj.get_field(field_name)
+              when RecordObject
+                obj.get_field(field_name)
+              else
+                # Try to access field via Aura method dispatch
+                unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
+                  raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
+                end
+
+                obj.aura_send(field_name.to_sym)
+
               end
             end
           end
@@ -322,13 +378,11 @@ module Aua
         end
         warn "Response from LLM: \\#{ret.inspect}"
 
-        value = JSON.parse(ret).dig("value")
+        value = JSON.parse(ret)["value"]
         result = klass.construct(value)
         Aua.logger.info "Cast result: \\#{result.inspect} (\\#{result.class})"
         result
       end
-
-      private
 
       def schema_for(klass)
         # All Klass objects should provide json_schema and construct methods
@@ -467,8 +521,9 @@ module Aua
         val = stmt.value
 
         case stmt.type
-        when :id, :let, :send then evaluate_simple(stmt)
+        when :id, :let, :send, :member_access then evaluate_simple(stmt)
         when :type_declaration then eval_type_declaration(val[0], val[1])
+        when :object_literal then eval_object_literal(val)
         when :type_lookup then eval_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
@@ -490,6 +545,7 @@ module Aua
         when :id then eval_id(val)
         when :let then eval_let(val[0], evaluate_one(val[1]))
         when :send then eval_send(val[0], val[1], *val[2..])
+        when :member_access then eval_member_access(val[0], val[1])
         else
 
           raise Error, "Unknown simple statement: #{stmt} (#{stmt.class})"
@@ -573,11 +629,35 @@ module Aua
       end
 
       def eval_type_lookup(type_name)
-        # Look up the type in the environment
-        type_obj = @env[type_name]
-        raise Error, "Unknown type: #{type_name}" unless type_obj.is_a?(Klass)
+        # Look up a type by name in the type registry
+        type_obj = @type_registry.lookup(type_name)
+        if type_obj.nil?
+          # Also check the environment for built-in types
+          type_obj = @env[type_name]
+        end
+
+        raise Error, "Type '#{type_name}' not found" unless type_obj
 
         type_obj
+      end
+
+      def eval_object_literal(translated_fields)
+        # translated_fields is a hash where keys are field names (strings)
+        # and values are translated statements (arrays of statements)
+        values = {} # : Hash[String, Obj]
+        translated_fields.each do |field_name, field_statements|
+          # Evaluate the field's statements to get the actual value
+          # For single field values, field_statements should be an array with one element
+          field_value = if field_statements.is_a?(Array)
+                          field_statements.map { |stmt| evaluate_one(stmt) }.last
+                        else
+                          evaluate_one(field_statements)
+                        end
+          values[field_name] = field_value
+        end
+
+        # Return an ObjectLiteral instance
+        ObjectLiteral.new(values)
       end
 
       def eval_if(condition, true_branch, false_branch)
@@ -600,6 +680,28 @@ module Aua
           maybe_str.aura_send(:to_s)
         else
           raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
+        end
+      end
+
+      def eval_member_access(obj_statements, field_name)
+        # Evaluate the object (left side of the dot)
+        obj = if obj_statements.is_a?(Array)
+                obj_statements.map { |stmt| evaluate_one(stmt) }.last
+              else
+                evaluate_one(obj_statements)
+              end
+
+        # Access the field
+        case obj
+        when ObjectLiteral, RecordObject
+          obj.get_field(field_name)
+        else
+          # Try to access field via Aura method dispatch
+          unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
+            raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
+          end
+
+          obj.aura_send(field_name.to_sym)
         end
       end
     end

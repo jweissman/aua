@@ -117,8 +117,83 @@ module Aua
       end
 
       def interpolation_end(_)
+        # Context-aware brace handling using the context stack
+        context = @lexer.pop_context
         advance
-        t(:interpolation_end, "}")
+
+        case context
+        when :interpolation
+          t(:interpolation_end, "}")
+        when :object_literal
+          t(:rbrace, "}")
+        else
+          # Fallback: check the old string machine approach
+          if string_machine.inside_string || string_machine.saw_interpolation
+            t(:interpolation_end, "}")
+          else
+            t(:rbrace, "}")
+          end
+        end
+      end
+
+      def lbrace(_)
+        # Push object literal context when we see { outside of interpolation
+        @lexer.push_context(:object_literal) unless @lexer.in_interpolation?
+        advance
+        t(:lbrace, "{")
+      end
+
+      def rbrace(_)
+        # Context-aware brace handling
+        context = @lexer.pop_context
+        puts "DEBUG: rbrace context=#{context.inspect}, stack=#{@lexer.instance_variable_get(:@context_stack).inspect}"
+        advance
+
+        case context
+        when :interpolation
+          puts "DEBUG: Emitting interpolation_end"
+          t(:interpolation_end, "}")
+        when :object_literal
+          puts "DEBUG: Emitting rbrace for object_literal"
+          t(:rbrace, "}")
+        else
+          puts "DEBUG: Fallback case, context=#{context.inspect}"
+          # Fallback: check the old string machine approach
+          if string_machine.saw_interpolation && string_machine.inside_string
+            puts "DEBUG: Fallback to interpolation_end via string machine"
+            t(:interpolation_end, "}")
+          else
+            puts "DEBUG: Fallback to rbrace"
+            t(:rbrace, "}")
+          end
+        end
+      end
+
+      def colon(_)
+        advance
+        t(:colon, ":")
+      end
+
+      def comma(_)
+        advance
+        t(:comma, ",")
+      end
+
+      def dot(_)
+        # Check if this is a valid context for a dot
+        # Valid contexts: after identifier/value (member access) or before digit (decimal)
+
+        # Look behind to see what came before
+        # This is tricky without lexer lookahead, so let's check the next character
+        if next_char =~ /\d/
+          # This might be a decimal number like .42, which should be an error
+          # Let the number lexer handle this and potentially error
+          unexpected(".")
+        else
+          # This is likely member access, allow it
+          advance
+          t(:dot, ".")
+        end
       end
 
       def unexpected(_char) = raise(Error, Handle.unexpected_character_message(lens))

@@ -17,8 +17,9 @@ module Aua
 
         describe "standalone dot" do
           let(:input) { "." }
-          it "raises an error for unexpected character" do
-            expect { tokens }.to raise_error(Aua::Error)
+          it "lexes as a dot token (syntax validation handled at parser level)" do
+            expect(tokens.map(&:type)).to eq([:dot])
+            expect(tokens.first.value).to eq(".")
           end
         end
 

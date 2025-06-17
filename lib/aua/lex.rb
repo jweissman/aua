@@ -27,6 +27,7 @@ module Aua
     def initialize(code)
       @doc = Text::Document.new(code)
       @lens = Lens.new(@doc)
+      @context_stack = [] # Stack to track brace contexts: :interpolation, :object_literal
     end
 
     def tokens = enum_for(:tokenize).lazy
@@ -37,6 +38,23 @@ module Aua
     def slice_from(start) = @doc.slice(start, @doc.position - start)
     def t(type, value = nil, at: caret) = Token.new(type:, value:, at: at || caret)
     def string_machine = @string_machine ||= Handle::StringMachine.new(self)
+
+    # Context stack management for brace disambiguation
+    def push_context(context_type)
+      @context_stack.push(context_type)
+    end
+
+    def pop_context
+      @context_stack.pop
+    end
+
+    def current_context
+      @context_stack.last
+    end
+
+    def in_interpolation?
+      current_context == :interpolation
+    end
 
     private
 

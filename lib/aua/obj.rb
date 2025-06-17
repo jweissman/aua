@@ -85,7 +85,7 @@ module Aua
     def klass = self.class.klass
 
     def self.klass = @klass ||= Klass.new("Klass", nil)
-    def self.obj   = @klass_obj ||= Klass.new("Obj", klass)
+    def self.obj   = @obj ||= Klass.new("Obj", klass)
 
     def introspect = @name
 
@@ -251,6 +251,64 @@ module Aua
 
     def self.json_schema
       { type: "object", properties: { value: { type: "string", format: "date-time" } }, required: ["value"] }
+    end
+  end
+
+  # Structured object for record types
+  class RecordObject < Obj
+    def initialize(type_name, field_definitions, values)
+      super()
+      @type_name = type_name
+      @field_definitions = field_definitions
+      @values = values || {}
+    end
+
+    attr_reader :type_name, :field_definitions, :values
+
+    def name = @type_name
+    def introspect = "#{@type_name} #{@values.inspect}"
+
+    # Support member access
+    def get_field(field_name)
+      raise Error, "Field '#{field_name}' not found in #{@type_name}" unless @values.key?(field_name)
+
+      @values[field_name]
+    end
+
+    # Support setting field values (for construction)
+    def set_field(field_name, value)
+      @values[field_name] = value
+    end
+
+    # Get the Klass for this record type
+    def klass
+      # This would need to be looked up from the type registry
+      # For now, create a simple klass
+      @klass ||= Klass.new(@type_name, Klass.obj)
+    end
+  end
+
+  # Object literal for untyped record-like structures
+  class ObjectLiteral < Obj
+    def initialize(values)
+      super()
+      @values = values || {}
+    end
+
+    attr_reader :values
+
+    def name = "object"
+    def introspect = @values.inspect
+
+    # Support member access
+    def get_field(field_name)
+      raise Error, "Field '#{field_name}' not found in object literal" unless @values.key?(field_name)
+
+      @values[field_name]
+    end
+
+    def klass
+      @klass ||= Klass.new("Object", Klass.obj)
     end
   end
 end

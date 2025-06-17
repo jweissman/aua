@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../obj"
+
 module Aua
   module Runtime
     # Registry for storing and retrieving custom type definitions
@@ -49,6 +51,8 @@ module Aua
           create_constant_type(name, definition.value)
         when :type_reference
           create_reference_type(name, definition.value)
+        when :record_type
+          create_record_type(name, definition.value)
         else
           raise Error, "Unknown type definition: #{definition.type}"
         end
@@ -163,6 +167,163 @@ module Aua
         end
 
         klass
+      end
+
+      # Create a record type (like { x: Int, y: Int })
+      def create_record_type(name, fields)
+        # Extract field definitions
+        field_defs = fields.map do |field|
+          field_name = field.value[0]
+          field_type_def = field.value[1]
+
+          # For now, just store the field name and type reference
+          # In a full implementation, we'd resolve type references
+          { name: field_name, type: field_type_def }
+        end
+
+        # Create a custom Klass for the record type
+        klass = Klass.new(name, Klass.obj)
+        klass.instance_variable_set(:@field_definitions, field_defs)
+
+        # Add methods to make it behave like a proper Klass
+        klass.define_singleton_method(:field_definitions) { @field_definitions }
+        klass.define_singleton_method(:name) { name }
+        klass.define_singleton_method(:introspect) { name }
+
+        # Add JSON schema support for LLM casting
+        registry = self # Capture registry reference for closure
+        klass.define_singleton_method(:json_schema) do
+          properties = {} # : Hash[String, Hash]
+          required = [] # : Array[String]
+
+          @field_definitions.each do |field_def|
+            field_name = field_def[:name]
+            field_type = field_def[:type]
+            required << field_name
+
+            # Map type references to JSON schema types
+            properties[field_name] = case field_type.type
+                                     when :type_reference
+                                       case field_type.value
+                                       when "Int"
+                                         { type: "integer" }
+                                       when "Float"
+                                         { type: "number" }
+                                       when "Str"
+                                         { type: "string" }
+                                       when "Bool"
+                                         { type: "boolean" }
+                                       else
+                                         # Check if this is a user-defined type
+                                         if registry.has_type?(field_type.value)
+                                           nested_type = registry.lookup(field_type.value)
+                                           if nested_type.respond_to?(:json_schema)
+                                             # Get the nested type's schema and extract the inner structure
+                                             nested_schema = nested_type.json_schema
+                                             if nested_schema.is_a?(Hash) && nested_schema[:type] == "object" && nested_schema[:properties] && nested_schema[:properties][:value]
+                                               # This is a wrapped schema, extract the inner object
+                                               nested_schema[:properties][:value]
+                                             else
+                                               # Use the schema as-is
+                                               nested_schema
+                                             end
+                                           else
+                                             # For non-record types (like enums), use string
+                                             { type: "string", description: "#{field_type.value} value" }
+                                           end
+                                         else
+                                           # For unknown types, default to string
+                                           { type: "string" }
+                                         end
+                                       end
+                                     else
+                                       # For complex types, default to string for now
+                                       { type: "string" }
+                                     end
+          end
+
+          {
+            type: "object",
+            properties: {
+              value: {
+                type: "object",
+                properties: properties,
+                required: required
+              }
+            }
+          }
+        end # Construct method creates record instances
+        type_registry = self
+        klass.define_singleton_method(:construct) do |value|
+          # Value should be a hash with the field values
+          # Wrap raw values in appropriate Aua objects, with recursive casting for record types
+          wrapped_values = {} # : Hash[String, Obj]
+          value.each do |field_name, field_value|
+            puts "DEBUG: Processing field #{field_name}: #{field_value.inspect} (#{field_value.class})"
+
+            # Find the field definition for this field
+            field_def = @field_definitions.find { |fd| fd[:name] == field_name }
+            if field_def && field_def[:type].type == :type_reference
+              field_type_name = field_def[:type].value
+
+              # Check if this field should be a record type
+              if type_registry.has_type?(field_type_name)
+                field_type = type_registry.lookup(field_type_name)
+
+                # If it's a record type and we have a hash, recursively cast it
+                if field_type.respond_to?(:field_definitions) && field_value.is_a?(Hash)
+                  puts "DEBUG: Recursively casting #{field_name} to #{field_type_name}"
+                  wrapped_values[field_name] = field_type.construct(field_value)
+                else
+                  # For non-record types or non-hash values, use regular wrapping
+                  wrapped_values[field_name] = type_registry.wrap_value(field_value)
+                end
+              else
+                # For built-in types, use regular wrapping
+                wrapped_values[field_name] = type_registry.wrap_value(field_value)
+              end
+            else
+              # For fields without type info, use regular wrapping
+              wrapped_values[field_name] = type_registry.wrap_value(field_value)
+            end
+
+            puts "DEBUG: After processing: #{wrapped_values[field_name].inspect}"
+          end
+
+          # Create a structured object that supports member access
+          result = Aua::RecordObject.new(name, @field_definitions, wrapped_values)
+          puts "DEBUG: Final RecordObject: #{result.inspect}"
+          result
+        end
+
+        klass
+      end
+
+      public
+
+      # Helper method to wrap raw Ruby values in appropriate Aua objects
+      def wrap_value(value)
+        case value
+        when Integer
+          Aua::Int.new(value)
+        when ::Float
+          Aua::Float.new(value)
+        when String
+          Aua::Str.new(value)
+        when TrueClass, FalseClass
+          Aua::Bool.new(value)
+        when Hash
+          # For nested objects, wrap recursively
+          wrapped_hash = {} # : Hash[String, Obj]
+          value.each { |k, v| wrapped_hash[k] = wrap_value(v) }
+          Aua::ObjectLiteral.new(wrapped_hash)
+        when Array
+          # For arrays, wrap each element
+          value.map { |v| wrap_value(v) }
+        else
+          # For unknown types, pass through as-is
+          value
+        end
       end
     end
   end
