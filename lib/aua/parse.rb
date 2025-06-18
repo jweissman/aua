@@ -72,7 +72,7 @@ module Aua
 
     include Grammar
 
-    def initialize(tokens, context = Runtime::Context.new)
+    def initialize(tokens, context = Runtime::Context.new(""))
       @tokens = tokens
       @buffer = [] # : Array[Syntax::Token | nil]
       @current_string_quote = nil
@@ -164,13 +164,7 @@ module Aua
       return unless @current_token.type == :keyword && @current_token.value == "type"
 
       consume(:keyword, "type")
-      unless @current_token.type == :id
-        raise Error,
-              "Expected type name after 'type' keyword, got #{@current_token.type} #{@current_token.at}: #{Text.indicate(
-                @context.source, @current_token.at
-              )}"
-      end
-
+      parse_failure("type name") unless @current_token.type == :id
       type_name = @current_token.value
       consume(:id)
       consume(:equals)
@@ -441,19 +435,23 @@ module Aua
         consume(:comma)
         # Skip any whitespace/newlines after comma
         advance while @current_token.type == :eos
-        true
+        return true
       when :rbrace
-        false
+        return false
       else
         # raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
         parse_failure("',' or '}' in record type")
       end
+
+      false
     end
 
     def parse_failure(expectation, at: @current_token.at)
+      cursor = at # : Aua::Text::Cursor
       raise Error,
             "Expected #{expectation}, got #{@current_token.type} #{@current_token.at}:\n#{Text.indicate(
-              @context.source_document, at
+              @context.source_document.send(:text),
+              cursor
             ).join("\n")}\n"
     end
   end

@@ -95,9 +95,10 @@ module Aua
         begin
           @parse.consume(:rparen)
         rescue Aua::Error
-          raise Error,
-                "Unmatched opening parenthesis #{@parse.current_token.at}\n#{
-                  Text.indicate(@parse.context.source_document, @parse.current_token.at).join("\n")}"
+          @parse.send :parse_failure, "Unmatched opening parenthesis"
+          # raise Error,
+          #       "Unmatched opening parenthesis #{@parse.current_token.at}\n#{
+          #         Text.indicate(@parse.context.source_document, @parse.current_token.at).join("\n")}"
         end
         expr
       end

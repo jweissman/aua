@@ -73,8 +73,7 @@ module Aua
     # and an indicator pointing to the character's position.
     #
     # @param code [String] The code to indicate within.
-    # @param column [Integer] The column number to point to (1-based).
-    # @param line [Integer, nil] The line number to point to (1-based), or nil for all lines.
+    # @param cursor [Cursor] The cursor indicating the position in the code.
     # @return [Array<String>] The lines with an indicator.
     def self.indicate(text, cursor)
       lines = text.lines

@@ -102,8 +102,8 @@ module Aua
         def next_next_char: () -> char
         def eof?: () -> bool
         def current_pos: () -> Integer
-        def t: (Symbol, untyped) -> Syntax::Token
-             | (Symbol) -> Syntax::Token
+        def t: (Symbol, ?untyped) -> Syntax::Token
+            #  | (Symbol) -> Syntax::Token
         def flush: () -> String
         def append: (String) -> void
         def at_str_end?: (?quote: String) -> bool
@@ -157,9 +157,7 @@ module Aua
       def string_machine: () -> StringMachine
       def interpolative_quote?: (String) -> bool
 
-      def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
-           | (Symbol, untyped) -> Syntax::Token
-           | (Symbol) -> Syntax::Token
+      def t: (Symbol, ?untyped) -> Syntax::Token
 
       def interpolative_string: (String) -> untyped
 
@@ -246,9 +244,7 @@ module Aua
     def in_interpolation?: () -> bool
     def accept!: (Array[String]) -> token?
 
-    def t: (Symbol, untyped, at: Text::Cursor) -> Syntax::Token
-         | (Symbol, untyped) -> Syntax::Token
-         | (Symbol) -> Syntax::Token
+    def t: (Symbol, ?untyped) -> Syntax::Token
 
     private
 
@@ -348,11 +344,14 @@ module Aua
 
     @tokens: Enumerator[token]
     @buffer: Array[token?]
+    @context: Runtime::Context
 
     attr_reader current_token: token
     attr_accessor current_string_quote: String?
+    attr_reader context: Runtime::Context
 
-    def initialize: (Enumerator[token]) -> void
+    def initialize: (Enumerator[token], ?Runtime::Context?) -> void
+    def parse_failure: (String, ?at: Text::Cursor?) -> void
     def tree: () -> AST::Node
     def consume: (Symbol) -> void
                | (Symbol, untyped?) -> void

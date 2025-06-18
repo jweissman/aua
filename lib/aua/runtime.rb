@@ -73,7 +73,7 @@ module Aua
         @source = source
       end
 
-      def source_document = @source
+      def source_document = @source_document ||= Text::Document.new(@source)
     end
 
     # Global interpreter settings.
