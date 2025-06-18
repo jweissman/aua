@@ -47,6 +47,7 @@ module Aua
         alias str_start str_end
 
         def method_missing(_method_name, *_args, **_kwargs, &)
+          warn "Warning: Unhandled structured string token #{parser.current_token.type} at #{parser.current_token.at}"
           raise Error, "Unterminated string literal #{parser.current_token.at}" if parser.current_token.type == :eof
 
           raise Error,
@@ -66,15 +67,16 @@ module Aua
       end
     end
 
-    attr_reader :current_token
+    attr_reader :current_token, :context
     attr_accessor :current_string_quote
 
     include Grammar
 
-    def initialize(tokens)
+    def initialize(tokens, context = Runtime::Context.new)
       @tokens = tokens
       @buffer = [] # : Array[Syntax::Token | nil]
       @current_string_quote = nil
+      @context = context
 
       advance
     end
@@ -112,7 +114,7 @@ module Aua
 
     def unexpected_tokens? = @length != @current_token_index && @current_token.type != :eos
 
-    def info(message) = Aua.logger.info("aura:parse") { message }
+    def info(message) = Aua.logger.info("parse") { message }
 
     private
 
@@ -163,7 +165,10 @@ module Aua
 
       consume(:keyword, "type")
       unless @current_token.type == :id
-        raise Error, "Expected type name after 'type' keyword, got #{@current_token.type}"
+        raise Error,
+              "Expected type name after 'type' keyword, got #{@current_token.type} #{@current_token.at}: #{Text.indicate(
+                @context.source, @current_token.at
+              )}"
       end
 
       type_name = @current_token.value
@@ -415,7 +420,8 @@ module Aua
     end
 
     def parse_record_field
-      raise Error, "Expected field name, got #{@current_token.type}" unless @current_token.type == :id
+      # raise Error, "Expected field name, got #{@current_token.type}" unless @current_token.type == :id
+      parse_failure("field name") unless @current_token.type == :id
 
       field_name = @current_token.value
       consume(:id)
@@ -439,8 +445,16 @@ module Aua
       when :rbrace
         false
       else
-        raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
+        # raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
+        parse_failure("',' or '}' in record type")
       end
+    end
+
+    def parse_failure(expectation, at: @current_token.at)
+      raise Error,
+            "Expected #{expectation}, got #{@current_token.type} #{@current_token.at}:\n#{Text.indicate(
+              @context.source_document, at
+            ).join("\n")}\n"
     end
   end
 end

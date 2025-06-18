@@ -26,10 +26,7 @@ module Aua
         def next_char = @lexer.lens.peek
         def next_next_char = @lexer.lens.peek_n(2).last
         def current_pos = @lexer.lens.current_pos
-
-        def t(type, value = nil)
-          @lexer.t(type, value, at: @lexer.caret)
-        end
+        def t(type, value = nil) = @lexer.t(type, value)
 
         def flush
           val = @buffer

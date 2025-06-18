@@ -27,10 +27,11 @@ module Aua
       def initialize(env = {})
         Aua.logger.debug "Initializing Aua interpreter with env: #{env.inspect}"
         @env = env.merge(self.class.prelude_env)
+        # @ctx = ctx
       end
 
       def lex(_ctx, code) = Lex.new(code).enum_for(:tokenize)
-      def parse(_ctx, tokens) = Parse.new(tokens).tree
+      def parse(ctx, tokens) = Parse.new(tokens, ctx).tree
       def vm = @vm ||= Aua.vm(@env) || VM.new(@env)
 
       def self.prelude_env
@@ -68,7 +69,7 @@ module Aua
     end
 
     class Context
-      def initialize(source)
+      def initialize(source = "")
         @source = source
       end
 

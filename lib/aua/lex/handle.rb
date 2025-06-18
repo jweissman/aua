@@ -220,7 +220,7 @@ module Aua
       def lens = @lexer.lens
       def advance(inc = 1) = @lexer.advance(inc)
       def recognize = @lexer.recognize
-      def t(type, value = nil, at: @lexer.caret) = @lexer.t(type, value, at:)
+      def t(type, value = nil) = @lexer.t(type, value)
       def current_pos = lens.current_pos
       def current_char = lens.current_char
       def next_char = lens.peek

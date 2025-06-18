@@ -36,7 +36,7 @@ module Aua
     def inspect = "#<#{self.class.name}@#{@lens.describe}>"
     def caret = @doc.caret
     def slice_from(start) = @doc.slice(start, @doc.position - start)
-    def t(type, value = nil, at: caret) = Token.new(type:, value:, at: at || caret)
+    def t(type, value = nil) = Token.new(type:, value:, at: caret)
     def string_machine = @string_machine ||= Handle::StringMachine.new(self)
 
     # Context stack management for brace disambiguation

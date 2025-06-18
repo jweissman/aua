@@ -6,9 +6,7 @@ module Aua
     # def t(type, value = nil, at:)
     #   Token.new(type:, value:, at:)
     # end
-    class Token < Data.define(:type, :value, :at)
-      attr_reader :at
-    end
+    class Token < Data.define(:type, :value, :at); end
 
     ONE_CHAR_TOKEN_NAMES = {
       /\s/ => :whitespace,
