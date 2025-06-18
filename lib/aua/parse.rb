@@ -371,7 +371,8 @@ module Aua
 
       return primitives.send "parse_#{PRIMARY_NAMES[@current_token.type]}" if PRIMARY_NAMES.key?(@current_token.type)
 
-      raise Error, "Unexpected token type: #{@current_token.type}"
+      # raise Error, "Unexpected token type: #{@current_token.type}"
+      parse_failure("Unexpected token type")
     end
 
     def primitives = @primitives ||= Primitives.new(self)
@@ -448,11 +449,15 @@ module Aua
 
     def parse_failure(expectation, at: @current_token.at)
       cursor = at # : Aua::Text::Cursor
+      Parse failure # {cursor}.
+      # {expectation}, got #{@current_token.type}:
+
+      # {Text.indicate(@context.source_document.send(:text), cursor)}
       raise Error,
             "Expected #{expectation}, got #{@current_token.type} #{@current_token.at}:\n#{Text.indicate(
               @context.source_document.send(:text),
               cursor
-            ).join("\n")}\n"
+            )}\n"
     end
   end
 end

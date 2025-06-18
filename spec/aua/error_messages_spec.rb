@@ -1,3 +1,4 @@
+require "spec_helper"
 RSpec.describe "Parser and Lexer Error Messages" do
   describe "lexer errors" do
     it "provides clear position information for unexpected tokens" do
@@ -79,7 +80,8 @@ RSpec.describe "Parser and Lexer Error Messages" do
         expect(error.message).to include("line 4")
         expect(error.message).to include("Expected ',' or '}'")
         # Should show surrounding context
-        expect(error.message).to include("age: invalid_expression")
+        expect(error.message).to include("name: Str,")
+        expect(error.message).to include("person = ")
       end
     end
   end

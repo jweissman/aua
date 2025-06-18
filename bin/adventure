@@ -11,200 +11,47 @@ type Stats = {
   charisma: Int
 }
 
-type Inventory = {
-  items: Array,
-  gold: Int,
-  capacity: Int
-}
-
-type Location = {
-  name: String,
-  description: String,
-  exits: Array,
-  items: Array,
-  npcs: Array
-}
-
 type Player = {
   name: String,
   profession: String,
   stats: Stats,
-  inventory: Inventory,
-  current_location: String,
   level: Int
 }
-
-type GameAction = {
-  action_type: String,
-  target: String,
-  result: String,
-  success: Bool
-}
-
 # Initialize the game world
 say "=== Welcome to the Mystical Realm of Aethros ==="
-say ""
 
 # Create player with LLM-enhanced character generation
 player_name = ask "What is your name, brave adventurer?"
 
 # Use LLM to generate a rich character background
-character_prompt = """Create a fantasy character profession and brief background for a character named ${player_name}. 
-Return as JSON with: profession (one word), background (2-3 sentences), starting_stats (health: 80-120, strength: 10-20, intelligence: 10-20, charisma: 10-20)"""
+# character_prompt = """Create a fantasy character profession and brief background for a character named ${player_name}"""
 
-character_data = character_prompt as String
-say "Generating your character..."
+character_data = """Create a fantasy character"""
+say "Generating your character, please wait"
+player = character_data as Player
 
 # Initialize player stats (we'll enhance this with LLM data)
-initial_stats = {
-  health: 100,
-  strength: 15,
-  intelligence: 12,
-  charisma: 14
-} as Stats
+# initial_stats = {
+#   health: 100,
+#   strength: 15,
+#   intelligence: 12,
+#   charisma: 14
+# } # as Stats
+# 
+# initial_inventory = {
+#   items: ["rusty sword", "leather pouch"],
+#   gold: 50,
+#   capacity: 10
+# } # as Inventory
+# 
+# player = {
+#   name: player_name,
+#   profession: "adventurer",
+#   stats: initial_stats,
+#   inventory: initial_inventory,
+#   current_location: "village_square",
+#   level: 1
+# } # as Player
 
-initial_inventory = {
-  items: ["rusty sword", "leather pouch"],
-  gold: 50,
-  capacity: 10
-} as Inventory
-
-player = {
-  name: player_name,
-  profession: "adventurer",
-  stats: initial_stats,
-  inventory: initial_inventory,
-  current_location: "village_square",
-  level: 1
-} as Player
-
-say "Welcome, ${player.name} the ${player.profession}!"
-say "Health: ${player.stats.health}, Strength: ${player.stats.strength}"
-say "Intelligence: ${player.stats.intelligence}, Charisma: ${player.stats.charisma}"
-say "Gold: ${player.inventory.gold}"
-say ""
-
-# Define game locations with rich descriptions
-village_square = {
-  name: "Village Square",
-  description: "A bustling town square with cobblestone paths. A fountain bubbles in the center, and merchants hawk their wares from colorful stalls.",
-  exits: ["north", "east", "south", "west"],
-  items: ["healing potion", "old map"],
-  npcs: ["merchant", "town_guard"]
-} as Location
-
-dark_forest = {
-  name: "Dark Forest",
-  description: "Ancient trees tower overhead, their branches blocking most sunlight. Strange sounds echo from deeper in the woods.",
-  exits: ["south", "deeper"],
-  items: ["mysterious herb", "glowing crystal"],
-  npcs: ["forest_sprite"]
-} as Location
-
-say "=== Game World Initialized ==="
-say "Current Location: ${village_square.name}"
-say village_square.description
-say "Available exits: ${village_square.exits}"
-say "Items here: ${village_square.items}"
-say ""
-
-# Main game loop
-game_running = true
-current_location = village_square
-
-while game_running
-  say "--- What would you like to do? ---"
-  say "Commands: look, inventory, stats, go [direction], take [item], talk [npc], quit"
-  
-  user_input = ask "> "
-  
-  # Parse user command with LLM enhancement
-  if user_input == "quit"
-    game_running = false
-    say "Thanks for playing! Farewell, ${player.name}!"
-  
-  elsif user_input == "look"
-    say "=== ${current_location.name} ==="
-    say current_location.description
-    say "Exits: ${current_location.exits}"
-    if current_location.items.size > 0
-      say "Items you can take: ${current_location.items}"
-    end
-    if current_location.npcs.size > 0
-      say "People here: ${current_location.npcs}"
-    end
-  
-  elsif user_input == "inventory"
-    say "=== Your Inventory ==="
-    say "Items: ${player.inventory.items}"
-    say "Gold: ${player.inventory.gold}"
-    say "Capacity: ${player.inventory.items.size}/${player.inventory.capacity}"
-  
-  elsif user_input == "stats"
-    say "=== ${player.name} the ${player.profession} (Level ${player.level}) ==="
-    say "Health: ${player.stats.health}"
-    say "Strength: ${player.stats.strength}"
-    say "Intelligence: ${player.stats.intelligence}"
-    say "Charisma: ${player.stats.charisma}"
-  
-  elsif user_input.starts_with("go ")
-    direction = user_input.substring(3)
-    if current_location.exits.includes(direction)
-      if direction == "north" && current_location.name == "Village Square"
-        current_location = dark_forest
-        say "You venture north into the Dark Forest..."
-        say current_location.description
-      else
-        say "You move ${direction}..."
-        # In a full game, we'd have a location system
-        say "This area is still being explored by the developers!"
-      end
-    else
-      say "You can't go that way. Available exits: ${current_location.exits}"
-    end
-  
-  elsif user_input.starts_with("take ")
-    item_name = user_input.substring(5)
-    if current_location.items.includes(item_name)
-      if player.inventory.items.size < player.inventory.capacity
-        # Add item to player inventory (we'd enhance this with proper item objects)
-        say "You take the ${item_name}."
-        # Remove from location, add to inventory
-        say "The ${item_name} has been added to your inventory."
-      else
-        say "Your inventory is full! Current capacity: ${player.inventory.capacity}"
-      end
-    else
-      say "There's no ${item_name} here."
-    end
-  
-  elsif user_input.starts_with("talk ")
-    npc_name = user_input.substring(5)
-    if current_location.npcs.includes(npc_name)
-      # Use LLM to generate dynamic NPC dialogue
-      dialogue_prompt = """Generate a short dialogue response for a ${npc_name} in a fantasy setting. 
-      The player is ${player.name} the ${player.profession}. Keep it 1-2 sentences and in character."""
-      
-      npc_response = dialogue_prompt as String
-      say "${npc_name}: \"${npc_response}\""
-    else
-      say "There's no ${npc_name} here to talk to."
-    end
-  
-  else
-    # Enhanced command parsing with LLM
-    action_analysis_prompt = """Analyze this player command in a text adventure game: "${user_input}"
-    Return JSON with: action_type (move/take/talk/examine/unknown), target (what they're acting on), confidence (0.0-1.0)"""
-    
-    # For now, provide helpful feedback
-    say "I don't understand '${user_input}'. Try commands like:"
-    say "- look (examine your surroundings)"
-    say "- go north/south/east/west (move around)"
-    say "- take [item] (pick up items)"
-    say "- talk [person] (speak with NPCs)"
-    say "- inventory (check your items)"
-    say "- stats (view your character)"
-  end
-  
-  say ""
-end
+say "Hi"
+ 

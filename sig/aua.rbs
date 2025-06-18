@@ -103,7 +103,7 @@ module Aua
         def eof?: () -> bool
         def current_pos: () -> Integer
         def t: (Symbol, ?untyped) -> Syntax::Token
-            #  | (Symbol) -> Syntax::Token
+        #  | (Symbol) -> Syntax::Token
         def flush: () -> String
         def append: (String) -> void
         def at_str_end?: (?quote: String) -> bool

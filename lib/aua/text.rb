@@ -13,7 +13,11 @@ module Aua
       end
 
       def advance = @column += 1
-      def newline = @line += 1
+
+      def newline
+        @line += 1
+        @column = 1
+      end
 
       def to_s = "at line #{@line}, column #{@column}"
     end
@@ -69,6 +73,8 @@ module Aua
       attr_reader :text
     end
 
+    CONTEXT_SIZE = 3 # Number of lines to show before and after the cursor position
+
     # Indicates the position of a character in the code by printing the line
     # and an indicator pointing to the character's position.
     #
@@ -79,13 +85,16 @@ module Aua
       lines = text.lines
       line = cursor.line
       column = cursor.column
-      lines.each_with_index.map do |line_content, index|
+      lines = lines.each_with_index.map do |line_content, index|
         if line.nil? || index + 1 == line
           "#{line_content.chomp}\n#{" " * (column - 1)}^"
         else
           line_content.chomp
         end
       end
+      start_line = [0, line - CONTEXT_SIZE].max
+      end_line = [lines.length - 1, line + CONTEXT_SIZE - 1].min
+      lines[start_line..end_line].join("\n")
     end
   end
 end
