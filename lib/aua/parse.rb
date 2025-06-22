@@ -227,26 +227,42 @@ module Aua
 
       while @current_token.type == :pipe
         consume(:pipe)
-        case @current_token.type
-        when :simple_str
-          value = @current_token.value
-          consume(:simple_str)
-          types << s(:type_constant, s(:simple_str, value))
-        when :str_part
-          value = @current_token.value
-          consume(:str_part)
-          consume(:str_end) # Consume the closing quote
-          types << s(:type_constant, s(:simple_str, value))
-        when :id
-          type_name = @current_token.value
-          consume(:id)
-          types << s(:type_reference, type_name)
-        else
-          raise Error, "Expected type after '|', got #{@current_token.type}"
-        end
+        types << parse_union_type_member
       end
 
       s(:union_type, types)
+    end
+
+    def parse_union_type_member
+      case @current_token.type
+      when :simple_str
+        parse_union_string_constant
+      when :str_part
+        parse_union_string_part
+      when :id
+        parse_union_type_reference
+      else
+        parse_failure("type after '|'")
+      end
+    end
+
+    def parse_union_string_constant
+      value = @current_token.value
+      consume(:simple_str)
+      s(:type_constant, s(:simple_str, value))
+    end
+
+    def parse_union_string_part
+      value = @current_token.value
+      consume(:str_part)
+      consume(:str_end) # Consume the closing quote
+      s(:type_constant, s(:simple_str, value))
+    end
+
+    def parse_union_type_reference
+      type_name = @current_token.value
+      consume(:id)
+      s(:type_reference, type_name)
     end
 
     def should_end_command_args?(token)
@@ -449,7 +465,6 @@ module Aua
 
     def parse_failure(expectation, at: @current_token.at)
       cursor = at # : Aua::Text::Cursor
-      Parse failure # {cursor}.
       # {expectation}, got #{@current_token.type}:
 
       # {Text.indicate(@context.source_document.send(:text), cursor)}

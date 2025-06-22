@@ -30,6 +30,8 @@ character_data = """Create a fantasy character"""
 say "Generating your character, please wait"
 player = character_data as Player
 
+say "You have ${player.stats.health} health, ${player.stats.strength} strength, ${player.stats.intelligence} intelligence, and ${player.stats.charisma} charisma."
+
 # Initialize player stats (we'll enhance this with LLM data)
 # initial_stats = {
 #   health: 100,

@@ -2,3 +2,4 @@
 name = ask "what is your name?"
 say "Hello ${name}"
 profession = """Provide a short profession for a fantasy character, ${name}. Give your answer as one word only with no spaces"""
+say "You are a ${profession}"

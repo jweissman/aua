@@ -210,40 +210,47 @@ module Aua
         module Binop
           class << self
             include Commands
+
             def binary_operation(operator, left, right)
               case operator
-              when :plus then Binop.binop_plus(left, right)
-              when :minus then Binop.binop_minus(left, right)
-              when :star then Binop.binop_star(left, right)
-              when :slash then Binop.binop_slash(left, right)
-              when :pow then Binop.binop_pow(left, right)
+              when :plus then binop_plus(left, right)
+              when :minus then binop_minus(left, right)
+              when :star then binop_star(left, right)
+              when :slash then binop_slash(left, right)
+              when :pow then binop_pow(left, right)
               when :dot then [Statement.new(type: :member_access, value: [left, right])]
-              when :as
-                Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
-                # Type casting operation
-                # raise Error, "Type cast lhs must be obj (got #{left.class})" unless left.is_a?(Obj)
-
-                # Unwrap rhs until we get a single value
-                right = right.first while right.is_a?(Array) && right.size == 1
-
-                Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
-
-                # Resolve right-hand side to a Klass object
-                klass =
-                  if right.is_a?(Klass)
-                    right
-                  elsif right.is_a?(Statement) && right.type == :id
-                    # Defer type lookup to execution time by creating a special statement
-                    Statement.new(type: :type_lookup, value: right.value.first)
-                  else
-                    Aua::Str.klass
-                  end
-
-                CAST[left, klass]
+              when :as then handle_type_cast(left, right)
               else
                 raise Error, "Unknown binary operator: #{operator}"
               end
             end
+
+            private
+
+            def handle_type_cast(left, right)
+              Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
+
+              # Unwrap rhs until we get a single value
+              right = right.first while right.is_a?(Array) && right.size == 1
+
+              Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
+
+              klass = resolve_cast_target(right)
+              CAST[left, klass]
+            end
+
+            def resolve_cast_target(right)
+              if right.is_a?(Klass)
+                right
+              elsif right.is_a?(Statement) && right.type == :id
+                # Defer type lookup to execution time by creating a special statement
+                Statement.new(type: :type_lookup, value: right.value.first)
+              else
+                Aua::Str.klass
+              end
+            end
+
+            public
 
             def binop_plus(left, right)
               return int_plus(left, right) if left.is_a?(Int) && right.is_a?(Int)
