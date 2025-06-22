@@ -94,7 +94,7 @@ module Aua
       end
       start_line = [0, line - CONTEXT_SIZE].max
       end_line = [lines.length - 1, line + CONTEXT_SIZE - 1].min
-      lines[start_line..end_line].join("\n")
+      lines[start_line..end_line] || []
     end
   end
 end

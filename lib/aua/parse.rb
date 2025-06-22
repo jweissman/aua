@@ -243,6 +243,7 @@ module Aua
         parse_union_type_reference
       else
         parse_failure("type after '|'")
+        raise Error, "Unreachable" # This won't be reached due to parse_failure raising
       end
     end
 
@@ -387,8 +388,9 @@ module Aua
 
       return primitives.send "parse_#{PRIMARY_NAMES[@current_token.type]}" if PRIMARY_NAMES.key?(@current_token.type)
 
-      # raise Error, "Unexpected token type: #{@current_token.type}"
       parse_failure("Unexpected token type")
+      # This should never be reached, but Steep needs a return value
+      s(:error)
     end
 
     def primitives = @primitives ||= Primitives.new(self)

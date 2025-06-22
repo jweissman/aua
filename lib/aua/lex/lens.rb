@@ -32,7 +32,7 @@ module Aua
         <<~ERROR
           #{message} at line #{current_line}, column #{current_column}:
 
-          #{@doc.indicate}
+          #{@doc.indicate.join("\n")}
           #{hint || describe_character(current_char)}
         ERROR
       end

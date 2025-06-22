@@ -29,6 +29,8 @@ module Aua
   def self.logger=: (Logger) -> void
 
   module Text
+    CONTEXT_SIZE: Integer
+
     class Cursor
       attr_reader line: Integer
       attr_reader column: Integer
@@ -401,6 +403,10 @@ module Aua
     def parse_empty_record: () -> AST::Node
     def parse_record_field: () -> AST::Node
     def continue_record_parsing?: () -> bool
+    def parse_union_type_member: () -> AST::Node
+    def parse_union_string_constant: () -> AST::Node
+    def parse_union_string_part: () -> AST::Node
+    def parse_union_type_reference: () -> AST::Node
   end
 
   module Registry
@@ -669,6 +675,8 @@ module Aua
           def self.binop_pow: (statement, statement) -> statement
           def self.binop_dot: (statement, String) -> statement
           def self.access_field: (statement, String) -> statement
+          def self.handle_type_cast: (statement, statement) -> statement
+          def self.resolve_cast_target: (statement) -> (statement | Klass)
         end
 
         TRANSLATIONS: Hash[Symbol, Array[Statement]]
