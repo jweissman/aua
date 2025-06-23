@@ -116,6 +116,11 @@ module Aua
         t(:eos)
       end
 
+      def eq(_)
+        2.times { advance }
+        t(:eq)
+      end
+
       def interpolation_end(_)
         # Context-aware brace handling using the context stack
         Aua.logger.debug("interpolation_end") do

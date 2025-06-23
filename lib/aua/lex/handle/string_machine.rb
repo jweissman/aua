@@ -31,7 +31,7 @@ module Aua
         def current_pos = @lexer.lens.current_pos
 
         def t(type, value = nil)
-          @lexer.t(type, value, at: @lexer.caret)
+          @lexer.t(type, value) # , at: @lexer.caret)
         end
 
         def flush

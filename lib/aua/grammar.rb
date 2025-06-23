@@ -22,10 +22,11 @@ module Aua
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
       as: 0, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
-      plus: 1, minus: 1,
-      star: 2, slash: 2,
-      pow: 3,
-      dot: 4 # member access has high precedence
+      eq: 1, # equality comparison
+      plus: 2, minus: 2,
+      star: 3, slash: 3,
+      pow: 4,
+      dot: 5 # member access has high precedence
     }.freeze
 
     def s(type, *values)
@@ -83,6 +84,8 @@ module Aua
       def parse_str_end
         @str_parts ||= [] # : Array[AST::Node]
         @parse.consume(:str_end)
+        # If we have no str_parts, this is an empty string
+        return s(:str, "") if @str_parts.size == 0
         # If we have str_parts, we can return a structured string node
         return s(:str, @str_parts.first.value) if @str_parts.size == 1
 

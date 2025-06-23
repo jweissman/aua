@@ -217,6 +217,7 @@ module Aua
               when :star then binop_star(left, right)
               when :slash then binop_slash(left, right)
               when :pow then binop_pow(left, right)
+              when :eq then binop_equals(left, right)
               when :dot then [Statement.new(type: :member_access, value: [left, right])]
               when :as then handle_type_cast(left, right)
               else
@@ -331,6 +332,24 @@ module Aua
               else
                 raise_binop_type_error(:**, left, right)
               end
+            end
+
+            def binop_equals(left, right)
+              # unwrap left and right until we get a single value
+              left = left.first while left.is_a?(Array) && left.size == 1
+              right = right.first while right.is_a?(Array) && right.size == 1
+
+              # Equality comparison - returns Bool
+              # Check if types are compatible for equality comparison
+              compatible = left.class == right.class ||
+                           ((left.is_a?(Int) || left.is_a?(Float)) && (right.is_a?(Int) || right.is_a?(Float)))
+
+              # raise Error, "Cannot compare #{left.class} and #{right.class}" unless compatible
+
+              result = left.value == right.value
+              Aua.logger.info "Comparing #{left.inspect} (#{left.class}) [#{left.value}] == #{right.inspect} (#{right.class}) [#{right.value}] => #{result}"
+              # Bool.new(result)
+              [SEND[left, :eq, right]]
             end
 
             def binop_dot(left, right)

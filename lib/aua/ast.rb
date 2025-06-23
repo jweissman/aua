@@ -4,9 +4,7 @@ module Aua
   module AST
     # Represents a node in the abstract syntax tree (AST) of Aua.
     class Node < Data.define(:type, :value, :at)
-      attr_reader :at
-
-      def inspect = "#{type} (#{value.inspect} #{at})"
+      def inspect = "#{type}(#{value.inspect})"
 
       def ==(other)
         return false unless other.is_a?(Node)

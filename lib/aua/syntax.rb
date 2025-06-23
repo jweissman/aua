@@ -6,7 +6,9 @@ module Aua
     # def t(type, value = nil, at:)
     #   Token.new(type:, value:, at:)
     # end
-    class Token < Data.define(:type, :value, :at); end
+    class Token < Data.define(:type, :value, :at)
+      def inspect = "#{type.upcase}(#{value.inspect})"
+    end
 
     ONE_CHAR_TOKEN_NAMES = {
       /\s/ => :whitespace,
@@ -36,7 +38,7 @@ module Aua
       "|" => :pipe
     }.freeze
 
-    TWO_CHAR_TOKEN_NAMES = { "**" => :pow }.freeze
+    TWO_CHAR_TOKEN_NAMES = { "**" => :pow, "==" => :eq }.freeze
     THREE_CHAR_TOKEN_NAMES = { "\"\"\"" => :prompt }.freeze
     KEYWORDS = Set.new(%i[if then else elif as type]).freeze
   end

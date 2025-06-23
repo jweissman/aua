@@ -124,7 +124,7 @@ module Aua
       Enumerator.new do |yielder|
         loop do
           advance while @current_token.type == :eos
-          advance while @current_token.type == :str_end
+          # advance while @current_token.type == :str_end  # Commented out to allow empty strings
           break if %i[eos eof].include?(@current_token.type)
 
           statement = parse_expression

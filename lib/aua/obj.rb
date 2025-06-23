@@ -171,6 +171,7 @@ module Aua
     define_aura_method(:-) { Int.new(@value - _1.aura_send(:to_i)) }
     define_aura_method(:*) { Int.new(@value * _1.aura_send(:to_i)) }
     define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_i)) }
+    define_aura_method(:eq) { Bool.new(@value == _1.value) }
 
     define_aura_method(:to_i) { @value }
     define_aura_method(:to_s) { @value.to_s }
@@ -193,6 +194,8 @@ module Aua
 
     attr_reader :value
 
+    define_aura_method(:eq) { Bool.new(@value == _1.value) }
+
     def self.json_schema
       { type: "object", properties: { value: { type: "number" } }, required: ["value"] }
     end
@@ -203,6 +206,10 @@ module Aua
     def initialize(value)
       super()
       @value = value
+
+      Aua.logger.info("Bool#initialize") do
+        "Initialized Bool with value: #{@value.inspect}"
+      end
     end
 
     # def klass = Klass.new("Bool", Klass.obj)
@@ -213,6 +220,7 @@ module Aua
     attr_reader :value
 
     define_aura_method(:to_i) { Int.new(@value ? 1 : 0) }
+    define_aura_method(:eq) { Bool.new(@value == _1.value) }
 
     def self.json_schema
       { type: "object", properties: { value: { type: "boolean" } }, required: ["value"] }
@@ -235,6 +243,8 @@ module Aua
     def self.klass = @klass ||= Klass.new("Str", Klass.obj)
 
     attr_reader :value
+
+    define_aura_method(:eq) { Bool.new(@value == _1.value) }
 
     def self.json_schema
       { type: "object", properties: { value: { type: "string" } }, required: ["value"] }
