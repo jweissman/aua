@@ -36,7 +36,7 @@ module Aua
     def inspect = "#<#{self.class.name}@#{@lens.describe}>"
     def caret = @doc.caret
     def slice_from(start) = @doc.slice(start, @doc.position - start)
-    def t(type, value = nil) = Token.new(type:, value:, at: caret)
+    def t(type, value = nil, at: caret) = Token.new(type:, value:, at:)
     def string_machine = @string_machine ||= Handle::StringMachine.new(self)
 
     # Context stack management for brace disambiguation
@@ -67,13 +67,13 @@ module Aua
     # NOTE: - also yields the token to the block if given
     def observe(token, &)
       Aua.logger.debug("observe") do
-        "token: \\#{token.type} (value: \\#{token.value.inspect}), at: \\#{token.at.inspect}"
+        "token: \\#{token.type} (value: \\#{token.value.inspect}) #{token.at}"
       end
 
       yield token if block_given?
 
       # Reset string state after any string-ending token
-      return unless %i[str_end].include?(token.type)
+      return unless %i[str_end gen_lit].include?(token.type)
 
       string_machine.inside_string = false
       string_machine.buffer = ""
@@ -139,6 +139,8 @@ module Aua
         if tok.type == :interpolation_end
           string_machine.inside_string = true
           string_machine.mode = :body
+          # Immediately switch to string mode for the next character
+          handle_string_mode(&) if string_machine.inside_string && !string_machine.mode.nil?
         end
       elsif @lens.more?
         raise Error, Handle.unexpected_character_message(@lens)

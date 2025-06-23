@@ -1,0 +1,4 @@
+#!/usr/bin/env aura
+name = "human name here"
+profession = """Simple prompt with ${name}"""
+say "Hello ${name}"

@@ -13,12 +13,15 @@ module Aua
         end
 
         def reset!
+          Aua.logger.debug("string_machine#reset") { "Before reset: mode=#{@mode}, inside_string=#{@inside_string}" }
           @mode = :start
           @buffer = ""
           @quote = nil
           @pending_tokens = []
           @saw_interpolation = false
           @max_len = 2048
+          @inside_string = false
+          Aua.logger.debug("string_machine#reset") { "After reset: mode=#{@mode}, inside_string=#{@inside_string}" }
         end
 
         def advance(inc = 1) = @lexer.advance(inc)
@@ -26,7 +29,10 @@ module Aua
         def next_char = @lexer.lens.peek
         def next_next_char = @lexer.lens.peek_n(2).last
         def current_pos = @lexer.lens.current_pos
-        def t(type, value = nil) = @lexer.t(type, value)
+
+        def t(type, value = nil)
+          @lexer.t(type, value, at: @lexer.caret)
+        end
 
         def flush
           val = @buffer
@@ -123,7 +129,9 @@ module Aua
           @buffer = nil
           @mode = nil
           advance(3)
+          # Reset the string machine state AND inform the lexer we're no longer in a string
           reset!
+          @lexer.string_machine.inside_string = false
           Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type} (reset after gen_lit)" }
           token
         end
@@ -162,6 +170,7 @@ module Aua
 
           # Push interpolation context to the lexer's context stack
           @lexer.push_context(:interpolation)
+          Aua.logger.debug("string_machine#interpolation") { "Pushed :interpolation to context stack" }
 
           token = t(:str_part, @buffer) unless @buffer.nil? || @buffer.empty?
           @buffer = ""

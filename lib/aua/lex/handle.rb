@@ -118,7 +118,13 @@ module Aua
 
       def interpolation_end(_)
         # Context-aware brace handling using the context stack
+        Aua.logger.debug("interpolation_end") do
+          "Context stack before pop: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+        end
         context = @lexer.pop_context
+        Aua.logger.debug("interpolation_end") do
+          "Popped context: #{context.inspect}, remaining stack: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+        end
         advance
 
         case context
@@ -128,6 +134,9 @@ module Aua
           t(:rbrace, "}")
         else
           # Fallback: check the old string machine approach
+          Aua.logger.debug("interpolation_end") do
+            "Fallback - inside_string: #{string_machine.inside_string}, saw_interpolation: #{string_machine.saw_interpolation}"
+          end
           if string_machine.inside_string || string_machine.saw_interpolation
             t(:interpolation_end, "}")
           else
@@ -145,19 +154,31 @@ module Aua
 
       def rbrace(_)
         # Context-aware brace handling
+        Aua.logger.debug("rbrace") do
+          "Context stack before pop: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+        end
         context = @lexer.pop_context
+        Aua.logger.debug("rbrace") do
+          "Popped context: #{context.inspect}, remaining stack: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+        end
         advance
 
         case context
         when :interpolation
+          Aua.logger.debug("rbrace") { "Returning interpolation_end token" }
           t(:interpolation_end, "}")
         when :object_literal
           t(:rbrace, "}")
         else
           # Fallback: check the old string machine approach
-          if string_machine.saw_interpolation && string_machine.inside_string
+          Aua.logger.debug("rbrace") do
+            "Fallback - inside_string: #{string_machine.inside_string}, saw_interpolation: #{string_machine.saw_interpolation}"
+          end
+          if string_machine.inside_string || string_machine.saw_interpolation
+            Aua.logger.debug("rbrace") { "Fallback returning interpolation_end token" }
             t(:interpolation_end, "}")
           else
+            Aua.logger.debug("rbrace") { "Returning rbrace token" }
             t(:rbrace, "}")
           end
         end

@@ -630,6 +630,7 @@ module Aua
       end
 
       def eval_call(fn_name, args)
+        Aua.logger.info("vm:eval_call") { "Calling builtin function: #{fn_name} with args: #{args.inspect}" }
         fn = Aua.vm.builtins[fn_name.to_sym]
         raise Error, "Unknown builtin: #{fn_name}" unless fn
 
