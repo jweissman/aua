@@ -32,20 +32,6 @@ player = character_data as Player
 
 say "You have ${player.stats.health} health, ${player.stats.strength} strength, ${player.stats.intelligence} intelligence, and ${player.stats.charisma} charisma."
 
-# Initialize player stats (we'll enhance this with LLM data)
-# initial_stats = {
-#   health: 100,
-#   strength: 15,
-#   intelligence: 12,
-#   charisma: 14
-# } # as Stats
-# 
-# initial_inventory = {
-#   items: ["rusty sword", "leather pouch"],
-#   gold: 50,
-#   capacity: 10
-# } # as Inventory
-# 
 # player = {
 #   name: player_name,
 #   profession: "adventurer",

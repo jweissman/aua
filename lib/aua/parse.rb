@@ -400,6 +400,8 @@ module Aua
     def parse_structured_str
       parts = structured_string_enumerator.to_a
       token_type = @current_string_quote == "\"\"\"" ? :structured_gen_lit : :structured_str
+      # Reset the string quote after determining the type
+      @current_string_quote = nil
       return s(:str, parts.first.value) if parts.size == 1 && parts.first.type == :str
 
       s(token_type, parts)
@@ -474,7 +476,7 @@ module Aua
             "Expected #{expectation}, got #{@current_token.type} #{@current_token.at}:\n#{Text.indicate(
               @context.source_document.send(:text),
               cursor
-            )}\n"
+            ).join("\n")}\n"
     end
   end
 end

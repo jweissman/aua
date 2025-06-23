@@ -156,8 +156,7 @@ module Aua
 
         def translate_gen_lit(node)
           value = node.value
-          current_conversation = Aua::LLM.chat
-          [Str.new(current_conversation.ask(value))]
+          [GEN[Str.new(value)]]
         end
 
         def translate_if(node)

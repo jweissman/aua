@@ -2,6 +2,5 @@
 name = ask "what is your name?"
 say "Hello ${name}"
 profession = """Provide an adventuring profession for my fantasy character as exactly one word with no spaces. The character name is ${name}. The profession should be a common fantasy role such as 'warrior', 'mage', 'rogue', etc. Do not include any additional text or punctuation."""
-
 say "Okay, ${name}. Let's find out what you do for a living."
 say "You are a ${profession}. Good luck with that!"

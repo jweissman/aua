@@ -129,9 +129,8 @@ module Aua
           @buffer = nil
           @mode = nil
           advance(3)
-          # Reset the string machine state AND inform the lexer we're no longer in a string
+          # Reset the string machine state
           reset!
-          @lexer.string_machine.inside_string = false
           Aua.logger.debug("string_machine#body") { "ending with token type=#{token&.type} (reset after gen_lit)" }
           token
         end

@@ -1,3 +1,0 @@
-#!/usr/bin/env aura
-name = ask "what is your name?"
-say "Hello ${name}"
