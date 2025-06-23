@@ -227,6 +227,46 @@ module Aua
         t(:dot, ".")
       end
 
+      def gt(_)
+        advance
+        t(:gt)
+      end
+
+      def lt(_)
+        advance
+        t(:lt)
+      end
+
+      def gte(_)
+        2.times { advance }
+        t(:gte)
+      end
+
+      def lte(_)
+        2.times { advance }
+        t(:lte)
+      end
+
+      def not(_)
+        advance
+        t(:not)
+      end
+
+      def and_char(_)
+        advance
+        t(:and_char)
+      end
+
+      def and(_)
+        2.times { advance }
+        t(:and)
+      end
+
+      def or(_)
+        2.times { advance }
+        t(:or)
+      end
+
       def unexpected(_char) = raise(Error, Handle.unexpected_character_message(lens))
 
       def self.unexpected_character_message(the_lens)

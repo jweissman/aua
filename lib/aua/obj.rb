@@ -172,6 +172,12 @@ module Aua
     define_aura_method(:*) { Int.new(@value * _1.aura_send(:to_i)) }
     define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_i)) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
+    define_aura_method(:gt) do
+      Bool.new(@value > _1.value)
+    end
+    define_aura_method(:lt) { Bool.new(@value < _1.value) }
+    define_aura_method(:gte) { Bool.new(@value >= _1.value) }
+    define_aura_method(:lte) { Bool.new(@value <= _1.value) }
 
     define_aura_method(:to_i) { @value }
     define_aura_method(:to_s) { @value.to_s }
@@ -195,6 +201,10 @@ module Aua
     attr_reader :value
 
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
+    define_aura_method(:gt) { Bool.new(@value > _1.value) }
+    define_aura_method(:lt) { Bool.new(@value < _1.value) }
+    define_aura_method(:gte) { Bool.new(@value >= _1.value) }
+    define_aura_method(:lte) { Bool.new(@value <= _1.value) }
 
     def self.json_schema
       { type: "object", properties: { value: { type: "number" } }, required: ["value"] }
@@ -214,13 +224,20 @@ module Aua
 
     # def klass = Klass.new("Bool", Klass.obj)
     def name = "bool"
-    def introspect = @value.inspect ? "true" : "false"
+    def introspect = !!@value ? "true" : "false"
     def self.klass = @klass ||= Klass.new("Bool", Klass.obj)
 
     attr_reader :value
 
     define_aura_method(:to_i) { Int.new(@value ? 1 : 0) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
+    define_aura_method(:gt) { Bool.new(@value && !_1.value) }  # true > false
+    define_aura_method(:lt) { Bool.new(!@value && _1.value) }  # false < true
+    define_aura_method(:gte) { Bool.new(@value || !_1.value) }
+    define_aura_method(:lte) { Bool.new(!@value || _1.value) }
+    define_aura_method(:and) { Bool.new(@value && _1.value) }  # logical AND
+    define_aura_method(:or) { Bool.new(@value || _1.value) }   # logical OR
+    define_aura_method(:not) { Bool.new(!@value) } # logical NOT
 
     def self.json_schema
       { type: "object", properties: { value: { type: "boolean" } }, required: ["value"] }
@@ -245,6 +262,10 @@ module Aua
     attr_reader :value
 
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
+    define_aura_method(:gt) { Bool.new(@value > _1.value) } # lexicographic comparison
+    define_aura_method(:lt) { Bool.new(@value < _1.value) }
+    define_aura_method(:gte) { Bool.new(@value >= _1.value) }
+    define_aura_method(:lte) { Bool.new(@value <= _1.value) }
 
     def self.json_schema
       { type: "object", properties: { value: { type: "string" } }, required: ["value"] }

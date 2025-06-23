@@ -53,7 +53,7 @@ module Aua
         def translate(ast)
           case ast.type
           when :nihil, :int, :float, :bool, :simple_str, :str then reify_primary(ast)
-          when :if, :negate, :id, :assign, :binop then translate_basic(ast)
+          when :if, :negate, :not, :id, :assign, :binop then translate_basic(ast)
           when :gen_lit then translate_gen_lit(ast)
           when :call then translate_call(ast)
           when :seq then translate_sequence(ast)
@@ -132,6 +132,7 @@ module Aua
           case node.type
           when :if then translate_if(node)
           when :negate then translate_negation(node)
+          when :not then translate_not(node)
           when :id then [LOCAL_VARIABLE_GET[node.value]]
           when :assign then translate_assignment(node)
           when :binop then translate_binop(node)
@@ -178,6 +179,16 @@ module Aua
           [RECALL[negated]]
         end
 
+        def translate_not(node)
+          operand = node.value
+
+          # For boolean NOT, we need to evaluate the operand and then negate it
+          # This is different from arithmetic negation - it works on any expression that evaluates to a boolean
+          operand_translation = translate(operand)
+
+          [SEND[operand_translation, :not]]
+        end
+
         def translate_assignment(node)
           name, value_node = node.value
           value = translate(value_node)
@@ -218,7 +229,13 @@ module Aua
               when :slash then binop_slash(left, right)
               when :pow then binop_pow(left, right)
               when :eq then binop_equals(left, right)
+              when :gt then [SEND[left, :gt, right]]
+              when :lt then [SEND[left, :lt, right]]
+              when :gte then [SEND[left, :gte, right]]
+              when :lte then [SEND[left, :lte, right]]
               when :dot then [Statement.new(type: :member_access, value: [left, right])]
+              when :and then [SEND[left, :and, right]]
+              when :or then [SEND[left, :or, right]]
               when :as then handle_type_cast(left, right)
               else
                 raise Error, "Unknown binary operator: #{operator}"
@@ -601,7 +618,7 @@ module Aua
 
       # interpolate strings, collapse complex vals, etc.
       def resolve(obj)
-        Aua.logger.info "Resolving object: #{obj.inspect}"
+        Aua.logger.info("vm:resolve") { "Resolving object: #{obj.inspect}" }
         return interpolated(obj) if obj.is_a?(Str)
 
         obj
@@ -629,7 +646,11 @@ module Aua
           raise Error, "Unknown aura method '#{method}' for #{receiver.class}"
         end
 
-        receiver.aura_send(method, *args)
+        ret = receiver.aura_send(method, *args)
+        Aua.logger.info("vm:eval_send") do
+          "Sending method '#{method}' to #{receiver.class} with args: #{args.inspect} => #{ret.inspect}"
+        end
+        ret
       end
 
       def eval_cat(parts)
@@ -648,12 +669,15 @@ module Aua
       end
 
       def eval_call(fn_name, args)
-        Aua.logger.info("vm:eval_call") { "Calling builtin function: #{fn_name} with args: #{args.inspect}" }
         fn = Aua.vm.builtins[fn_name.to_sym]
         raise Error, "Unknown builtin: #{fn_name}" unless fn
 
         evaluated_args = [*args].map { |a| evaluate_one(a) }
-        fn.call(*evaluated_args)
+        ret = fn.call(*evaluated_args)
+        Aua.logger.info("vm:eval_call") do
+          "Calling builtin function: #{fn_name} with args: #{args.inspect} => #{ret.inspect}"
+        end
+        ret
       end
 
       def eval_id(identifier)

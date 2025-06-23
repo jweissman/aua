@@ -331,14 +331,61 @@ module Aua
     end
 
     def parse_condition_body
-      consume(:keyword, "then")
-      true_branch = parse_expression
-      false_branch = nil
-      if @current_token.type == :keyword && @current_token.value == "else"
-        consume(:keyword, "else")
-        false_branch = parse_expression
+      # Check if this is a ternary-style conditional (with 'then')
+      if @current_token.type == :keyword && @current_token.value == "then"
+        consume(:keyword, "then")
+        true_branch = parse_expression
+        false_branch = s(:nihil) # Default to nihil for missing else branch
+        if @current_token.type == :keyword && @current_token.value == "else"
+          consume(:keyword, "else")
+          false_branch = parse_expression
+        end
+        [true_branch, false_branch]
+      else
+        # Block-style conditional
+        # Expect statements until 'end' or 'else'
+        true_statements = [] # : Array[untyped]
+
+        # Skip optional newlines/eos after condition
+        advance while @current_token.type == :eos
+
+        # Parse statements until we hit 'elif', 'else' or 'end'
+        while @current_token.type != :keyword || !%w[elif else end].include?(@current_token.value)
+          stmt = parse_expression
+          true_statements << stmt if stmt
+          advance while @current_token.type == :eos # Skip statement separators
+        end
+
+        true_branch = true_statements.size == 1 ? true_statements.first : s(:seq, true_statements)
+        false_branch = s(:nihil) # Default to nihil (no-op) for missing else branch
+
+        # Handle optional 'elif' and 'else' blocks
+        if @current_token.type == :keyword && @current_token.value == "elif"
+          # elif creates a nested if structure
+          # elif condition -> body becomes: if condition then body else (rest of elif/else chain)
+          consume(:keyword, "elif")
+          elif_condition = parse_expression
+          elif_true, elif_false = parse_condition_body # Recursively parse the elif/else chain
+          false_branch = s(:if, elif_condition, elif_true, elif_false)
+        elsif @current_token.type == :keyword && @current_token.value == "else"
+          consume(:keyword, "else")
+          advance while @current_token.type == :eos # Skip newlines after 'else'
+
+          false_statements = [] # : Array[untyped]
+          while @current_token.type != :keyword || @current_token.value != "end"
+            stmt = parse_expression
+            false_statements << stmt if stmt
+            advance while @current_token.type == :eos
+          end
+
+          false_branch = false_statements.size == 1 ? false_statements.first : s(:seq, false_statements)
+        end
+
+        # Consume the 'end' keyword
+        consume(:keyword, "end")
+
+        [true_branch, false_branch]
       end
-      [true_branch, false_branch]
     end
 
     def parse_binop(min_prec = 0)
@@ -354,6 +401,10 @@ module Aua
         consume(:minus)
         operand = parse_unary
         s(:negate, operand)
+      elsif @current_token.type == :not
+        consume(:not)
+        operand = parse_unary
+        s(:not, operand)
       else
         parse_primary
       end

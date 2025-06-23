@@ -22,11 +22,13 @@ module Aua
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
       as: 0, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
-      eq: 1, # equality comparison
-      plus: 2, minus: 2,
-      star: 3, slash: 3,
-      pow: 4,
-      dot: 5 # member access has high precedence
+      or: 1, # logical OR has lowest precedence among operators
+      and: 2, # logical AND has higher precedence than OR
+      eq: 3, gt: 3, lt: 3, gte: 3, lte: 3, # comparison operators
+      plus: 4, minus: 4,
+      star: 5, slash: 5,
+      pow: 6,
+      dot: 7 # member access has high precedence
     }.freeze
 
     def s(type, *values)

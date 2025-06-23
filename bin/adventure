@@ -41,19 +41,18 @@ if action == "look"
   say "You look around carefully..."
   detailed_description = """Provide a more detailed, atmospheric description of the cavern entrance. Add 2-3 sentences about what ${player_name} the ${player_profession} notices with their training. Make it immersive and fantasy-themed."""
   say detailed_description
-
-if action == "examine"
+elif action == "examine"
   say "You examine your surroundings more closely..."
   examine_result = """${player_name} the ${player_profession} examines the cavern entrance. What interesting details do they discover? Provide 2-3 sentences about something specific they notice, making use of their professional skills."""
   say examine_result
 
-if action == "inventory"
+elif action == "inventory"
   say "You check your belongings..."
   say "As a ${player_profession}, you carry the tools of your trade:"
   gear_description = """List 3-4 items that a ${player_profession} would carry for adventuring. Format as a simple list, one item per line, starting with '- '. Keep it brief and fantasy-appropriate."""
   say gear_description
 
-if action == "go north"
+elif action == "go north"
   say "You venture deeper into the cavern..."
   say ""
   say "📍 Crystal Chamber"
@@ -63,12 +62,13 @@ if action == "go north"
   chamber_description = """Describe what ${player_name} the ${player_profession} finds particularly interesting about this crystal chamber. Include one detail that hints at adventure or danger."""
   say chamber_description
 
-if action == "go south"
+elif action == "go south"
   say "You decide to return to the village for now..."
   say "Perhaps you'll be better prepared for adventure another day."
 
-if action == "quit"
+elif action == "quit"
   say "Thanks for playing! May your adventures continue elsewhere..."
+end
 
 # If none of the above actions matched
 action_suggestions = """The player tried to '${action}' at the cavern entrance. Suggest 2-3 alternative actions they could try instead, keeping it brief and game-appropriate."""
@@ -76,6 +76,7 @@ if action != "look" && action != "examine" && action != "inventory" && action !=
   say "Hmm, you're not sure how to do that here."
   say "Perhaps you could try:"
   say action_suggestions
+end
 
 say ""
 say "Thanks for trying The Crystal Caverns Adventure!"

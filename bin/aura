@@ -39,8 +39,8 @@ def gets!
 end
 
 def rep!
-  input = gets!.chomp
-  return if input.strip.empty?
+  input = gets!&.chomp
+  return if input.nil? || input.strip.empty?
 
   bye if input.nil? || input.strip == "exit"
   eval_print(input)
