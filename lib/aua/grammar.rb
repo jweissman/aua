@@ -24,7 +24,7 @@ module Aua
       as: 0, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
       or: 1, # logical OR has lowest precedence among operators
       and: 2, # logical AND has higher precedence than OR
-      eq: 3, gt: 3, lt: 3, gte: 3, lte: 3, # comparison operators
+      eq: 3, neq: 3, gt: 3, lt: 3, gte: 3, lte: 3, # comparison operators
       plus: 4, minus: 4,
       star: 5, slash: 5,
       pow: 6,

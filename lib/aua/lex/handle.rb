@@ -118,7 +118,13 @@ module Aua
 
       def eq(_)
         2.times { advance }
+        # maybe should be eqeq or similar?
         t(:eq)
+      end
+
+      def neq(_)
+        2.times { advance }
+        t(:neq)
       end
 
       def interpolation_end(_)

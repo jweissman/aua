@@ -229,6 +229,7 @@ module Aua
               when :slash then binop_slash(left, right)
               when :pow then binop_pow(left, right)
               when :eq then binop_equals(left, right)
+              when :neq then binop_not_equals(left, right)
               when :gt then [SEND[left, :gt, right]]
               when :lt then [SEND[left, :lt, right]]
               when :gte then [SEND[left, :gte, right]]
@@ -356,6 +357,15 @@ module Aua
               left = left.first while left.is_a?(Array) && left.size == 1
               right = right.first while right.is_a?(Array) && right.size == 1
               [SEND[left, :eq, right]]
+            end
+
+            def binop_not_equals(left, right)
+              # unwrap left and right until we get a single value
+              left = left.first while left.is_a?(Array) && left.size == 1
+              right = right.first while right.is_a?(Array) && right.size == 1
+              # Use SEND to call .eq and then negate the result with .not
+              eq_result = SEND[left, :eq, right]
+              [SEND[eq_result, :not]]
             end
 
             def binop_dot(left, right)
