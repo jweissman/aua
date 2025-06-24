@@ -340,7 +340,6 @@ module Aua
           consume(:keyword, "else")
           false_branch = parse_expression
         end
-        [true_branch, false_branch]
       else
         # Block-style conditional
         # Expect statements until 'end' or 'else'
@@ -379,8 +378,8 @@ module Aua
         # Consume the 'end' keyword
         consume(:keyword, "end")
 
-        [true_branch, false_branch]
       end
+      [true_branch, false_branch]
     end
 
     def parse_elif_chain
@@ -465,7 +464,7 @@ module Aua
 
     def parse_primary
       raise Aua::Error, "Unexpected end of input while parsing primary expression" if @current_token.type == :eos
-      return parse_structured_str if @current_token.type == :str_part
+      return parse_structured_str if %i[str_part interpolation_start].include?(@current_token.type)
 
       if @current_token.type == :prompt
         advance

@@ -80,4 +80,41 @@ RSpec.describe "Equality Comparison Features" do
       expect('x = 3; if x == 5 then "match" else "no match"').to be_aua("no match").and_be_a(Aua::Str)
     end
   end
+
+  describe "inequality operator (!=)" do
+    it "compares unequal integers" do
+      expect("1 != 0").to be_aua(true).and_be_a(Aua::Bool)
+    end
+
+    it "compares equal integers" do
+      expect("1 != 1").to be_aua(false).and_be_a(Aua::Bool)
+    end
+
+    it "compares unequal strings" do
+      expect('"hello" != "world"').to be_aua(true).and_be_a(Aua::Bool)
+    end
+
+    it "compares equal strings" do
+      expect('"hello" != "hello"').to be_aua(false).and_be_a(Aua::Bool)
+    end
+
+    it "compares unequal booleans" do
+      expect("true != false").to be_aua(true).and_be_a(Aua::Bool)
+      expect("false != true").to be_aua(true).and_be_a(Aua::Bool)
+    end
+
+    it "compares equal booleans" do
+      expect("true != true").to be_aua(false).and_be_a(Aua::Bool)
+      expect("false != false").to be_aua(false).and_be_a(Aua::Bool)
+    end
+
+    it "works with variables" do
+      code = <<~AURA
+        x = 5
+        y = 3
+        x != y
+      AURA
+      expect(code).to be_aua(true).and_be_a(Aua::Bool)
+    end
+  end
 end

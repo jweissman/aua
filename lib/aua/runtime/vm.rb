@@ -355,17 +355,6 @@ module Aua
               # unwrap left and right until we get a single value
               left = left.first while left.is_a?(Array) && left.size == 1
               right = right.first while right.is_a?(Array) && right.size == 1
-
-              # Equality comparison - returns Bool
-              # Check if types are compatible for equality comparison
-              compatible = left.class == right.class ||
-                           ((left.is_a?(Int) || left.is_a?(Float)) && (right.is_a?(Int) || right.is_a?(Float)))
-
-              # raise Error, "Cannot compare #{left.class} and #{right.class}" unless compatible
-
-              result = left.value == right.value
-              Aua.logger.info "Comparing #{left.inspect} (#{left.class}) [#{left.value}] == #{right.inspect} (#{right.class}) [#{right.value}] => #{result}"
-              # Bool.new(result)
               [SEND[left, :eq, right]]
             end
 

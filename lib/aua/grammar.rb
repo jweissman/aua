@@ -87,7 +87,7 @@ module Aua
         @str_parts ||= [] # : Array[AST::Node]
         @parse.consume(:str_end)
         # If we have no str_parts, this is an empty string
-        return s(:str, "") if @str_parts.size == 0
+        return s(:str, "") if @str_parts.empty?
         # If we have str_parts, we can return a structured string node
         return s(:str, @str_parts.first.value) if @str_parts.size == 1
 

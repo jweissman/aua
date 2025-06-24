@@ -152,6 +152,14 @@ module Aua
       def lbracket: (String) -> token?
       def rbracket: (String) -> token?
       def dot: (String) -> token
+      def and: (String) -> token?
+      def or: (String) -> token?
+      def not: (String) -> token?
+      def eq: (String) -> token?
+      def lt: (String) -> token?
+      def gt: (String) -> token?
+      def lte: (String) -> token?
+      def gte: (String) -> token?
 
       def interpolation_end: (String) -> token?
       def eos: (String) -> token?
@@ -165,6 +173,7 @@ module Aua
 
       private
 
+      def and_char: (String) -> token
       def lens: () -> Lex::Lens
       def advance: (?Integer) -> void
       def recognize: () -> Lex::Recognizer
@@ -368,6 +377,7 @@ module Aua
     def parse_unary: () -> AST::Node?
     def parse_conditional: () -> AST::Node?
     def parse_condition_body: () -> [AST::Node, AST::Node?]
+    def parse_elif_chain: () -> AST::Node
     def parse_structured_str: () -> AST::Node
     def parse_statements: () -> AST::Node
     def parse_typedef: () -> AST::Node
@@ -673,6 +683,7 @@ module Aua
           def self.raise_binop_type_error: (Symbol, statement, statement) -> statement
           def self.binop_star: (statement, statement) -> statement
           def self.binop_pow: (statement, statement) -> statement
+          def self.binop_equals: (statement, statement) -> statement
           def self.binop_dot: (statement, String) -> statement
           def self.access_field: (statement, String) -> statement
           def self.handle_type_cast: (statement, statement) -> statement
@@ -694,6 +705,7 @@ module Aua
         def translate_basic: (AST::Node) -> statement
         def translate_binop: (AST::Node) -> statement
         def translate_if: (AST::Node) -> statement
+        def translate_not: (AST::Node) -> statement
         def translate_gen_lit: (untyped) -> Array[Aua::Str]
         def translate_call: (AST::Node) -> Array[Statement]
         def translate_sequence: (AST::Node) -> Array[Statement]
