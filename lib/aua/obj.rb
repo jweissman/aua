@@ -74,6 +74,7 @@ module Aua
     end
 
     # def self.klass   = @klass_obj ||= Klass.new("Obj", klass)
+    # define_aura_method(:to_s) { introspect }
   end
 
   # The class object for Aua types.
@@ -229,6 +230,7 @@ module Aua
 
     attr_reader :value
 
+    define_aura_method(:to_s) { introspect }
     define_aura_method(:to_i) { Int.new(@value ? 1 : 0) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
     define_aura_method(:gt) { Bool.new(@value && !_1.value) }  # true > false
@@ -262,6 +264,7 @@ module Aua
     attr_reader :value
 
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
+    define_aura_method(:+) { Str.new(@value + _1.value.to_s) } # String concatenation
     define_aura_method(:gt) { Bool.new(@value > _1.value) } # lexicographic comparison
     define_aura_method(:lt) { Bool.new(@value < _1.value) }
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }

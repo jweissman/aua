@@ -156,6 +156,9 @@ module Aua
       maybe_command = parse_command
       return maybe_command if maybe_command
 
+      maybe_while = parse_while
+      return maybe_while if maybe_while
+
       parse_binop
     end
 
@@ -562,6 +565,28 @@ module Aua
               @context.source_document.send(:text),
               cursor
             ).join("\n")}\n"
+    end
+
+    def parse_while
+      return nil unless @current_token.type == :keyword && @current_token.value == "while"
+
+      consume(:keyword, "while")
+      condition = parse_expression
+      advance while @current_token.type == :eos # Skip newlines
+
+      # Parse the body statements
+      body_statements = [] # : Array[untyped]
+      while @current_token.type != :keyword || @current_token.value != "end"
+        stmt = parse_expression
+        body_statements << stmt if stmt
+        advance while @current_token.type == :eos # Skip statement separators
+      end
+
+      # Consume the 'end' keyword
+      consume(:keyword, "end")
+
+      body = body_statements.size == 1 ? body_statements.first : s(:seq, body_statements)
+      s(:while, condition, body)
     end
   end
 end

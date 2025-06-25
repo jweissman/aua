@@ -127,11 +127,19 @@ RSpec.describe "Operations Features" do
     end
   end
 
+  describe "type conversion" do
+    it "converts ints to str when concatenating with strings" do
+      result = Aua.run('"hello" + 42')
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to eq("hello42")
+    end
+  end
+
   describe "type operation errors" do
     it "raises error for unsupported operations on different types" do
       # NOTE: this now passes due to bool => 1 : 0 conversion
       # expect { Aua.run("1 + true") }.to raise_error(Aua::Error)
-      expect { Aua.run('"hello" + 42') }.to raise_error(Aua::Error)
+      # expect { Aua.run('"hello" + 42') }.to raise_error(Aua::Error)
       expect { Aua.run("true + false") }.to raise_error(Aua::Error)
     end
   end

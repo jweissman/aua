@@ -25,7 +25,8 @@ module Aua
     # If testing, it uses a file; otherwise, it uses $stdout.
     #
     # @return [IO] The output stream for logging.
-    def self.outlet = $stderr
+    # def self.outlet = $stderr
+    def self.outlet = File.open("log/aura.log", "a")
   end
 
   def self.logger = @logger ||= Logger.default

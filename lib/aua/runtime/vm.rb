@@ -53,7 +53,7 @@ module Aua
         def translate(ast)
           case ast.type
           when :nihil, :int, :float, :bool, :simple_str, :str then reify_primary(ast)
-          when :if, :negate, :not, :id, :assign, :binop then translate_basic(ast)
+          when :if, :while, :negate, :not, :id, :assign, :binop then translate_basic(ast)
           when :gen_lit then translate_gen_lit(ast)
           when :call then translate_call(ast)
           when :seq then translate_sequence(ast)
@@ -131,6 +131,7 @@ module Aua
         def translate_basic(node)
           case node.type
           when :if then translate_if(node)
+          when :while then translate_while(node)
           when :negate then translate_negation(node)
           when :not then translate_not(node)
           when :id then [LOCAL_VARIABLE_GET[node.value]]
@@ -165,6 +166,13 @@ module Aua
           [
             Semantics.inst(:if, translate(condition), translate(true_branch), translate(false_branch))
           ]
+        end
+
+        def translate_while(node)
+          condition, body = node.value
+          condition_stmt = translate(condition)
+          body_stmt = translate(body)
+          Statement.new(type: :while, value: [condition_stmt, body_stmt])
         end
 
         def translate_negation(node)
@@ -518,6 +526,7 @@ module Aua
         raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
 
         Aua.logger.info "Asking question: \\#{question.value}"
+        $stdout.puts(question.value)
         response = $stdin.gets
         Aua.logger.info "Response: \\#{response}"
         raise Error, "No response received" if response.nil?
@@ -597,6 +606,9 @@ module Aua
         when :if
           cond, true_branch, false_branch = val
           eval_if(cond, true_branch, false_branch)
+        when :while
+          cond, body = val
+          eval_while(cond, body)
         else
           raise Error, "Unknown statement: #{stmt} (#{stmt.class})"
         end
@@ -743,9 +755,22 @@ module Aua
       def eval_if(condition, true_branch, false_branch)
         condition_value = evaluate_one(condition)
         if condition_value.is_a?(Bool) && condition_value.value
-          evaluate_one(true_branch)
+          eval_branch(true_branch)
         elsif false_branch
-          evaluate_one(false_branch)
+          eval_branch(false_branch)
+        end
+      end
+
+      def eval_branch(branch)
+        case branch
+        when Array
+          # Handle array of statements - evaluate each and return the last result
+          result = nil
+          branch.each { |stmt| result = evaluate_one(stmt) }
+          result
+        else
+          # Handle single statement
+          evaluate_one(branch)
         end
       end
 
@@ -783,6 +808,32 @@ module Aua
 
           obj.aura_send(field_name.to_sym)
         end
+      end
+
+      def eval_while(condition, body)
+        # While loops return nihil (null/void) like in most languages
+        result = resolve(Nihil.new)
+
+        # Loop while condition is true
+        loop do
+          condition_result = evaluate_one(condition)
+
+          # Convert to boolean - truthy check
+          is_truthy = case condition_result
+                      when Bool then condition_result.value
+                      when Nihil then false
+                      when Int then condition_result.value != 0
+                      when Str then !condition_result.value.empty?
+                      else true
+                      end
+
+          break unless is_truthy
+
+          # Execute the body
+          eval_branch(body)
+        end
+
+        result
       end
     end
   end
