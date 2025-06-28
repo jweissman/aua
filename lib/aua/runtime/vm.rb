@@ -1,412 +1,10 @@
+require_relative "vm/commands"
+require_relative "vm/translator"
+
 module Aua
   module Runtime
     # The virtual machine for executing Aua ASTs.
     class VM
-      module Commands
-        include Semantics
-        # Recall a local variable by its value.
-        RECALL = lambda do |item|
-          Semantics.inst(:let, Semantics::MEMO, item)
-        end
-
-        # Retrieve the value of a local variable by name.
-        LOCAL_VARIABLE_GET = lambda do |name|
-          Semantics.inst(:id, name)
-        end
-
-        # Aura send command to invoke a method on an object.
-        SEND = lambda do |receiver, method, *args|
-          Semantics.inst(:send, receiver, method, *args)
-        end
-
-        # Concatenate an array of parts into a single string.
-        CONCATENATE = lambda do |parts|
-          Semantics.inst(:cat, *parts)
-        end
-
-        # Generate a new object from a prompt.
-        GEN = lambda do |prompt|
-          Semantics.inst(:gen, prompt)
-        end
-
-        # Cast an object to a specific type.
-        CAST = lambda do |obj, type|
-          Semantics.inst(:cast, obj, type)
-        end
-
-        # Construct a list/array from elements.
-        CONS = lambda do |elements|
-          Semantics.inst(:cons, *elements)
-        end
-      end
-
-      # The translator class that converts Aua AST nodes into VM instructions.
-      class Translator
-        include Commands
-
-        def initialize(virtual_machine)
-          @vm = virtual_machine
-        end
-
-        def environment = @vm.instance_variable_get(:@env)
-
-        def translate(ast)
-          case ast.type
-          when :nihil, :int, :float, :bool, :simple_str, :str then reify_primary(ast)
-          when :if, :while, :negate, :not, :id, :assign, :binop then translate_basic(ast)
-          when :gen_lit then translate_gen_lit(ast)
-          when :call then translate_call(ast)
-          when :seq then translate_sequence(ast)
-          when :structured_str, :structured_gen_lit then translate_structured_str(ast)
-          when :type_declaration then translate_type_declaration(ast)
-          when :object_literal then translate_object_literal(ast)
-          when :array_literal then translate_array_literal(ast)
-          else
-            raise Error, "Unknown AST node type: \\#{ast.type}"
-          end
-        end
-
-        # Join all parts, recursively translating expressions
-        def translate_structured_str(node)
-          parts = node.value.map { |part| translate_structured_str_part(part) }
-          if node.type == :structured_gen_lit
-            [GEN[CONCATENATE[parts]]]
-          else
-            [CONCATENATE[parts]]
-          end
-        end
-
-        def translate_structured_str_part(part)
-          Aua.logger.info "Translating part: \\#{part.inspect}"
-          if part.is_a?(AST::Node)
-            val = translate(part)
-            val = val.first if val.is_a?(Array) && val.size == 1
-            val.is_a?(Str) ? val.value : val
-          else
-            part.to_s
-          end
-        end
-
-        def translate_call(node)
-          fn_name, args = node.value
-          [Semantics.inst(:call, fn_name, *args.map { |a| translate(a) })]
-        end
-
-        def translate_type_declaration(node)
-          # Type declarations return the type declaration statement
-          type_name, type_def = node.value
-          [Statement.new(type: :type_declaration, value: [type_name, type_def])]
-        end
-
-        def translate_object_literal(node)
-          # Translate each field value to statements
-          translated_fields = {} # : Hash[String, untyped]
-
-          # node.value is an array of field nodes
-          node.value.each do |field_node|
-            field_name, field_ast = field_node.value
-            translated_field = translate(field_ast)
-            translated_fields[field_name] = translated_field
-          end
-
-          [Statement.new(type: :object_literal, value: translated_fields)]
-        end
-
-        def translate_array_literal(node)
-          # Translate each element in the array
-          translated_elements = node.value.map { |element| translate(element) }
-          [CONS[translated_elements]]
-        end
-
-        def translate_sequence(node)
-          stmts = node.value
-          Aua.logger.info("vm:tx") { "Translating sequence: #{stmts.inspect}" }
-          raise Error, "Empty sequence" if stmts.empty?
-          raise Error, "Sequence must be an array" unless stmts.is_a?(Array)
-          raise Error, "Sequence must contain only AST nodes" unless stmts.all? { |s| s.is_a?(AST::Node) }
-
-          stmts.map { |stmt| translate(stmt) }.flatten
-        end
-
-        def translate_basic(node)
-          case node.type
-          when :if then translate_if(node)
-          when :while then translate_while(node)
-          when :negate then translate_negation(node)
-          when :not then translate_not(node)
-          when :id then [LOCAL_VARIABLE_GET[node.value]]
-          when :assign then translate_assignment(node)
-          when :binop then translate_binop(node)
-          else
-            raise Error, "Unknown Basic AST node type: \\#{node.type}"
-          end
-        end
-
-        def reify_primary(node)
-          case node.type
-          when :int then Int.new(node.value)
-          when :float then Float.new(node.value)
-          when :bool then Bool.new(node.value)
-          when :str, :simple_str
-            Aua.logger.info "Reifying string: #{node.inspect}"
-            Str.new(node.value)
-          else
-            Aua.logger.warn "Unknown primary node type: #{node.type.inspect}"
-            Nihil.new
-          end
-        end
-
-        def translate_gen_lit(node)
-          value = node.value
-          [GEN[Str.new(value)]]
-        end
-
-        def translate_if(node)
-          condition, true_branch, false_branch = node.value
-          [
-            Semantics.inst(:if, translate(condition), translate(true_branch), translate(false_branch))
-          ]
-        end
-
-        def translate_while(node)
-          condition, body = node.value
-          condition_stmt = translate(condition)
-          body_stmt = translate(body)
-          Statement.new(type: :while, value: [condition_stmt, body_stmt])
-        end
-
-        def translate_negation(node)
-          operand = node.value
-
-          negated = case operand.type
-                    when :int then Int.new(-operand.value)
-                    when :float then Float.new(-operand.value)
-                    else
-                      raise Error, "Negation only supported for Int and Float"
-                    end
-          [RECALL[negated]]
-        end
-
-        def translate_not(node)
-          operand = node.value
-
-          # For boolean NOT, we need to evaluate the operand and then negate it
-          # This is different from arithmetic negation - it works on any expression that evaluates to a boolean
-          operand_translation = translate(operand)
-
-          [SEND[operand_translation, :not]]
-        end
-
-        def translate_assignment(node)
-          name, value_node = node.value
-          value = translate(value_node)
-          [Semantics.inst(:let, name, value)]
-        end
-
-        def translate_binop(node)
-          Aua.logger.info "Translating binop: #{node.inspect}"
-          op, left_node, right_node = node.value
-
-          # Special handling for member access - don't translate the right side
-          if op == :dot
-            left = translate(left_node)
-            # Right side should be an ID node representing the field name
-            unless right_node.type == :id
-              raise Error, "Right side of member access must be a field name, got #{right_node.inspect}"
-            end
-
-            field_name = right_node.value
-            return Binop.binary_operation(op, left, field_name)
-          end
-
-          left = translate(left_node)
-          right = translate(right_node)
-          Binop.binary_operation(op, left, right) || SEND[left, op, right]
-        end
-
-        # Support translating binary operations.
-        module Binop
-          class << self
-            include Commands
-
-            def binary_operation(operator, left, right)
-              case operator
-              when :plus then binop_plus(left, right)
-              when :minus then binop_minus(left, right)
-              when :star then binop_star(left, right)
-              when :slash then binop_slash(left, right)
-              when :pow then binop_pow(left, right)
-              when :eq then binop_equals(left, right)
-              when :neq then binop_not_equals(left, right)
-              when :gt then [SEND[left, :gt, right]]
-              when :lt then [SEND[left, :lt, right]]
-              when :gte then [SEND[left, :gte, right]]
-              when :lte then [SEND[left, :lte, right]]
-              when :dot then [Statement.new(type: :member_access, value: [left, right])]
-              when :and then [SEND[left, :and, right]]
-              when :or then [SEND[left, :or, right]]
-              when :as then handle_type_cast(left, right)
-              else
-                raise Error, "Unknown binary operator: #{operator}"
-              end
-            end
-
-            private
-
-            def handle_type_cast(left, right)
-              Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
-
-              # Unwrap rhs until we get a single value
-              right = right.first while right.is_a?(Array) && right.size == 1
-
-              Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
-
-              klass = resolve_cast_target(right)
-              CAST[left, klass]
-            end
-
-            def resolve_cast_target(right)
-              if right.is_a?(Klass)
-                right
-              elsif right.is_a?(Statement) && right.type == :id
-                # Defer type lookup to execution time by creating a special statement
-                Statement.new(type: :type_lookup, value: right.value.first)
-              else
-                Aua::Str.klass
-              end
-            end
-
-            public
-
-            def binop_plus(left, right)
-              return int_plus(left, right) if left.is_a?(Int) && right.is_a?(Int)
-              return float_plus(left, right) if left.is_a?(Float) && right.is_a?(Float)
-              return str_plus(left, right) if left.is_a?(Str) && right.is_a?(Str)
-
-              raise_binop_type_error(:+, left, right)
-            end
-
-            def int_plus(left, right)
-              Int.new(left.value + right.value)
-            end
-
-            def float_plus(left, right)
-              Float.new(left.value + right.value)
-            end
-
-            def str_plus(left, right)
-              Str.new(left.value + right.value)
-            end
-
-            def raise_binop_type_error(operator, left, right)
-              [SEND[left, operator, right]]
-            end
-
-            def binop_minus(left, right)
-              if left.is_a?(Int) && right.is_a?(Int)
-                Int.new(left.value - right.value)
-              elsif left.is_a?(Float) && right.is_a?(Float)
-                Float.new(left.value - right.value)
-              else
-                raise_binop_type_error(:-, left, right)
-              end
-            end
-
-            def binop_star(left, right)
-              if left.is_a?(Int) && right.is_a?(Int)
-                Int.new(left.value * right.value)
-              elsif left.is_a?(Float) && right.is_a?(Float)
-                Float.new(left.value * right.value)
-              else
-                raise_binop_type_error(:*, left, right)
-              end
-            end
-
-            def binop_slash(left, right)
-              return int_slash(left, right) if left.is_a?(Int) && right.is_a?(Int)
-              return float_slash(left, right) if left.is_a?(Float) && right.is_a?(Float)
-
-              raise_binop_type_error(:/, left, right)
-            end
-
-            def int_slash(left, right)
-              raise Error, "Division by zero" if right.value.zero?
-
-              Int.new(left.value / right.value)
-            end
-
-            def float_slash(left, right)
-              lhs = left  # : Float
-              rhs = right # : Float
-              raise Error, "Division by zero" if rhs.value == 0.0
-
-              Float.new(lhs.value / rhs.value)
-            end
-
-            def binop_pow(left, right)
-              if left.is_a?(Int) && right.is_a?(Int)
-                # Convert to float to handle potential precision issues
-                result = left.value.to_f**right.value.to_f
-                # Return as Int if it's a whole number, Float otherwise
-                if result.finite? && result == result.round
-                  Int.new(result.to_i)
-                else
-                  Float.new(result)
-                end
-              elsif left.is_a?(Float) && right.is_a?(Float)
-                Float.new(left.value**right.value)
-              else
-                raise_binop_type_error(:**, left, right)
-              end
-            end
-
-            def binop_equals(left, right)
-              # unwrap left and right until we get a single value
-              left = left.first while left.is_a?(Array) && left.size == 1
-              right = right.first while right.is_a?(Array) && right.size == 1
-              [SEND[left, :eq, right]]
-            end
-
-            def binop_not_equals(left, right)
-              # unwrap left and right until we get a single value
-              left = left.first while left.is_a?(Array) && left.size == 1
-              right = right.first while right.is_a?(Array) && right.size == 1
-              # Use SEND to call .eq and then negate the result with .not
-              eq_result = SEND[left, :eq, right]
-              [SEND[eq_result, :not]]
-            end
-
-            def binop_dot(left, right)
-              # Member access: object.field
-              # Right side should be a field name (string)
-              unless right.is_a?(String)
-                raise Error, "Right side of member access must be a field name, got #{right.inspect}"
-              end
-
-              field_name = right # : String
-              access_field(left, field_name)
-            end
-
-            # Helper method for field access
-            def access_field(obj, field_name)
-              case obj
-              when ObjectLiteral, RecordObject
-                obj.get_field(field_name)
-              when Obj
-                # Try to access field via Aura method dispatch
-                unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
-                  raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
-                end
-
-                obj.aura_send(field_name.to_sym)
-              else
-                raise Error, "Expected an object for member access, got: #{obj.inspect} (#{obj.class})"
-              end
-            end
-          end
-        end
-      end
-
       extend Semantics
 
       def initialize(env = {})
@@ -596,10 +194,15 @@ module Aua
         when :type_declaration then eval_type_declaration(val[0], val[1])
         when :object_literal then eval_object_literal(val)
         when :type_lookup then eval_type_lookup(val)
+        when :lookup_type then eval_type_lookup(val)
+        when :union_type_lookup then eval_union_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
         when :cat then eval_cat(val)
         when :cons then eval_cons(val)
+        when :dynamic_union_class then eval_dynamic_union_class(val)
+        when :llm_select then eval_llm_select(val[0], val[1])
+        when :collapse then eval_collapse(val[0], val[1])
         when :call
           fn_name, *args = val
           eval_call(fn_name, args.map { |a| evaluate_one(a) })
@@ -733,6 +336,42 @@ module Aua
         type_obj
       end
 
+      def eval_union_type_lookup(type_name)
+        # Look up a union type and convert it to a dynamic union class
+        type_obj = @type_registry.lookup(type_name)
+        if type_obj.nil?
+          type_obj = @env[type_name]
+        end
+
+        raise Error, "Type '#{type_name}' not found" unless type_obj
+
+        # Extract choices from the union type and create dynamic class
+        choices = extract_union_choices_from_type(type_obj)
+        eval_dynamic_union_class(choices)
+      end
+
+      def extract_union_choices_from_type(type_obj)
+        # Handle different ways union types might be stored
+        if type_obj.respond_to?(:union_values)
+          # This is a proper Union class from type_classes.rb
+          type_obj.union_values
+        elsif type_obj.respond_to?(:choices)
+          type_obj.choices
+        elsif type_obj.is_a?(UnionType)
+          # Extract choices from UnionType
+          type_obj.types.map do |type_const|
+            if type_const.is_a?(TypeConstant)
+              type_const.name
+            else
+              type_const.inspect
+            end
+          end
+        else
+          # Fallback - assume it's a simple type
+          [type_obj.inspect]
+        end
+      end
+
       def eval_object_literal(translated_fields)
         # translated_fields is a hash where keys are field names (strings)
         # and values are translated statements (arrays of statements)
@@ -834,6 +473,162 @@ module Aua
         end
 
         result
+      end
+
+      def eval_llm_select(prompt_text, choices)
+        Aua.logger.info("vm:eval_llm_select") { "LLM selection: '#{prompt_text}' from #{choices.inspect}" }
+
+        # For now, simulate LLM selection with simple text matching
+        # In practice, this would call out to an actual LLM service
+        prompt_lower = prompt_text.downcase
+
+        # Simple heuristics to select the most appropriate choice
+        best_choice = choices.find do |choice|
+          choice_str = choice.is_a?(Str) ? choice.value : choice.to_s
+          prompt_lower.include?(choice_str.downcase)
+        end
+
+        # If no direct match, try partial matching
+        if best_choice.nil?
+          best_choice = choices.find do |choice|
+            choice_str = choice.is_a?(Str) ? choice.value : choice.to_s
+            choice_str.downcase.split(/[^a-z]/).any? { |word| prompt_lower.include?(word) }
+          end
+        end
+
+        # Fallback: return first choice if no match found
+        best_choice ||= choices.first
+
+        # Convert to Aua::Str if needed
+        result = if best_choice.is_a?(Str)
+                   best_choice
+                 else
+                   Str.new(best_choice.to_s)
+                 end
+
+        Aua.logger.info("vm:eval_llm_select") { "Selected: #{result.value}" }
+        result
+      end
+
+      def eval_collapse(prompt_text, choices)
+        Aua.logger.info("vm:eval_collapse") { "Collapsing superposition: '#{prompt_text}' from #{choices.inspect}" }
+
+        # For now, simulate quantum collapse with simple text matching
+        # In practice, this would call out to an actual LLM service
+        prompt_lower = prompt_text.downcase
+
+        # Simple heuristics to collapse the superposition to the most appropriate choice
+        best_choice = choices.find do |choice|
+          choice_str = choice.is_a?(Str) ? choice.value : choice.to_s
+          prompt_lower.include?(choice_str.downcase)
+        end
+
+        # If no direct match, try partial matching
+        if best_choice.nil?
+          best_choice = choices.find do |choice|
+            choice_str = choice.is_a?(Str) ? choice.value : choice.to_s
+            choice_str.downcase.split(/[^a-z]/).any? { |word| prompt_lower.include?(word) }
+          end
+        end
+
+        # Fallback: collapse to first choice if no match found (random collapse)
+        best_choice ||= choices.first
+
+        # Convert to Aua::Str if needed
+        result = if best_choice.is_a?(Str)
+                   best_choice
+                 else
+                   Str.new(best_choice.to_s)
+                 end
+
+        Aua.logger.info("vm:eval_collapse") { "Collapsed to: #{result.value}" }
+        result
+      end
+
+      def eval_dynamic_union_class(choices)
+        Aua.logger.info("vm:eval_dynamic_union_class") { "Creating dynamic union class with choices: #{choices.inspect}" }
+        
+        # Create a dynamic union class that can be used with the casting system
+        # This creates a class that represents a union of the given choices
+        
+        # For now, create a simple union-like Klass
+        # In the future, this could use the existing TypeRegistry::Union
+        union_class = Class.new(Klass) do
+          define_method :initialize do |choices|
+            @choices = choices
+            super("DynamicUnion")
+          end
+          
+          define_method :choices do
+            @choices
+          end
+          
+          define_method :json_schema do
+            {
+              type: "object",
+              properties: {
+                value: {
+                  type: "string",
+                  enum: @choices,
+                  description: "Select one of the available choices based on the context"
+                }
+              }
+            }
+          end
+          
+          define_method :construct do |value|
+            if @choices.include?(value)
+              Str.new(value)
+            else
+              # Fallback: pick the first choice
+              Str.new(@choices.first)
+            end
+          end
+          
+          define_method :introspect do
+            "Union(#{@choices.join(' | ')})"
+          end
+        end
+        
+        union_class.new(choices)
+      end
+
+    end
+
+    # Type representation classes for the translator
+    class UnionType
+      attr_reader :types
+      
+      def initialize(types)
+        @types = types
+      end
+      
+      def inspect
+        "UnionType(#{@types.map(&:inspect).join(' | ')})"
+      end
+    end
+
+    class TypeReference
+      attr_reader :name
+      
+      def initialize(name)
+        @name = name
+      end
+      
+      def inspect
+        "TypeRef(#{@name})"
+      end
+    end
+
+    class TypeConstant
+      attr_reader :name
+      
+      def initialize(name)
+        @name = name
+      end
+      
+      def inspect
+        "TypeConst(#{@name})"
       end
     end
   end

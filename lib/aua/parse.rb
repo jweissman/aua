@@ -186,6 +186,8 @@ module Aua
                     parse_type_reference
                   when :lbrace
                     parse_record_type
+                  when :lparen
+                    parse_parenthesized_type_expression
                   else
                     raise Error, "Expected type expression, got #{@current_token.type}"
                   end
@@ -458,8 +460,15 @@ module Aua
       op = op_token.type
       prec = BINARY_PRECEDENCE[op]
       consume(op)
-      next_min_prec = Set[:pow].include?(op) ? prec : prec + 1
-      right = parse_binop(next_min_prec)
+
+      # Special handling for tilde operator - parse the right side as a type expression
+      if op == :tilde
+        right = parse_type_expression
+      else
+        next_min_prec = Set[:pow].include?(op) ? prec : prec + 1
+        right = parse_binop(next_min_prec)
+      end
+
       s(:binop, op, left, right)
     end
 
@@ -587,6 +596,13 @@ module Aua
 
       body = body_statements.size == 1 ? body_statements.first : s(:seq, body_statements)
       s(:while, condition, body)
+    end
+
+    def parse_parenthesized_type_expression
+      consume(:lparen)
+      type_expr = parse_type_expression
+      consume(:rparen)
+      type_expr
     end
   end
 end

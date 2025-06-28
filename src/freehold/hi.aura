@@ -1,0 +1,10 @@
+#!/usr/bin/env aura
+
+say 'loading card database'
+cards = jsonl 'cards.db'
+say 'gathering two simulants from the multiverse'
+
+red = cards.sample
+blue = cards.sample
+
+# simple combat loop

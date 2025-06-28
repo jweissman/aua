@@ -111,6 +111,11 @@ module Aua
         t(:pipe)
       end
 
+      def tilde(_)
+        advance
+        t(:tilde)
+      end
+
       def eos(_)
         advance
         t(:eos)

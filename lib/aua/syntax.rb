@@ -37,7 +37,8 @@ module Aua
       "#" => :comment,
       ";" => :eos,
       "\n" => :eos,
-      "|" => :pipe
+      "|" => :pipe,
+      "~" => :tilde
     }.freeze
 
     TWO_CHAR_TOKEN_NAMES = { "**" => :pow, "==" => :eq, "!=" => :neq, ">=" => :gte, "<=" => :lte, "&&" => :and,
