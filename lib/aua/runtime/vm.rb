@@ -1,4 +1,5 @@
 require_relative "vm/commands"
+require_relative "vm/types"
 require_relative "vm/translator"
 
 module Aua
@@ -75,6 +76,11 @@ module Aua
         PROMPT
 
         # Add type-specific guidance
+        # type_guidance = if klass.aura_respond_to?(:describe)
+        #                   klass.aura_send(:describe)
+        #                 else
+        #                   "This is a #{klass.name} type. Please provide a value that fits this type."
+        #                 end
         type_guidance = case klass.name
                         when "List"
                           <<~GUIDANCE
@@ -630,43 +636,6 @@ module Aua
         end
 
         union_class.new(choices)
-      end
-    end
-
-    # Type representation classes for the translator
-    class UnionType
-      attr_reader :types
-
-      def initialize(types)
-        @types = types
-      end
-
-      def inspect
-        "UnionType(#{@types.map(&:inspect).join(" | ")})"
-      end
-    end
-
-    class TypeReference
-      attr_reader :name
-
-      def initialize(name)
-        @name = name
-      end
-
-      def inspect
-        "TypeRef(#{@name})"
-      end
-    end
-
-    class TypeConstant
-      attr_reader :name
-
-      def initialize(name)
-        @name = name
-      end
-
-      def inspect
-        "TypeConst(#{@name})"
       end
     end
   end

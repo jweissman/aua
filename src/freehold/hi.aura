@@ -4,7 +4,13 @@ def fight_one(a, b)
   a.ap += 2
   action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
   chosen_action = a.abilities[action_name]
-  perform(a, chosen_action, b)
+  events = ecs.perform(a, chosen_action, b)
+  events.each do
+    a.hp -= it.damage_splashback if it.damage_splashback
+    a.hp += it.health_absorbed   if it.health_absorbed
+    b.hp -= it.damage_inflicted  if it.damage_inflicted
+    b.hp += it.health_restored   it it.health_restored
+  end
 end
 
 say 'loading card database'

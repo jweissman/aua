@@ -149,6 +149,7 @@ RSpec.describe "LLM Features" do
 
         it "nihil" do
           expect("nihil as Str").to be_aua("")
+          # expect("nihil as Str").to be_aua("the empty string")
           expect("nihil as Bool").to be_aua(false)
         end
       end

@@ -31,7 +31,8 @@ RSpec.describe "String Interpolation Features" do
 
   describe "nested interpolation" do
     it "handles interpolation within interpolation" do
-      expect('name = "Bob"; title = "Dr."; greeting = "Hello ${title} ${name}"; "Message: ${greeting}!"').to be_aua("Message: Hello Dr. Bob!")
+      code = 'name = "Bob"; title = "Dr."; greeting = "Hello ${title} ${name}"; "Message: ${greeting}!"'
+      expect(code).to be_aua("Message: Hello Dr. Bob!")
     end
   end
 

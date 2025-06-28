@@ -78,7 +78,8 @@ RSpec.describe "Boolean Value Processing" do
     end
 
     it "uses comparison result in ternary conditional" do
-      expect("result = (5 > 3); if result then \"greater\" else \"not greater\"").to be_aua("greater").and_be_a(Aua::Str)
+      code = 'result = (5 > 3); if result then "greater" else "not greater"'
+      expect(code).to be_aua("greater").and_be_a(Aua::Str)
     end
   end
 end

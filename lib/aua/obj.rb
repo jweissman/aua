@@ -70,11 +70,9 @@ module Aua
     #
     def self.define_aura_method(name, &block)
       aura_methods[name] = block # : aura_meth
-      # print "#{self.name.split("::").last}##{name} "
     end
 
-    # def self.klass   = @klass_obj ||= Klass.new("Obj", klass)
-    # define_aura_method(:to_s) { introspect }
+    def self.describe(message) = define_aura_method(:describe) { message }
   end
 
   # The class object for Aua types.
@@ -94,48 +92,45 @@ module Aua
 
     def introspect = @name
 
+    def schema_classes
+      {
+        "Nihil" => Nihil,
+        "Int" => Int,
+        "Float" => Float,
+        "Bool" => Bool,
+        "Str" => Str,
+        "Time" => Time,
+        "List" => List
+      }
+    end
+
     def json_schema
-      case @name
-      when "Nihil"
-        Nihil.json_schema
-      when "Int"
-        Int.json_schema
-      when "Float"
-        Float.json_schema
-      when "Bool"
-        Bool.json_schema
-      when "Str"
-        Str.json_schema
-      when "Time"
-        Time.json_schema
-      when "List"
-        List.json_schema
-      else
-        raise "Not a primitive type: #{@name}" unless @parent.nil?
-      end
+      schema_class = schema_classes[@name]
+      return schema_class.json_schema if schema_class
+
+      raise "Not a primitive type: #{@name}" unless @parent.nil?
     end
 
     def construct(val)
       case @name
-      when "Nihil"
-        Nihil.new
-      when "Int"
-        Int.new(val)
-      when "Float"
-        Float.new(val)
-      when "Bool"
-        Bool.new(val)
-      when "Str"
-        Str.new(val)
-      when "Time"
-        Time.new(val)
-      when "List"
-        # Convert raw strings to Aua::Str objects
-        aua_values = val.map { |item| Aua::Str.new(item.to_s) }
-        Aua::List.new(aua_values)
+      when "Nihil", "Int", "Float", "Bool", "Str", "Time"
+        schema_classes[@name].new(val)
+      when "List" then construct_list(val)
       else
-        raise "Not a primitive type: #{@name}" unless @parent.nil?
+        validate_primitive_type!
       end
+    end
+
+    private
+
+    def construct_list(val)
+      # NOTE: feels like we should try to convert each item to Aua-like not just string?
+      aua_values = val.map { |item| Aua::Str.new(item.to_s) }
+      Aua::List.new(aua_values)
+    end
+
+    def validate_primitive_type!
+      raise "Not a primitive type: #{@name}" unless @parent.nil?
     end
   end
 
@@ -173,8 +168,8 @@ module Aua
     define_aura_method(:*) { Int.new(@value * _1.aura_send(:to_i)) }
     define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_i)) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
-    define_aura_method(:gt) do
-      Bool.new(@value > _1.value)
+    define_aura_method(:gt) do |other|
+      Bool.new(@value > other.value)
     end
     define_aura_method(:lt) { Bool.new(@value < _1.value) }
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }
@@ -305,6 +300,12 @@ module Aua
 
   # Array value in Aua.
   class List < Obj
+    describe <<~GUIDANCE
+      Represents a list of values in Aua.
+      Can contain any Aua objects, including other lists.
+      Provides methods for accessing and manipulating the list.
+    GUIDANCE
+
     def initialize(values = [])
       super()
       @values = values

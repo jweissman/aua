@@ -4,6 +4,7 @@ module Aua
     class VM
       # The translator class that converts Aua AST nodes into VM instructions.
       class Translator
+        include Types
         include Commands
 
         def initialize(virtual_machine)
@@ -251,69 +252,35 @@ module Aua
               # Unwrap rhs until we get a single value
               right = right.first while right.is_a?(Array) && right.size == 1
 
-              union_class = resolve_union_target(right)
-              CAST[left, union_class]
-            end
-
-            def resolve_union_target(right)
-              if right.is_a?(UnionType)
+              if right.is_a?(Aua::Runtime::VM::Types::UnionType)
                 # Inline union type - create dynamic class immediately
                 choices = extract_choices_from_union_type(right)
-                Statement.new(type: :dynamic_union_class, value: choices)
-              elsif right.is_a?(TypeReference)
+                union_class = Statement.new(type: :dynamic_union_class, value: choices)
+              elsif right.is_a?(Aua::Runtime::VM::Types::TypeReference)
                 # Type reference - defer lookup to runtime
-                Statement.new(type: :union_type_lookup, value: right.name)
+                union_class = Statement.new(type: :union_type_lookup, value: right.name)
               else
                 # Fallback - try to treat as regular type
-                resolve_cast_target(right)
+                union_class = resolve_cast_target(right)
               end
+
+              CAST[left, union_class]
             end
 
             def extract_choices_from_union_type(union_type)
               union_type.types.map do |type_obj|
-                if type_obj.is_a?(TypeConstant)
-                  type_obj.name
+                if type_obj.is_a?(Aua::Runtime::VM::Types::TypeConstant)
+                  # Extract the actual value from the AST node
+                  ast_node = type_obj.name
+                  if ast_node.respond_to?(:value)
+                    ast_node.value
+                  else
+                    ast_node.inspect # Fallback
+                  end
                 else
                   type_obj.inspect # Fallback
                 end
               end
-            end
-
-            def create_dynamic_union_class(choices)
-              # Create a dynamic class similar to eval_dynamic_union_class in VM
-              dynamic_class = Class.new(Klass) do
-                define_method :initialize do |choice_list|
-                  @choices = choice_list
-                  @name = "Union(#{choice_list.join(" | ")})"
-                end
-
-                define_method :json_schema do
-                  {
-                    type: "object",
-                    properties: {
-                      value: {
-                        type: "string",
-                        enum: @choices
-                      }
-                    }
-                  }
-                end
-
-                define_method :construct do |value|
-                  if @choices.include?(value)
-                    Str.new(value)
-                  else
-                    # Fallback: pick the first choice
-                    Str.new(@choices.first)
-                  end
-                end
-
-                define_method :introspect do
-                  "Union(#{@choices.join(" | ")})"
-                end
-              end
-
-              dynamic_class.new(choices)
             end
 
             def extract_union_choices(right)
@@ -485,24 +452,19 @@ module Aua
         def translate_union_type(ast)
           # Union type is represented as an array of its constituent types
           types = ast.value.map { |child| translate(child).first }
-          [UnionType.new(types)]
+          [Aua::Runtime::VM::Types::UnionType.new(types)]
         end
 
         def translate_type_reference(ast)
           # Type reference to an existing type
           type_name = ast.value
-          [TypeReference.new(type_name)]
+          [Aua::Runtime::VM::Types::TypeReference.new(type_name)]
         end
 
         def translate_type_constant(ast)
           # Type constant (like String, Int, etc.)
-          # If it's a simple_str, extract the actual string value
-          type_name = if ast.value.is_a?(AST::Node) && ast.value.type == :simple_str
-                        ast.value.value
-                      else
-                        ast.value
-                      end
-          [TypeConstant.new(type_name)]
+          type_name = ast.value
+          [Aua::Runtime::VM::Types::TypeConstant.new(type_name)]
         end
       end
     end

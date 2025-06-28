@@ -63,10 +63,11 @@ RSpec.describe Aua::Lex do
                                ])
 
         # Line 3: profession = """Provide a short profession for a fantasy character, ${name}. Give your answer as one word only with no spaces"""
+        profession_part = "Provide a short profession for a fantasy character, "
         expect(lines[2]).to eq([
                                  [:id, "profession"],
                                  [:equals, "="],
-                                 [:str_part, "Provide a short profession for a fantasy character, "],
+                                 [:str_part, profession_part],
                                  [:interpolation_start, "${"],
                                  [:id, "name"],
                                  [:interpolation_end, "}"],
@@ -146,7 +147,8 @@ RSpec.describe Aua::Lex do
                                  [:str_end, nil]
                                ])
 
-        # Line 10: description = """The ${weather} sky stretches above ${current_location}, where ${name} stands ready for adventure."""
+        # Line 10: description = """The ${weather} sky stretches above ${current_location}, where ${name} stands \
+        # ready for adventure."""
         expect(lines[9]).to eq([
                                  [:id, "description"],
                                  [:equals, "="],

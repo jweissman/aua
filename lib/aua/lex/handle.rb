@@ -139,7 +139,8 @@ module Aua
         end
         context = @lexer.pop_context
         Aua.logger.debug("interpolation_end") do
-          "Popped context: #{context.inspect}, remaining stack: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+          stack = @lexer.instance_variable_get(:@context_stack)
+          "Popped context: #{context.inspect}, remaining stack: #{stack.inspect}"
         end
         advance
 
@@ -151,7 +152,9 @@ module Aua
         else
           # Fallback: check the old string machine approach
           Aua.logger.debug("interpolation_end") do
-            "Fallback - inside_string: #{string_machine.inside_string}, saw_interpolation: #{string_machine.saw_interpolation}"
+            inside = string_machine.inside_string
+            saw = string_machine.saw_interpolation
+            "Fallback - inside_string: #{inside}, saw_interpolation: #{saw}"
           end
           if string_machine.inside_string || string_machine.saw_interpolation
             t(:interpolation_end, "}")
@@ -171,11 +174,13 @@ module Aua
       def rbrace(_)
         # Context-aware brace handling
         Aua.logger.debug("rbrace") do
-          "Context stack before pop: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+          stack = @lexer.instance_variable_get(:@context_stack)
+          "Context stack before pop: #{stack.inspect}"
         end
         context = @lexer.pop_context
         Aua.logger.debug("rbrace") do
-          "Popped context: #{context.inspect}, remaining stack: #{@lexer.instance_variable_get(:@context_stack).inspect}"
+          stack = @lexer.instance_variable_get(:@context_stack)
+          "Popped context: #{context.inspect}, remaining stack: #{stack.inspect}"
         end
         advance
 
@@ -188,7 +193,9 @@ module Aua
         else
           # Fallback: check the old string machine approach
           Aua.logger.debug("rbrace") do
-            "Fallback - inside_string: #{string_machine.inside_string}, saw_interpolation: #{string_machine.saw_interpolation}"
+            inside = string_machine.inside_string
+            saw = string_machine.saw_interpolation
+            "Fallback - inside_string: #{inside}, saw_interpolation: #{saw}"
           end
           if string_machine.inside_string || string_machine.saw_interpolation
             Aua.logger.debug("rbrace") { "Fallback returning interpolation_end token" }
