@@ -66,7 +66,7 @@ module Aua
       end
 
       def build_cast_prompt(obj, klass)
-        _base_prompt = <<~PROMPT
+        base_prompt = <<~PROMPT
           You are an English-language runtime.
           Please provide a 'translation' of the given object in the requested type (#{klass.introspect}).
           This should be a forgiving and humanizing cast into the spirit of the target type.
@@ -74,19 +74,58 @@ module Aua
           The object is '#{obj.introspect}'.
         PROMPT
 
+        # Add type-specific guidance
+        type_guidance = case klass.name
+                        when "List"
+                          <<~GUIDANCE
+
+                            This is a List type. The result should be an array of strings.
+                            If the input contains multiple items (like in brackets or comma-separated),
+                            preserve them as separate array elements. If it's a single item, you can
+                            still make it an array, but consider if it represents multiple conceptual items.
+                          GUIDANCE
+                        when "Bool"
+                          <<~GUIDANCE
+
+                            This is a Boolean type.
+                            Return true for positive, affirmative, or 'yes-like' values
+                            (like "yes", "true", "yep", "ok", "sure", etc.) and false for negative, dismissive,
+                            or 'no-like' values (like null, false, or strings like "no", "nope", "nah", "never", etc.).
+                          GUIDANCE
+                        when "Int"
+                          <<~GUIDANCE
+
+                            This is an Integer type. Convert textual numbers to their numeric equivalents.
+                            For example: "one" → 1, "twenty-three" → 23, etc.
+                          GUIDANCE
+                        when "Str"
+                          <<~GUIDANCE
+
+                            For numbers, you might use written-out forms (like "3.14" → "π", "1" → "one").
+                          GUIDANCE
+                        when "Nihil"
+                          <<~GUIDANCE
+                            This is a Nihil type, which represents the absence of value.
+                            For instance, you might return an empty string.
+                          GUIDANCE
+                        else
+                          ""
+                        end
+
         # Add context for union types
-        # if klass.respond_to?(:union_values)
-        #   possible_values = klass.union_values
-        #   base_prompt + <<~ADDITIONAL
+        if klass.respond_to?(:union_values)
+          possible_values = klass.union_values
+          type_guidance += <<~ADDITIONAL
 
-        #     This is a union type with these possible values:
-        #     #{possible_values.map { |v| "- '#{v}'" }.join("\n")}
+            This is a union type with these possible values:
+            #{possible_values.map { |v| "- '#{v}'" }.join("\n")}
 
-        #     Please select the most appropriate value from this list.
-        #   ADDITIONAL
-        # else
-        #   base_prompt
-        # end
+            Please select the most appropriate value from this list.
+          ADDITIONAL
+        end
+
+        # base_prompt + type_guidance + "\n"
+        [base_prompt, type_guidance].join("\n").strip
       end
 
       def builtin_inspect(obj)
@@ -339,9 +378,7 @@ module Aua
       def eval_union_type_lookup(type_name)
         # Look up a union type and convert it to a dynamic union class
         type_obj = @type_registry.lookup(type_name)
-        if type_obj.nil?
-          type_obj = @env[type_name]
-        end
+        type_obj = @env[type_name] if type_obj.nil?
 
         raise Error, "Type '#{type_name}' not found" unless type_obj
 
@@ -546,11 +583,13 @@ module Aua
       end
 
       def eval_dynamic_union_class(choices)
-        Aua.logger.info("vm:eval_dynamic_union_class") { "Creating dynamic union class with choices: #{choices.inspect}" }
-        
+        Aua.logger.info("vm:eval_dynamic_union_class") do
+          "Creating dynamic union class with choices: #{choices.inspect}"
+        end
+
         # Create a dynamic union class that can be used with the casting system
         # This creates a class that represents a union of the given choices
-        
+
         # For now, create a simple union-like Klass
         # In the future, this could use the existing TypeRegistry::Union
         union_class = Class.new(Klass) do
@@ -558,11 +597,11 @@ module Aua
             @choices = choices
             super("DynamicUnion")
           end
-          
+
           define_method :choices do
             @choices
           end
-          
+
           define_method :json_schema do
             {
               type: "object",
@@ -575,7 +614,7 @@ module Aua
               }
             }
           end
-          
+
           define_method :construct do |value|
             if @choices.include?(value)
               Str.new(value)
@@ -584,37 +623,36 @@ module Aua
               Str.new(@choices.first)
             end
           end
-          
+
           define_method :introspect do
-            "Union(#{@choices.join(' | ')})"
+            "Union(#{@choices.join(" | ")})"
           end
         end
-        
+
         union_class.new(choices)
       end
-
     end
 
     # Type representation classes for the translator
     class UnionType
       attr_reader :types
-      
+
       def initialize(types)
         @types = types
       end
-      
+
       def inspect
-        "UnionType(#{@types.map(&:inspect).join(' | ')})"
+        "UnionType(#{@types.map(&:inspect).join(" | ")})"
       end
     end
 
     class TypeReference
       attr_reader :name
-      
+
       def initialize(name)
         @name = name
       end
-      
+
       def inspect
         "TypeRef(#{@name})"
       end
@@ -622,11 +660,11 @@ module Aua
 
     class TypeConstant
       attr_reader :name
-      
+
       def initialize(name)
         @name = name
       end
-      
+
       def inspect
         "TypeConst(#{@name})"
       end

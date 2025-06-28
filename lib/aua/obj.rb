@@ -258,7 +258,12 @@ module Aua
     # def self.klass = @klass ||= Klass.new("Str", Klass.obj)
     # def klass = self.class.klass
     def name = "str"
-    def introspect = @value.inspect[1..80]&.concat(@value.length > 80 ? "..." : "") || ""
+
+    def introspect
+      str = @value.to_s
+      str.length > 80 ? "#{str[0..77]}..." : str
+    end
+
     def self.klass = @klass ||= Klass.new("Str", Klass.obj)
 
     attr_reader :value

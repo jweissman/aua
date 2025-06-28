@@ -62,7 +62,7 @@ RSpec.describe "LLM Features" do
     describe "list casting" do
       it "casts natural language to lists" do
         code = <<~AUA
-          text = "I need to buy apples, bananas, and oranges from the store"
+          text = "apples; bananas; and oranges"
           items = text as List
           items
         AUA

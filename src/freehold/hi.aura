@@ -1,5 +1,12 @@
 #!/usr/bin/env aura
 
+def fight_one(a, b)
+  a.ap += 2
+  action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
+  chosen_action = a.abilities[action_name]
+  perform(a, chosen_action, b)
+end
+
 say 'loading card database'
 cards = jsonl 'cards.db'
 say 'gathering two simulants from the multiverse'
@@ -8,3 +15,7 @@ red = cards.sample
 blue = cards.sample
 
 # simple combat loop
+while red.hp > 0 && blue.hp > 0
+  fight_one(red, blue)
+  fight_one(blue, red)
+end

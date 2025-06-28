@@ -247,7 +247,7 @@ module Aua
 
               # The ~ operator is like 'as' but specifically for union types
               # It converts the union type into a dynamic class for casting
-              
+
               # Unwrap rhs until we get a single value
               right = right.first while right.is_a?(Array) && right.size == 1
 
@@ -284,7 +284,7 @@ module Aua
               dynamic_class = Class.new(Klass) do
                 define_method :initialize do |choice_list|
                   @choices = choice_list
-                  @name = "Union(#{choice_list.join(' | ')})"
+                  @name = "Union(#{choice_list.join(" | ")})"
                 end
 
                 define_method :json_schema do
@@ -309,7 +309,7 @@ module Aua
                 end
 
                 define_method :introspect do
-                  "Union(#{@choices.join(' | ')})"
+                  "Union(#{@choices.join(" | ")})"
                 end
               end
 
@@ -497,11 +497,11 @@ module Aua
         def translate_type_constant(ast)
           # Type constant (like String, Int, etc.)
           # If it's a simple_str, extract the actual string value
-          if ast.value.is_a?(AST::Node) && ast.value.type == :simple_str
-            type_name = ast.value.value
-          else
-            type_name = ast.value
-          end
+          type_name = if ast.value.is_a?(AST::Node) && ast.value.type == :simple_str
+                        ast.value.value
+                      else
+                        ast.value
+                      end
           [TypeConstant.new(type_name)]
         end
       end
