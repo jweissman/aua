@@ -1,6 +1,7 @@
 require_relative "vm/commands"
 require_relative "vm/types"
 require_relative "vm/translator"
+require_relative "type_classes"
 
 module Aua
   module Runtime
@@ -36,7 +37,10 @@ module Aua
         # Generic casting using LLM + JSON schema
         Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
 
-        Aua.logger.debug "Casting with schema: \\#{obj.introspect} (#{obj.class}) => \\#{klass.introspect} (#{klass.class})"
+        Aua.logger.debug(
+          "Casting with schema: \\#{obj.introspect} (#{obj.class}) => " \
+          "\\#{klass.introspect} (#{klass.class})"
+        )
 
         chat = Aua::LLM.chat
         ret = chat.with_json_guidance(schema_for(klass)) do
@@ -238,8 +242,7 @@ module Aua
         when :id, :let, :send, :member_access then evaluate_simple(stmt)
         when :type_declaration then eval_type_declaration(val[0], val[1])
         when :object_literal then eval_object_literal(val)
-        when :type_lookup then eval_type_lookup(val)
-        when :lookup_type then eval_type_lookup(val)
+        when :type_lookup, :lookup_type then eval_type_lookup(val)
         when :union_type_lookup then eval_union_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
@@ -277,7 +280,7 @@ module Aua
 
       # interpolate strings, collapse complex vals, etc.
       def resolve(obj)
-        Aua.logger.info("vm:resolve") { "Resolving object: #{obj.inspect}" }
+        Aua.logger.debug("vm:resolve") { "Resolving object: #{obj.inspect}" }
         return interpolated(obj) if obj.is_a?(Str)
 
         obj
@@ -553,89 +556,21 @@ module Aua
         result
       end
 
-      def eval_collapse(prompt_text, choices)
-        Aua.logger.info("vm:eval_collapse") { "Collapsing superposition: '#{prompt_text}' from #{choices.inspect}" }
-
-        # For now, simulate quantum collapse with simple text matching
-        # In practice, this would call out to an actual LLM service
-        prompt_lower = prompt_text.downcase
-
-        # Simple heuristics to collapse the superposition to the most appropriate choice
-        best_choice = choices.find do |choice|
-          choice_str = choice.is_a?(Str) ? choice.value : choice.to_s
-          prompt_lower.include?(choice_str.downcase)
-        end
-
-        # If no direct match, try partial matching
-        if best_choice.nil?
-          best_choice = choices.find do |choice|
-            choice_str = choice.is_a?(Str) ? choice.value : choice.to_s
-            choice_str.downcase.split(/[^a-z]/).any? { |word| prompt_lower.include?(word) }
-          end
-        end
-
-        # Fallback: collapse to first choice if no match found (random collapse)
-        best_choice ||= choices.first
-
-        # Convert to Aua::Str if needed
-        result = if best_choice.is_a?(Str)
-                   best_choice
-                 else
-                   Str.new(best_choice.to_s)
-                 end
-
-        Aua.logger.info("vm:eval_collapse") { "Collapsed to: #{result.value}" }
-        result
-      end
-
       def eval_dynamic_union_class(choices)
         Aua.logger.info("vm:eval_dynamic_union_class") do
           "Creating dynamic union class with choices: #{choices.inspect}"
         end
 
-        # Create a dynamic union class that can be used with the casting system
-        # This creates a class that represents a union of the given choices
-
-        # For now, create a simple union-like Klass
-        # In the future, this could use the existing TypeRegistry::Union
-        union_class = Class.new(Klass) do
-          define_method :initialize do |choices|
-            @choices = choices
-            super("DynamicUnion")
-          end
-
-          define_method :choices do
-            @choices
-          end
-
-          define_method :json_schema do
-            {
-              type: "object",
-              properties: {
-                value: {
-                  type: "string",
-                  enum: @choices,
-                  description: "Select one of the available choices based on the context"
-                }
-              }
-            }
-          end
-
-          define_method :construct do |value|
-            if @choices.include?(value)
-              Str.new(value)
-            else
-              # Fallback: pick the first choice
-              Str.new(@choices.first)
-            end
-          end
-
-          define_method :introspect do
-            "Union(#{@choices.join(" | ")})"
-          end
+        # Create type_constant variants for each choice
+        # We need to create AST::Node-like structures that the Union class expects
+        variants = choices.map do |choice|
+          # Create a type_constant variant with a proper value node
+          value_node = Struct.new(:value).new(choice)
+          Struct.new(:type, :value).new(:type_constant, value_node)
         end
 
-        union_class.new(choices)
+        # Use the existing Union class instead of metaprogramming
+        Union.new("DynamicUnion", variants, @type_registry)
       end
     end
   end

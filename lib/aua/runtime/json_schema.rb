@@ -37,7 +37,7 @@ module Aua
       # @return [Hash] JSON schema object
       def self.for_union_type(variants, _type_registry)
         # Extract string values like the original implementation
-        string_values = variants.map do |variant|
+        choices = variants.map do |variant|
           case variant.type
           when :type_constant
             variant.value.value
@@ -46,14 +46,16 @@ module Aua
           else
             raise Error, "Unsupported union variant: #{variant.type}"
           end
-        end.select { |v| v.is_a?(String) }
+        end
+
+        choices = choices.select { |v| v.is_a?(String) }
 
         {
           type: "object",
           properties: {
             value: {
               type: "string",
-              enum: string_values
+              enum: choices
             }
           }
         }

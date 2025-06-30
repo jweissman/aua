@@ -114,7 +114,7 @@ module Aua
           when :float then Float.new(node.value)
           when :bool then Bool.new(node.value)
           when :str, :simple_str
-            Aua.logger.info "Reifying string: #{node.inspect}"
+            Aua.logger.debug "Reifying string: #{node.inspect}"
             Str.new(node.value)
           else
             Aua.logger.warn "Unknown primary node type: #{node.type.inspect}"
@@ -170,7 +170,7 @@ module Aua
         end
 
         def translate_binop(node)
-          Aua.logger.info "Translating binop: #{node.inspect}"
+          Aua.logger.debug "Translating binop: #{node.inspect}"
           op, left_node, right_node = node.value
 
           # Special handling for member access - don't translate the right side
@@ -296,7 +296,7 @@ module Aua
                   # Type reference: resolve the type
                   type_name = right.value
                   type_def = Aua.vm.instance_variable_get(:@env)[type_name]
-                  if type_def && type_def.respond_to?(:choices)
+                  if type_def.respond_to?(:choices)
                     type_def.choices
                   else
                     [type_name] # Fallback if type not found
@@ -305,7 +305,7 @@ module Aua
                   # Legacy ID case
                   type_name = right.value.first
                   type_def = Aua.vm.instance_variable_get(:@env)[type_name]
-                  if type_def && type_def.respond_to?(:choices)
+                  if type_def.respond_to?(:choices)
                     type_def.choices
                   else
                     [type_name] # Fallback if type not found

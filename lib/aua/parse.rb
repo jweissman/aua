@@ -142,7 +142,7 @@ module Aua
 
     # Parses an expression
     def parse_expression
-      info "parse-expr | Current token: #{@current_token.type} (#{@current_token.value})"
+      Aua.logger.debug("parse-expr") { "Current token: #{@current_token.type} (#{@current_token.value})" }
 
       maybe_type_declaration = parse_type_declaration
       return maybe_type_declaration if maybe_type_declaration
@@ -303,15 +303,15 @@ module Aua
       save_token = @current_token
       save_buffer = @buffer.dup
       consume(:id)
-      info " - Consumed command ID: #{id_token.value}"
+      Aua.logger.debug " - Consumed command ID: #{id_token.value}"
       args = command_argument_enumerator.to_a
-      info " - Parsed arguments: #{args.inspect}"
+      Aua.logger.debug " - Parsed arguments: #{args.inspect}"
       if args.empty?
         @current_token = save_token
         @buffer = save_buffer
         return nil
       end
-      info " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}"
+      Aua.logger.debug " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}"
       s(:call, id_token.value, args)
     end
 

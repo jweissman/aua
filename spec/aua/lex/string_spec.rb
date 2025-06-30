@@ -7,6 +7,25 @@ RSpec.describe Aua::Lex do
     subject(:lexer) { described_class.new(input) }
     let(:tokens) { lexer.tokens.to_a }
 
+    context "strings with nonalphanumeric characters" do
+      let(:input) do
+        <<~AURA
+          name = "A.C. Slater"
+          say "Hello, ${name}!"
+          greeting = "Welcome to Bayside High, ${name}!"
+        AURA
+      end
+
+      it "lexes strings with nonalphanumeric characters correctly" do
+        token_map = tokens.map { |t| [t.type, t.value] }.to_a
+
+        expect(token_map).to include([:id, "name"])
+        expect(token_map).to include([:equals, "="])
+        expect(token_map).to include([:str_part, "A.C. Slater"])
+        expect(token_map).to include([:str_end, nil])
+      end
+    end
+
     context "multiple consecutive interpolated strings" do
       let(:input) do
         <<~AURA
@@ -62,7 +81,8 @@ RSpec.describe Aua::Lex do
                                  [:str_end, nil]
                                ])
 
-        # Line 3: profession = """Provide a short profession for a fantasy character, ${name}. Give your answer as one word only with no spaces"""
+        # Line 3: profession = """Provide a short profession for a fantasy character, ${name}.
+        # Give your answer as one word only with no spaces"""
         profession_part = "Provide a short profession for a fantasy character, "
         expect(lines[2]).to eq([
                                  [:id, "profession"],
