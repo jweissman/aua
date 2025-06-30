@@ -1,0 +1,18 @@
+type Character = { name: Str, hp: Int, attack: Int, defense: Int }
+type GameState = { player: Character, enemy: Character, turn: Int }
+
+player = { name: "Hero", hp: 100, attack: 20, defense: 5 }
+enemy = { name: "Orc", hp: 80, attack: 15, defense: 3 }
+
+state = { player: player, enemy: enemy, turn: 1 }
+
+# Simulate one turn of combat
+damage_to_enemy = state.player.attack - state.enemy.defense
+enemy_after_damage = {
+  name: state.enemy.name,
+  hp: state.enemy.hp - damage_to_enemy,
+  attack: state.enemy.attack,
+  defense: state.enemy.defense
+}
+
+enemy_after_damage.hp

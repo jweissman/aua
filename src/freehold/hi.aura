@@ -1,27 +1,47 @@
 #!/usr/bin/env aura
 
-def fight_one(a, b)
-  a.ap += 2
-  action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
-  chosen_action = a.abilities[action_name]
-  events = ecs.perform(a, chosen_action, b)
-  events.each do
-    a.hp -= it.damage_splashback if it.damage_splashback
-    a.hp += it.health_absorbed   if it.health_absorbed
-    b.hp -= it.damage_inflicted  if it.damage_inflicted
-    b.hp += it.health_restored   it it.health_restored
-  end
-end
+# TODO classical structure and udfs?
+# class ECS
+#   def perform(command, source, action, target)
+#   end
+# end
+# 
+# ecs = new ECS
+# 
+# def fight_one(a, b)
+#   a.ap += 2
+#   action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
+#   chosen_action = a.abilities[action_name]
+#   events = ecs.perform(chosen_action.block, a, action_name, b)
+#   events.each do
+#     a.hp -= it.damage_splashback if it.damage_splashback
+#     a.hp += it.health_absorbed   if it.health_absorbed
+#     b.hp -= it.damage_inflicted  if it.damage_inflicted
+#     b.hp += it.health_restored   it it.health_restored
+#   end
+# end
 
 say 'loading card database'
 cards = jsonl 'cards.db'
-say 'gathering two simulants from the multiverse'
 
+say 'gathering two simulants from the multiverse'
 red = cards.sample
 blue = cards.sample
 
 # simple combat loop
 while red.hp > 0 && blue.hp > 0
-  fight_one(red, blue)
-  fight_one(blue, red)
+  # fight_one(red, blue)
+  damage = red.attack - blue.defense
+  blue.hp -= damage
+  say "#{red.name} hit #{blue.name} for #{damage}"
+  # fight_one(blue, red)
+  damage = blue.attack - red.defense
+  red.hp -= damage
 end
+
+# fn draw
+#   say a.hp
+#   say b.hp
+# end
+# 
+# game(&update, &draw)
