@@ -147,6 +147,9 @@ module Aua
       maybe_type_declaration = parse_type_declaration
       return maybe_type_declaration if maybe_type_declaration
 
+      maybe_function_definition = parse_function_definition
+      return maybe_function_definition if maybe_function_definition
+
       maybe_assignment = parse_assignment
       return maybe_assignment if maybe_assignment
 
@@ -174,6 +177,58 @@ module Aua
 
       type_expr = parse_type_expression
       s(:type_declaration, type_name, type_expr)
+    end
+
+    # Parses a function definition: fun name(params) body end
+    def parse_function_definition
+      return unless @current_token.type == :keyword && @current_token.value == "fun"
+
+      consume(:keyword, "fun")
+      parse_failure("function name") unless @current_token.type == :id
+      function_name = @current_token.value
+      consume(:id)
+
+      # Parse parameter list
+      consume(:lparen)
+      parameters = []
+      unless @current_token.type == :rparen
+        loop do
+          parse_failure("parameter name") unless @current_token.type == :id
+          parameters << @current_token.value
+          consume(:id)
+          break unless @current_token.type == :comma
+
+          consume(:comma)
+        end
+      end
+      consume(:rparen)
+
+      # Parse function body (until 'end')
+      body_statements = []
+
+      # Skip any newlines after the parameter list
+      advance while @current_token.type == :eos
+
+      while @current_token.type != :keyword || @current_token.value != "end"
+        break if @current_token.type == :eof
+
+        # Skip newlines/whitespace within function body
+        if @current_token.type == :eos
+          advance
+          next
+        end
+
+        statement = parse_expression
+        body_statements << statement if statement
+
+        # Skip newlines after each statement
+        advance while @current_token.type == :eos
+      end
+
+      consume(:keyword, "end")
+
+      body = body_statements.size == 1 ? body_statements.first : s(:seq, body_statements.compact)
+      s(:function_definition, function_name, parameters, body)
     end
 
     def parse_type_expression

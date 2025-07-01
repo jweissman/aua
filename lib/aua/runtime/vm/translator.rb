@@ -22,6 +22,7 @@ module Aua
           when :seq then translate_sequence(ast)
           when :structured_str, :structured_gen_lit then translate_structured_str(ast)
           when :type_declaration then translate_type_declaration(ast)
+          when :function_definition then translate_function_definition(ast)
           when :object_literal then translate_object_literal(ast)
           when :array_literal then translate_array_literal(ast)
           when :union_type then translate_union_type(ast)
@@ -465,6 +466,27 @@ module Aua
           # Type constant (like String, Int, etc.)
           type_name = ast.value
           [Aua::Runtime::VM::Types::TypeConstant.new(type_name)]
+        end
+
+        def translate_function_definition(node)
+          # Function definition: fun name(params) body end
+          function_name, parameters, body = node.value
+
+          # Translate the body to VM statements
+          translated_body = translate(body)
+
+          # Create a function object that stores the parameters and translated body
+          function_obj = Statement.new(
+            type: :function_definition,
+            value: {
+              name: function_name,
+              parameters: parameters,
+              body: translated_body
+            }
+          )
+
+          # Store the function in the environment using assignment semantics
+          [Semantics.inst(:let, function_name, function_obj)]
         end
       end
     end

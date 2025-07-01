@@ -9,10 +9,35 @@ module Aua
     class VM
       extend Semantics
 
+      # Represents a call frame on the Aura call stack
+      class CallFrame
+        attr_reader :function_name, :parameters, :arguments, :local_env, :caller_env
+
+        def initialize(function_name, parameters, arguments, caller_env)
+          @function_name = function_name
+          @parameters = parameters
+          @arguments = arguments
+          @caller_env = caller_env
+          @local_env = caller_env.dup
+
+          # Bind parameters to arguments in local environment
+          parameters.zip(arguments) do |param, arg|
+            @local_env[param] = arg
+          end
+        end
+
+        def to_s
+          args_str = @arguments.map(&:inspect).join(", ")
+          "#{@function_name}(#{args_str})"
+        end
+      end
+
       def initialize(env = {})
         @env = env
         @tx = Translator.new(self)
         @type_registry = TypeRegistry.new
+        @call_stack = [] # Stack of CallFrame objects
+        @max_stack_depth = 1000 # Prevent stack overflow
       end
 
       def builtins
@@ -241,6 +266,7 @@ module Aua
         case stmt.type
         when :id, :let, :send, :member_access then evaluate_simple(stmt)
         when :type_declaration then eval_type_declaration(val[0], val[1])
+        when :function_definition then eval_function_definition(val)
         when :object_literal then eval_object_literal(val)
         when :type_lookup, :lookup_type then eval_type_lookup(val)
         when :union_type_lookup then eval_union_type_lookup(val)
@@ -331,8 +357,14 @@ module Aua
       end
 
       def eval_call(fn_name, args)
+        # First check if it's a user-defined function
+        if @env.key?(fn_name) && @env[fn_name].is_a?(Hash) && @env[fn_name][:type] == :user_function
+          return eval_user_function(@env[fn_name], args)
+        end
+
+        # Fall back to builtin functions
         fn = Aua.vm.builtins[fn_name.to_sym]
-        raise Error, "Unknown builtin: #{fn_name}" unless fn
+        raise Error, "Unknown function: #{fn_name}" unless fn
 
         evaluated_args = [*args].map { |a| evaluate_one(a) }
         ret = fn.call(*evaluated_args)
@@ -571,6 +603,85 @@ module Aua
 
         # Use the existing Union class instead of metaprogramming
         Union.new("DynamicUnion", variants, @type_registry)
+      end
+
+      def eval_function_definition(function_data)
+        # Function definition stores the function in the environment
+        function_name = function_data[:name]
+        parameters = function_data[:parameters]
+        body = function_data[:body]
+
+        # Create function object with a temporary closure
+        function_obj = {
+          type: :user_function,
+          name: function_name,
+          parameters: parameters,
+          body: body,
+          closure_env: nil # Will be set below
+        }
+
+        # Store the function in the current environment
+        @env[function_name] = function_obj
+
+        # Now create the closure environment as a snapshot that includes the function
+        # This allows recursive calls while preserving lexical scoping
+        function_obj[:closure_env] = @env.dup
+
+        # Return the function object
+        function_obj
+      end
+
+      def eval_user_function(function_obj, args)
+        # Extract function information
+        function_name = function_obj[:name]
+        parameters = function_obj[:parameters]
+        body = function_obj[:body]
+        closure_env = function_obj[:closure_env]
+
+        # Check argument count
+        if args.length != parameters.length
+          raise Error, "Function '#{function_name}' expects #{parameters.length} arguments, got #{args.length}"
+        end
+
+        # Check for stack overflow
+        if @call_stack.length >= @max_stack_depth
+          stack_trace = @call_stack.map(&:to_s).join(" -> ")
+          raise Error, "Stack overflow: maximum call depth (#{@max_stack_depth}) exceeded\nCall stack: #{stack_trace}"
+        end
+
+        # Evaluate arguments in current environment
+        evaluated_args = args.map { |arg| evaluate_one(arg) }
+
+        # Create and push new call frame
+        frame = CallFrame.new(function_name, parameters, evaluated_args, closure_env)
+        @call_stack.push(frame)
+
+        # Switch to frame's local environment
+        previous_env = @env
+        @env = frame.local_env
+
+        begin
+          # Execute function body
+          if body.is_a?(Array)
+            # Multiple statements - evaluate each and return the last result
+            result = nil
+            body.each { |stmt| result = evaluate_one(stmt) }
+          else
+            # Single statement
+            result = evaluate_one!(body)
+          end
+        rescue Error => e
+          # Enhance error with call stack information
+          stack_trace = @call_stack.map(&:to_s).reverse.join("\n  at ")
+          enhanced_message = "#{e.message}\nCall stack:\n  at #{stack_trace}"
+          raise Error, enhanced_message
+        ensure
+          # Always restore environment and pop call frame
+          @env = previous_env
+          @call_stack.pop
+        end
+
+        result
       end
     end
   end

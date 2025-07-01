@@ -137,26 +137,26 @@ RSpec.describe "Performance and Complexity Features", :performance do
   describe "complex feature composition" do
     it "combines multiple language features efficiently" do
       # Complex script combining:
-      # - Type declarations  
+      # - Type declarations
       # - Object literals
       # - Property access
       # - Block conditionals
       # - Function calls
       complex_script = <<~AURA
         type Status = 'active' | 'inactive' | 'pending'
-        
+
         user = {
           name: "Alice Johnson",
           age: 28,
           status: 'active'
         }
-        
+
         if user.status == 'active'
           greeting = "Hello Alice! You are 28 years old."
         else
           greeting = "User Alice is not active"
         end
-        
+
         inspect(greeting)
       AURA
 
@@ -178,7 +178,7 @@ RSpec.describe "Performance and Complexity Features", :performance do
 
         # Natural language description that needs semantic extraction
         description = "Our development team includes Alice (30, team lead), Bob, and Charlie. They're all actively working on the project."
-        
+
         # This tests the LLM's ability to extract structured data from natural language
         team = description as Team
         team.leader.name
@@ -272,11 +272,11 @@ RSpec.describe "Performance and Complexity Features", :performance do
         expect { Aua.run(test_case) }.not_to raise_error
       end
     end
-  end  # Helper method for creating test files that could graduate to Aura
+  end # Helper method for creating test files that could graduate to Aura
   def self.create_aura_example(name, code)
     example_dir = File.join(__dir__, "../../examples")
     FileUtils.mkdir_p(example_dir)
-    
+
     File.write(File.join(example_dir, "#{name}.aura"), code)
   end
 
