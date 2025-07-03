@@ -32,6 +32,8 @@ module Aua
         @cursor = Cursor.new(1, 1)
         @position = 0
         @chars = @text.chars.freeze
+
+        # warn "Document initialized with text of length #{@text.length}"
       end
 
       def current = @chars.fetch(@position, nil)

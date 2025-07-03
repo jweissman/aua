@@ -47,7 +47,7 @@ module Aua
         alias str_start str_end
 
         def method_missing(_method_name, *_args, **_kwargs, &)
-          warn "Warning: Unhandled structured string token #{parser.current_token.type} at #{parser.current_token.at}"
+          # warn "Warning: Unhandled structured string token #{parser.current_token.type} at #{parser.current_token.at}"
           raise Error, "Unterminated string literal #{parser.current_token.at}" if parser.current_token.type == :eof
 
           raise Error,
@@ -92,6 +92,7 @@ module Aua
 
     def peek_token
       @buffer[0] = next_token if @buffer[0].nil?
+      @buffer[0]
     end
 
     def consume(expected_type, exact_value = nil)
@@ -102,6 +103,8 @@ module Aua
       if exact_value && @current_token.value != exact_value
         raise Error, "Expected token value '#{exact_value}', but got '#{@current_token.value}'"
       end
+
+      # warn "CONSUME: #{@current_token.type} (#{@current_token.value}) at #{@current_token.at}"
 
       advance
     end
@@ -156,11 +159,15 @@ module Aua
       maybe_conditional = parse_conditional
       return maybe_conditional if maybe_conditional
 
-      maybe_command = parse_command
-      return maybe_command if maybe_command
-
       maybe_while = parse_while
       return maybe_while if maybe_while
+
+      # Try binary operations (including function calls) before commands
+      maybe_binop = parse_binop
+      return maybe_binop if maybe_binop
+
+      maybe_command = parse_command
+      return maybe_command if maybe_command
 
       parse_binop
     end
@@ -333,6 +340,9 @@ module Aua
     def command_argument_enumerator
       Enumerator.new do |yielder|
         while PRIMARY_NAMES.key?(@current_token.type)
+          Aua.logger.info "parse-command-arg" do
+            "Parsing command argument with current token: #{@current_token.type} (#{@current_token.value})"
+          end
           yielder << if @current_token.type == :str_part
                        parse_structured_str
                      else
@@ -350,17 +360,27 @@ module Aua
       end
     end
 
-    # Parses a command or function call: id arg1 arg2 ...
+    # Parses a command: id arg1, arg2, ...
     def parse_command
       return unless @current_token.type == :id
+
+      Aua.logger.info "parse-command" do
+        "> Parsing command with current token: #{@current_token.type} (#{@current_token.value})"
+      end
 
       id_token = @current_token
       save_token = @current_token
       save_buffer = @buffer.dup
       consume(:id)
-      Aua.logger.debug " - Consumed command ID: #{id_token.value}"
+      Aua.logger.info " - Consumed command ID: #{id_token.value}"
+      Aua.logger.info " - Current token after consume: #{@current_token.type} (#{@current_token.value})"
+
+      # Check for function call syntax: identifier followed by (
+      return parse_function_call(id_token) if @current_token.type == :lparen
+
+      # Try command syntax with comma-separated arguments
       args = command_argument_enumerator.to_a
-      Aua.logger.debug " - Parsed arguments: #{args.inspect}"
+      Aua.logger.info " - Parsed arguments: #{args.inspect}"
       if args.empty?
         @current_token = save_token
         @buffer = save_buffer
@@ -368,6 +388,55 @@ module Aua
       end
       Aua.logger.debug " - Call recognized with ID: #{id_token.value} and args: #{args.inspect}"
       s(:call, id_token.value, args)
+    end
+
+    def parse_function_argument = parse_expression
+
+    # Parses function calls: identifier(arg1, arg2, ...)
+    def parse_function_call(ident)
+      Aua.logger.info "parse-function-call" do
+        "Parsing function call with identifier: #{ident.value}, current token: #{@current_token.type} (#{@current_token.value})"
+      end
+
+      function_name = ident.value
+      # consume(:id)
+      consume(:lparen)
+
+      args = []
+      while @current_token.type != :rparen
+        # loop do
+        # Skip whitespace within argument list
+        advance while @current_token.type == :eos
+
+        Aua.logger.info "parse-function-call" do
+          "Parsing argument, current token: #{@current_token.type} (#{@current_token.value})"
+        end
+
+        args << parse_function_argument
+
+        Aua.logger.info "parse-function-call" do
+          "After parsing argument, current token: #{@current_token.type} (#{@current_token.value})"
+        end
+
+        # Skip whitespace after argument
+        advance while @current_token.type == :eos
+
+        Aua.logger.info "parse-function-call" do
+          "After skipping whitespace, current token: #{@current_token.type} (#{@current_token.value})"
+        end
+
+        break unless @current_token.type == :comma
+
+        consume(:comma)
+        # end
+      end
+
+      consume(:rparen)
+      the_call = s(:call, function_name, args)
+      Aua.logger.info "parse-function-call" do
+        "Parsed function call: #{the_call.inspect}, current token: #{@current_token.type} (#{@current_token.value})"
+      end
+      the_call
     end
 
     def parse_assignment
@@ -483,10 +552,17 @@ module Aua
     end
 
     def parse_binop(min_prec = 0)
+      Aua.logger.info("parse-binop") do
+        "Parsing binary operation with min_prec: #{min_prec}"
+      end
       left = parse_unary
       raise Error, "Unexpected end of input while parsing binary operation" if left.nil?
 
       left = consume_binary_op(left) while binary_op?(@current_token.type) && precedent?(@current_token.type, min_prec)
+
+      Aua.logger.info "parse-binop" do
+        "Parsed binary operation: #{@current_token.type} (#{@current_token.value}) with left operand: #{left.inspect}"
+      end
       left
     end
 
@@ -536,6 +612,20 @@ module Aua
       if @current_token.type == :prompt
         advance
         return parse_primary
+      end
+
+      # Check for function calls: identifier followed by (
+      peek = peek_token
+      Aua.logger.info "parse-primary" do
+        "Parsing primary expression with current token: #{@current_token.type} (#{@current_token.value}) / peek token: #{peek&.type} (#{peek&.value}) [peek nil? #{peek.nil?}]"
+      end
+      if @current_token.type == :id && peek&.type == :lparen
+        Aua.logger.info "parse-primary" do
+          "Detected function call pattern: #{@current_token.value}("
+        end
+        ident = @current_token
+        consume(:id)
+        return parse_function_call(ident)
       end
 
       return primitives.send "parse_#{PRIMARY_NAMES[@current_token.type]}" if PRIMARY_NAMES.key?(@current_token.type)
@@ -613,7 +703,7 @@ module Aua
         return false
       else
         # raise Error, "Expected ',' or '}' in record type, got #{@current_token.type}"
-        parse_failure("',' or '}' in record type")
+        parse_failure("Expected ',' or '}' in record type")
       end
 
       false
@@ -621,14 +711,13 @@ module Aua
 
     def parse_failure(expectation, at: @current_token.at)
       cursor = at # : Aua::Text::Cursor
-      # {expectation}, got #{@current_token.type}:
 
-      # {Text.indicate(@context.source_document.send(:text), cursor)}
-      raise Error,
-            "Expected #{expectation}, got #{@current_token.type} #{@current_token.at}:\n#{Text.indicate(
-              @context.source_document.send(:text),
-              cursor
-            ).join("\n")}\n"
+      source_text = @context.source_document.content
+      error_description = Text.indicate(source_text, cursor).join("\n")
+      warning = "#{expectation}, got #{@current_token.type} #{@current_token.at}:"
+      message = [warning, error_description].join("\n")
+      # warn "ERROR: #{message}" # \n\n[source]\n#{source_text}"
+      raise Error, message
     end
 
     def parse_while

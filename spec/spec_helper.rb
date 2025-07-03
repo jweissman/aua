@@ -23,10 +23,10 @@ RSpec.configure do |config|
 
     outlet =
       #   FileUtils.mkdir_p("log")
-      #   File.open("log/aura.log", "w")
-      # rescue StandardError => e
-      #   warn "Failed to open log file: #{e.message}"
-      Thread.current[:logger_outlet] ||= $stdout
+      File.open("log/aura.log", "w")
+    # rescue StandardError => e
+    #   warn "Failed to open log file: #{e.message}"
+    # Thread.current[:logger_outlet] ||= $stdout
 
     Aua.logger = Aua::Logger.default("spec", outlet:)
 

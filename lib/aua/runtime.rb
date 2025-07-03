@@ -25,9 +25,7 @@ module Aua
       attr_reader :env
 
       def initialize(env = {})
-        Aua.logger.debug "Initializing Aua interpreter with env: #{env.inspect}"
-        @env = env.merge(self.class.prelude_env)
-        # @ctx = ctx
+        @env = env.merge(self.class.prelude_env).compact
       end
 
       def lex(_ctx, code) = Lex.new(code).enum_for(:tokenize)

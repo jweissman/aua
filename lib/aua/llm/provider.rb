@@ -257,7 +257,7 @@ module Aua
 
         def generate
           key = Cache.simple_key([prompt, { model:, generation: }])
-          Aua.logger.debug "Generating key for prompt: '#{prompt}' => #{key[..8]}.."
+          # Aua.logger.debug "Generating key for prompt: '#{prompt}' => #{key[..8]}.."
           db.with_cache(key) { call }
         end
 

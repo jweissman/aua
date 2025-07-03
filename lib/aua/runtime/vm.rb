@@ -62,10 +62,10 @@ module Aua
         # Generic casting using LLM + JSON schema
         Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
 
-        Aua.logger.debug(
-          "Casting with schema: \\#{obj.introspect} (#{obj.class}) => " \
-          "\\#{klass.introspect} (#{klass.class})"
-        )
+        # Aua.logger.debug(
+        #   "Casting with schema: \\#{obj.introspect} (#{obj.class}) => " \
+        #   "\\#{klass.introspect} (#{klass.class})"
+        # )
 
         chat = Aua::LLM.chat
         ret = chat.with_json_guidance(schema_for(klass)) do
@@ -255,12 +255,14 @@ module Aua
         stmt = stmt.first while stmt.is_a?(Array) && stmt.size == 1
         return resolve(stmt) if stmt.is_a? Obj
 
-        raise Error, "Expected a Statement, got: #{stmt.inspect} (#{stmt.class})" unless stmt.is_a? Statement
+        raise Error, "Expected a Statement, got: #{stmt.inspect[...80]}... (#{stmt.class})" unless stmt.is_a? Statement
 
         evaluate_one!(stmt)
       end
 
       def evaluate_one!(stmt)
+        return stmt if stmt.is_a?(Aua::Obj)
+
         val = stmt.value
 
         case stmt.type

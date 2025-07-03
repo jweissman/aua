@@ -21,8 +21,14 @@
 #   end
 # end
 
-say 'loading card database'
-cards = jsonl 'cards.db'
+# say 'loading card database'
+# cards = jsonl 'cards.db'
+
+cards = [
+  { name: 'archon alpha, the noblissimus' },
+  { name: 'prince gulfregon, shield of ambria' },
+  { name: 'tharn kallix, terraqueous worldmage' }
+]
 
 say 'gathering two simulants from the multiverse'
 red = cards.sample

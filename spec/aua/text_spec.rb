@@ -105,12 +105,13 @@ RSpec.describe Aua::Text do
       end
 
       xit "handles newlines correctly" do
-        doc.advance(5) # advance to newline
-        expect(doc.current).to eq("\n")
-        expect(doc.cursor.line).to eq(1)
+        doc.advance(4) # advance to newline
+        expect(doc.current).to eq("o") # \n")
+        expect(doc.cursor.line).to eq(2)
         expect(doc.cursor.column).to eq(5)
         doc.advance(1) # advance past newline
-        expect(doc.cursor.line).to eq(2)
+        expect(doc.current).to eq("\n")
+        expect(doc.cursor.line).to eq(3)
         expect(doc.cursor.column).to eq(1)
       end
 
@@ -162,7 +163,7 @@ RSpec.describe Aua::Text do
     end
 
     describe "#indicate" do
-      xit "returns indication of current position" do
+      it "returns indication of current position" do
         doc.advance(7) # position at 'o' in 'world'
         result = doc.indicate
         expect(result).to be_an(Array)
@@ -175,7 +176,7 @@ RSpec.describe Aua::Text do
     let(:code) { "let x = 5\nlet y = 10" }
     let(:cursor) { Aua::Text::Cursor.new(5, 2) }
 
-    xit "creates indication with caret at specified position" do
+    it "creates indication with caret at specified position" do
       result = described_class.indicate(code, cursor)
       expect(result).to be_an(Array)
 
@@ -185,7 +186,7 @@ RSpec.describe Aua::Text do
       expect(indication).to include("    ^") # caret at column 5
     end
 
-    xit "handles single line code" do
+    it "handles single line code" do
       single_line = "let x = 5"
       cursor = Aua::Text::Cursor.new(7, 1)
       result = described_class.indicate(single_line, cursor)
@@ -195,7 +196,7 @@ RSpec.describe Aua::Text do
       expect(indication).to include("      ^") # caret at column 7
     end
 
-    xit "handles multi-line with specific line highlighting" do
+    it "handles multi-line with specific line highlighting" do
       multi_line = "line 1\nline 2\nline 3"
       cursor = Aua::Text::Cursor.new(3, 2)
       result = described_class.indicate(multi_line, cursor)

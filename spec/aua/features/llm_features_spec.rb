@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe "LLM Features" do
+RSpec.describe "LLM Features", :llm do
   describe "generative string literals", gen: true do
     it "evaluates a generative string literal and returns a string containing Rayleigh" do
       result = Aua.run('"""What is the name of the physical phenomena responsible for the sky being blue?"""')

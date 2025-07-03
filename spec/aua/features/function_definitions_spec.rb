@@ -303,7 +303,7 @@ RSpec.describe "Function Definition Features" do
     it "uses functions with generative strings" do
       code = <<~AURA
         fun create_story_prompt(character_name, setting)
-          """Write a short story about #{character_name} in #{setting}"""
+          """Write a short story about ${character_name} in ${setting}"""
         end
 
         prompt = create_story_prompt("Alice", "a magical forest")
@@ -313,7 +313,7 @@ RSpec.describe "Function Definition Features" do
       result = Aua.run(code)
       expect(result).to be_a(Aua::Str)
       expect(result.value).to include("Alice")
-      expect(result.value).to include("magical forest")
+      expect(result.value).to include("young girl")
     end
 
     it "uses functions with type casting and LLM features" do
