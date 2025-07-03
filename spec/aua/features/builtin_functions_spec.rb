@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Builtin Functions (E2E)" do
+RSpec.describe "Builtin Functions (E2E)", :llm do
   describe "cast function" do
     it "supports function call syntax with two arguments" do
       # Test basic cast function call with parentheses

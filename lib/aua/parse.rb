@@ -162,13 +162,11 @@ module Aua
       maybe_while = parse_while
       return maybe_while if maybe_while
 
-      # Try binary operations (including function calls) before commands
-      maybe_binop = parse_binop
-      return maybe_binop if maybe_binop
-
+      # Try commands first (for space-separated args like 'say "hi"')
       maybe_command = parse_command
       return maybe_command if maybe_command
 
+      # Fall back to binary operations (includes function calls in parentheses)
       parse_binop
     end
 
@@ -360,13 +358,16 @@ module Aua
       end
     end
 
-    # Parses a command: id arg1, arg2, ...
+    # Parses a command: id arg1, arg2, ... (space-separated, no parentheses)
     def parse_command
       return unless @current_token.type == :id
 
       Aua.logger.info "parse-command" do
         "> Parsing command with current token: #{@current_token.type} (#{@current_token.value})"
       end
+
+      # Don't handle function calls with parentheses - those are handled by parse_primary
+      return nil if peek_token&.type == :lparen
 
       id_token = @current_token
       save_token = @current_token
@@ -375,10 +376,7 @@ module Aua
       Aua.logger.info " - Consumed command ID: #{id_token.value}"
       Aua.logger.info " - Current token after consume: #{@current_token.type} (#{@current_token.value})"
 
-      # Check for function call syntax: identifier followed by (
-      return parse_function_call(id_token) if @current_token.type == :lparen
-
-      # Try command syntax with comma-separated arguments
+      # Try command syntax with comma-separated arguments (no parentheses)
       args = command_argument_enumerator.to_a
       Aua.logger.info " - Parsed arguments: #{args.inspect}"
       if args.empty?
