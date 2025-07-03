@@ -227,7 +227,7 @@ module Aua
               # Unwrap rhs until we get a single value
               right = right.first while right.is_a?(Array) && right.size == 1
 
-              Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
+              # Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
 
               klass = resolve_cast_target(right)
               CAST[left, klass]
