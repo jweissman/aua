@@ -28,9 +28,15 @@ module Aua
           when :union_type then translate_union_type(ast)
           when :type_reference then translate_type_reference(ast)
           when :type_constant then translate_type_constant(ast)
+          when :unit then translate_tuple(ast)
+          when :tuple then translate_tuple(ast)
           else
             raise Error, "Unknown AST node type: \\#{ast.type}"
           end
+        end
+
+        def translate_tuple(node)
+          [CONS[node.value&.map { |elem| translate(elem) }]]
         end
 
         # Join all parts, recursively translating expressions
@@ -225,11 +231,26 @@ module Aua
             def handle_lambda(left, right)
               Aua.logger.info "Handling lambda: #{left.inspect} => #{right.inspect}"
 
-              args = left
+              # Handle different parameter patterns
+              args = case left
+                     when ->(node) { node.respond_to?(:type) && node.type == :unit }
+                       # Empty parameter list: () => expr
+                       []
+                     when ->(node) { node.respond_to?(:type) && node.type == :id }
+                       # Single parameter: x => expr
+                       [left]
+                     when ->(node) { node.respond_to?(:type) && node.type == :tuple }
+                       # Multiple parameters: (x, y, z) => expr
+                       left.value
+                     else
+                       # Default case
+                       left
+                     end
+
               body = right
 
               # lhs is the arg list, rhs is the body
-              LAMBDA[ args, body ]
+              LAMBDA[args, body]
             end
 
             def handle_type_cast(left, right)

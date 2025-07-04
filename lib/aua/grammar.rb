@@ -98,16 +98,46 @@ module Aua
 
       def parse_parens
         @parse.consume(:lparen)
-        expr = @parse.send :parse_expression
-        begin
+
+        # Handle empty parentheses () - could be lambda params or empty tuple
+        if @parse.current_token.type == :rparen
           @parse.consume(:rparen)
-        rescue Aua::Error
-          @parse.send :parse_failure, "Unmatched opening parenthesis"
-          # raise Error,
-          #       "Unmatched opening parenthesis #{@parse.current_token.at}\n#{
-          #         Text.indicate(@parse.context.source_document, @parse.current_token.at).join("\n")}"
+          return @parse.s(:unit)
         end
-        expr
+
+        # Try to parse as a potential parameter list first
+        # Look for pattern: (id, id, ...) which could be lambda parameters
+        first_expr = @parse.send :parse_expression
+
+        # Check if we have a comma - if so, this is a parameter list
+        if @parse.current_token.type == :comma
+          # This is a comma-separated list, parse as tuple
+          elements = [first_expr]
+
+          while @parse.current_token.type == :comma
+            @parse.consume(:comma)
+            # Skip whitespace if needed
+            @parse.advance while @parse.current_token.type == :eos
+            elements << @parse.send(:parse_expression)
+          end
+
+          begin
+            @parse.consume(:rparen)
+          rescue Aua::Error
+            @parse.send :parse_failure, "Unmatched opening parenthesis"
+          end
+
+          # Return a tuple node
+          @parse.s(:tuple, elements)
+        else
+          # Single expression in parentheses
+          begin
+            @parse.consume(:rparen)
+          rescue Aua::Error
+            @parse.send :parse_failure, "Unmatched opening parenthesis"
+          end
+          first_expr
+        end
       end
 
       def parse_generative_lit

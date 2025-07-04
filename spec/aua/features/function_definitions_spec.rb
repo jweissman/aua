@@ -199,6 +199,62 @@ RSpec.describe "Function Definition Features" do
       expect(result).to be_a(Aua::Int)
       expect(result.value).to eq(15)
     end
+
+    it "returns nullary functions from functions" do
+      code = <<~AURA
+        fun make_nullary_function()
+          # lambda { "Hello, World!" }
+          () => "Hello, World!"
+        end
+
+        greet = make_nullary_function()
+        greet()
+      AURA
+
+      result = Aua.run(code)
+      expect(result).to be_a(Aua::Str)
+      expect(result.value).to eq("Hello, World!")
+    end
+
+    it "returns higher-arity functions from functions" do
+      code = <<~AURA
+        fun add_then_multiply(x)
+          # lambda { |y, z| (x + y) * z }
+          (y, z) => (x + y) * z
+        end
+
+        add_and_multiply = add_then_multiply(2)
+        add_and_multiply(3, 4)
+      AURA
+
+      result = Aua.run(code)
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(20) # (2 + 3) * 4 = 20
+    end
+
+    it "supports function composition" do
+      code = <<~AURA
+        fun compose(f, g)
+          # lambda { |x| f(g(x)) }
+          x => f(g(x))
+        end
+
+        fun increment(x)
+          x + 1
+        end
+
+        fun double(x)
+          x * 2
+        end
+
+        composed_function = compose(double, increment)
+        composed_function(3)
+      AURA
+
+      result = Aua.run(code)
+      expect(result).to be_a(Aua::Int)
+      expect(result.value).to eq(8) # (3 + 1) * 2 = 8
+    end
   end
 
   describe "game simulation functions" do

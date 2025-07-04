@@ -612,6 +612,15 @@ module Aua
         return parse_primary
       end
 
+      # Check for lambda patterns before other parsing
+      # Pattern 1: () => expr (empty parameter list)
+      if @current_token.type == :lparen && peek_token&.type == :rparen
+        # This could be either empty lambda params or empty parens
+        # We'll parse it as empty parens for now and handle lambda in binary op
+        # Actually, let's just handle it as lambda params if we're in a lambda context
+        # For now, let's comment this out and handle it differently
+      end
+
       # Check for function calls: identifier followed by (
       peek = peek_token
       Aua.logger.info "parse-primary" do
@@ -745,6 +754,47 @@ module Aua
       type_expr = parse_type_expression
       consume(:rparen)
       type_expr
+    end
+
+    def parse_lambda_parameters
+      # Handle empty parameter list: ()
+      if @current_token.type == :lparen && peek_token&.type == :rparen
+        consume(:lparen)
+        consume(:rparen)
+        return s(:lambda_params, [])
+      end
+
+      # Handle single parameter without parentheses: x
+      if @current_token.type == :id && peek_token&.type == :lambda
+        param = @current_token.value
+        consume(:id)
+        return s(:lambda_params, [s(:id, param)])
+      end
+
+      # Handle parenthesized parameter list: (x, y, z)
+      if @current_token.type == :lparen
+        consume(:lparen)
+        params = []
+
+        # Parse parameters separated by commas
+        while @current_token.type == :id
+          params << s(:id, @current_token.value)
+          consume(:id)
+
+          if @current_token.type == :comma
+            consume(:comma)
+          elsif @current_token.type == :rparen
+            break
+          else
+            parse_failure("Expected ',' or ')' in lambda parameter list")
+          end
+        end
+
+        consume(:rparen)
+        return s(:lambda_params, params)
+      end
+
+      parse_failure("Expected lambda parameters")
     end
   end
 end

@@ -38,11 +38,11 @@ blue = cards.sample
 while red.hp > 0 && blue.hp > 0
   # fight_one(red, blue)
   damage = red.attack - blue.defense
-  blue.hp -= damage
+  blue.hp = blue.hp - damage
   say "#{red.name} hit #{blue.name} for #{damage}"
   # fight_one(blue, red)
   damage = blue.attack - red.defense
-  red.hp -= damage
+  red.hp = red.hp - damage
 end
 
 # fn draw

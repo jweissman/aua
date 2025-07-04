@@ -630,46 +630,66 @@ module Aua
       end
 
       def eval_defun(val)
-        Aua.logger.info("vm:eval_defun") { "Defining function with value: #{val.inspect}" }
-        # val is a hash with :args and :body keys
-        # args should be an array of parameter names
-        # body should be an array of statements
-
-        # args = val[:args]
-        # body = val[:body]
+        Aua.logger.info("vm:eval_defun") { "Defining function with val: #{val.inspect}" }
         args, body = val
+        Aua.logger.info("vm:eval_defun") { "args: #{args.inspect}, body: #{body.inspect}" }
 
         # Extract parameter names from the args
-        parameters = args.map do |arg|
-          Aua.logger.info("vm:eval_defun") { "Processing arg: #{arg.inspect} (#{arg.class})" }
-          if arg.is_a?(Array) && arg.first == "ID"
-            param_name = arg.last.first
-            Aua.logger.info("vm:eval_defun") { "Extracted param name: #{param_name}" }
-            param_name
-          elsif arg.respond_to?(:type) && arg.type == :id && arg.respond_to?(:value)
-            param_name = arg.value.first
-            Aua.logger.info("vm:eval_defun") { "Extracted param name from Statement: #{param_name}" }
-            param_name
-          elsif arg.respond_to?(:value) && arg.value.is_a?(Array) && arg.value.first == "ID"
-            param_name = arg.value.last.first
-            Aua.logger.info("vm:eval_defun") { "Extracted param name from Statement: #{param_name}" }
-            param_name
-          else
-            param_name = arg.to_s
-            Aua.logger.info("vm:eval_defun") { "Using to_s: #{param_name}" }
-            param_name
-          end
-        end
+        parameters = case args
+                     when Array
+                       if args.length == 1 && args.first.is_a?(Aua::Runtime::Statement) && args.first.type == :cons
+                         # This is a CONS [param1, param2, ...] - extract parameters from the CONS value
+                         Aua.logger.info("vm:eval_defun") do
+                           "Found CONS statement with parameters, extracting from value"
+                         end
+                         cons_statement = args.first
+                         param_nodes = cons_statement.value # Array of parameter nodes
+                         param_nodes.map { |node| extract_parameter_name(node) }
+                       else
+                         # Regular array of parameter declarations
+                         args.map { |arg| extract_parameter_name(arg) }
+                       end
+                     else
+                       # Single parameter
+                       [extract_parameter_name(args)]
+                     end
 
-        # Create a Function object
-        # We use a generated name for anonymous functions
+        Aua.logger.info("vm:eval_defun") { "Extracted parameters: #{parameters.inspect}" }
+
+        # Create a Function object with a generated name for anonymous functions
         function_name = "lambda_#{object_id}_#{rand(1000)}"
 
         # Create the function object with current environment as closure
-        new_fn = Aua::Function.new(name: function_name, parameters:, body:)
+        Aua::Function.new(name: function_name, parameters: parameters, body: body)
+                     .enclose(@env)
+      end
 
-        new_fn.enclose(@env)
-        new_fn
+      def extract_parameter_name(arg)
+        Aua.logger.info("vm:extract_param") { "Extracting param name from: #{arg.inspect} (#{arg.class})" }
+        arg = arg.first if arg.is_a?(Array) && arg.length == 1
+        result = case arg
+                 when Array
+                   Aua.logger.info("vm:extract_param") { "Array first: #{arg.first.inspect} (#{arg.first.class})" }
+                   if (["ID", :ID].include?(arg.first) || arg.first.to_s == "ID") && arg.last.is_a?(Array)
+                     param_name = arg.last.first # Extract the parameter name
+                     Aua.logger.info("vm:extract_param") { "Found ID array, extracted: #{param_name}" }
+                     param_name
+                   else
+                     fallback = arg.to_s
+                     Aua.logger.info("vm:extract_param") { "Array fallback: #{fallback}" }
+                     fallback
+                   end
+                 when ->(a) { a.respond_to?(:type) && a.type == :id && a.respond_to?(:value) }
+                   param_name = arg.value.first
+                   Aua.logger.info("vm:extract_param") { "Found Statement, extracted: #{param_name}" }
+                   param_name
+                 else
+                   fallback = arg.to_s
+                   Aua.logger.info("vm:extract_param") { "Default fallback: #{fallback}" }
+                   fallback
+                 end
+        Aua.logger.info("vm:extract_param") { "Final result: #{result}" }
+        result
       end
 
       def eval_user_function(function_obj, args)

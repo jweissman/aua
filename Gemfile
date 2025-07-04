@@ -24,3 +24,5 @@ gem "ostruct", "~> 0.6.1"
 gem "pbt", "~> 0.5.0"
 
 gem "gosu", "~> 1.4"
+
+gem "ruby-lsp-rspec", "~> 0.1.25", group: :development
