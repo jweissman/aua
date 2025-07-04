@@ -269,6 +269,7 @@ module Aua
         when :id, :let, :send, :member_access then evaluate_simple(stmt)
         when :type_declaration then eval_type_declaration(val[0], val[1])
         when :function_definition then eval_function_definition(val)
+        when :defun then eval_defun(val)
         when :object_literal then eval_object_literal(val)
         when :type_lookup, :lookup_type then eval_type_lookup(val)
         when :union_type_lookup then eval_union_type_lookup(val)
@@ -359,7 +360,10 @@ module Aua
       end
 
       def eval_call(fn_name, args)
-        # First check if it's a user-defined function
+        # First check if it's a user-defined function (Function object)
+        return eval_user_function(@env[fn_name], args) if @env.key?(fn_name) && @env[fn_name].is_a?(Aua::Function)
+
+        # Check for legacy hash-based functions (for backward compatibility)
         if @env.key?(fn_name) && @env[fn_name].is_a?(Hash) && @env[fn_name][:type] == :user_function
           return eval_user_function(@env[fn_name], args)
         end
@@ -613,32 +617,73 @@ module Aua
         parameters = function_data[:parameters]
         body = function_data[:body]
 
-        # Create function object with a temporary closure
-        function_obj = {
-          type: :user_function,
-          name: function_name,
-          parameters: parameters,
-          body: body,
-          closure_env: nil # Will be set below
-        }
+        # Create Function object
+        function_obj = Aua::Function.new(name: function_name, parameters:, body:)
 
         # Store the function in the current environment
         @env[function_name] = function_obj
 
-        # Now create the closure environment as a snapshot that includes the function
-        # This allows recursive calls while preserving lexical scoping
-        function_obj[:closure_env] = @env.dup
+        function_obj.enclose(@env)
 
         # Return the function object
         function_obj
       end
 
+      def eval_defun(val)
+        Aua.logger.info("vm:eval_defun") { "Defining function with value: #{val.inspect}" }
+        # val is a hash with :args and :body keys
+        # args should be an array of parameter names
+        # body should be an array of statements
+
+        # args = val[:args]
+        # body = val[:body]
+        args, body = val
+
+        # Extract parameter names from the args
+        parameters = args.map do |arg|
+          Aua.logger.info("vm:eval_defun") { "Processing arg: #{arg.inspect} (#{arg.class})" }
+          if arg.is_a?(Array) && arg.first == "ID"
+            param_name = arg.last.first
+            Aua.logger.info("vm:eval_defun") { "Extracted param name: #{param_name}" }
+            param_name
+          elsif arg.respond_to?(:type) && arg.type == :id && arg.respond_to?(:value)
+            param_name = arg.value.first
+            Aua.logger.info("vm:eval_defun") { "Extracted param name from Statement: #{param_name}" }
+            param_name
+          elsif arg.respond_to?(:value) && arg.value.is_a?(Array) && arg.value.first == "ID"
+            param_name = arg.value.last.first
+            Aua.logger.info("vm:eval_defun") { "Extracted param name from Statement: #{param_name}" }
+            param_name
+          else
+            param_name = arg.to_s
+            Aua.logger.info("vm:eval_defun") { "Using to_s: #{param_name}" }
+            param_name
+          end
+        end
+
+        # Create a Function object
+        # We use a generated name for anonymous functions
+        function_name = "lambda_#{object_id}_#{rand(1000)}"
+
+        # Create the function object with current environment as closure
+        new_fn = Aua::Function.new(name: function_name, parameters:, body:)
+
+        new_fn.enclose(@env)
+        new_fn
+      end
+
       def eval_user_function(function_obj, args)
-        # Extract function information
-        function_name = function_obj[:name]
-        parameters = function_obj[:parameters]
-        body = function_obj[:body]
-        closure_env = function_obj[:closure_env]
+        return unless function_obj.is_a?(Aua::Function)
+
+        eval_function_object(function_obj, args)
+      end
+
+      def eval_function_object(function_obj, args)
+        # Extract function information from Function object
+        function_name = function_obj.name
+        parameters = function_obj.parameters
+        body = function_obj.body
+        closure_env = function_obj.closure_env
 
         # Check argument count
         if args.length != parameters.length
@@ -664,26 +709,13 @@ module Aua
 
         begin
           # Execute function body
-          if body.is_a?(Array)
-            # Multiple statements - evaluate each and return the last result
-            result = nil
-            body.each { |stmt| result = evaluate_one(stmt) }
-          else
-            # Single statement
-            result = evaluate_one!(body)
-          end
-        rescue Error => e
-          # Enhance error with call stack information
-          stack_trace = @call_stack.map(&:to_s).reverse.join("\n  at ")
-          enhanced_message = "#{e.message}\nCall stack:\n  at #{stack_trace}"
-          raise Error, enhanced_message
+          result = eval_branch(body)
+          result
         ensure
-          # Always restore environment and pop call frame
+          # Restore previous environment and pop call frame
           @env = previous_env
           @call_stack.pop
         end
-
-        result
       end
     end
   end

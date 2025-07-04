@@ -160,6 +160,8 @@ module Aua
       def gt: (String) -> token?
       def lte: (String) -> token?
       def gte: (String) -> token?
+      def tilde: (String) -> token?
+      def neq: (String) -> token?
 
       def interpolation_end: (String) -> token?
       def eos: (String) -> token?
@@ -431,7 +433,11 @@ module Aua
   type aura_meth = ^(*untyped) [self: self] -> Aua::Obj
   Methods: Registry::Store[aura_meth]
 
-  class Obj
+  class Base
+    def initialize: () -> void
+  end
+
+  class Obj < Base
     @method_store: Hash[Symbol, aura_meth]
 
     def klass: () -> Klass
@@ -440,13 +446,14 @@ module Aua
     def aura_methods: () -> Hash[Symbol, aura_meth]
     def self.aura_methods: () -> Hash[Symbol, aura_meth]
     def self.aura_method: (Symbol) -> aura_meth
-    # Proc
     def self.define_aura_method: (Symbol) { (*untyped) [self: self] -> Aua::Obj } -> void
 
     def aura_respond_to?: (Symbol) -> bool
     def aura_send: (Symbol, *untyped) -> untyped
     def json_schema: () -> untyped
     def self.klass: () -> Klass
+
+    def self.describe: (String) -> untyped
   end
 
   class Klass < Obj
@@ -561,9 +568,23 @@ module Aua
     def name: () -> String
   end
 
-  class Base
-    def initialize: () -> void
+  class Function < Obj
+    attr_reader name: String
+    attr_reader parameters: Array[String]
+    attr_reader body: untyped
+    attr_reader closure_env: Hash[String, untyped]
+    def initialize: (name: String, parameters: Array[String], body: untyped, closure_env: Hash[String, untyped]) -> void
+    def klass: () -> Klass
+    def introspect: () -> String
+    def pretty: () -> String
+    def callable_with?: (Integer) -> bool
+    def call: (untyped, Array[untyped]) -> untyped
+    def json_schema: () -> Hash[untyped, untyped]
+    def to_callable: () -> Hash[Symbol, untyped]
+    def self.klass: () -> Klass
+    def self.json_schema: () -> Hash[untyped, untyped]
   end
+
 
   module Runtime
     class Statement
@@ -657,6 +678,20 @@ module Aua
     type statement = Array[Statement] | Statement | Array[primary] | primary
 
     class VM
+      class CallFrame
+        def initialize: (String, untyped parameters, untyped evaluated_args, untyped closure_env) -> void
+        def local_env: () -> environment
+      end
+      module Types
+        class UnionType
+        end
+
+        class TypeReference
+        end
+
+        class TypeConstant
+        end
+      end
       module Commands
         LET: untyped
         RECALL: untyped
@@ -730,27 +765,29 @@ module Aua
       def evaluate_one: (Statement) -> Aua::Obj
       def evaluate_one!: (Statement) -> Aua::Obj
       def evaluate_simple: (Statement) -> Aua::Obj
-      def eval_cat: (Array[untyped]) -> untyped
-      def eval_send: (String | Symbol receiver, Symbol method, *untyped args) -> untyped
-      def eval_gen: (Array[untyped]) -> untyped
+
       def eval_call: (String | Symbol, Array[untyped]) -> untyped
-      def eval_id: (untyped) -> untyped
-      def eval_let: (String, Aua::Obj) -> Aua::Obj
-      def eval_if: (untyped, untyped, untyped?) -> untyped
-      def interpolated: (Aua::Obj) -> Aua::Obj
-      def resolve: (Aua::Obj) -> Aua::Obj
-      def reduce: (AST::Node) -> statement
+      def eval_cat: (Array[untyped]) -> untyped
       def eval_cons: (Array[untyped]) -> Aua::List
+      def eval_gen: (Array[untyped]) -> untyped
+      def eval_id: (untyped) -> untyped
+      def eval_if: (untyped, untyped, untyped?) -> untyped
+      def eval_let: (String, Aua::Obj) -> Aua::Obj
+      def eval_member_access: (Array[untyped], String) -> untyped
+      def eval_object_literal: (Array[untyped]) -> Aua::ObjectLiteral
+      def eval_send: (String | Symbol receiver, Symbol method, *untyped args) -> untyped
       def eval_type_declaration: (String, untyped) -> untyped
       def eval_type_lookup: (String) -> untyped
-      def eval_object_literal: (Array[untyped]) -> Aua::ObjectLiteral
-      def eval_member_access: (Array[untyped], String) -> untyped
-      def builtin_cast: (Aua::Obj, Klass) -> Aua::Obj?
+      def eval_user_function: (String, Array[untyped]) -> untyped
+
+      def interpolated: (Aua::Obj) -> Aua::Obj
+      def reduce: (AST::Node) -> statement
+      def resolve: (Aua::Obj) -> Aua::Obj
       def schema_for: (Klass) -> untyped
       def build_cast_prompt: (Aua::Obj, Klass) -> String
-
       def to_ruby_str: (untyped) -> String
 
+      def builtin_cast: (Aua::Obj, Klass) -> Aua::Obj?
       def builtin_inspect: (Aua::Obj) -> Aua::Str
       def builtin_rand: (Aua::Obj) -> Aua::Int
       def builtin_time: (Aua::Str) -> Aua::Time

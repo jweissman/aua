@@ -166,7 +166,7 @@ RSpec.describe "Function Definition Features" do
   end
 
   describe "higher-order functions" do
-    it "passes functions as arguments", skip: "requires first-class function support" do
+    it "passes functions as arguments" do
       code = <<~AURA
         fun apply_twice(func, value)
           func(func(value))
@@ -184,12 +184,11 @@ RSpec.describe "Function Definition Features" do
       expect(result.value).to eq(12)
     end
 
-    it "returns functions from functions", skip: "requires first-class function support" do
+    it "returns functions from functions" do
       code = <<~AURA
         fun make_adder(increment)
-          def(x)
-            x + increment
-          end
+          # lambda { |x| x + increment }
+          x => x + increment
         end
 
         add_five = make_adder(5)

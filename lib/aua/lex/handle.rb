@@ -285,6 +285,11 @@ module Aua
         t(:or)
       end
 
+      def fat_arrow(_)
+        2.times { advance }
+        t(:lambda)
+      end
+
       def unexpected(_char) = raise(Error, Handle.unexpected_character_message(lens))
 
       def self.unexpected_character_message(the_lens)

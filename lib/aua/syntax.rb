@@ -41,8 +41,10 @@ module Aua
       "~" => :tilde
     }.freeze
 
-    TWO_CHAR_TOKEN_NAMES = { "**" => :pow, "==" => :eq, "!=" => :neq, ">=" => :gte, "<=" => :lte, "&&" => :and,
-                             "||" => :or }.freeze
+    TWO_CHAR_TOKEN_NAMES = {
+      "**" => :pow, "==" => :eq, "!=" => :neq, ">=" => :gte, "<=" => :lte, "&&" => :and,
+      "||" => :or, "->" => :arrow, "=>" => :fat_arrow
+    }.freeze
     THREE_CHAR_TOKEN_NAMES = { "\"\"\"" => :prompt }.freeze
     KEYWORDS = Set.new(%i[if then else elif as type while end fun]).freeze
   end

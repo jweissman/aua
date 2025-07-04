@@ -43,6 +43,10 @@ module Aua
         LOOKUP_TYPE = lambda do |type_name|
           Semantics.inst(:lookup_type, type_name)
         end
+
+        LAMBDA = lambda do |args, body|
+          Semantics.inst(:defun, args, body)
+        end
       end
     end
   end

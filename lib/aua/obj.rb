@@ -379,4 +379,101 @@ module Aua
       @klass ||= Klass.new("Object", Klass.obj)
     end
   end
+
+  # Model for user-defined functions (first-class functions with closures)
+  class Function < Obj
+    attr_reader :name, :parameters, :body, :closure_env
+
+    def initialize(name:, parameters:, body:) # , closure_env:)
+      super()
+      @name = name
+      @parameters = parameters
+      @body = body
+      @closure_env = nil # closure_env
+    end
+
+    def enclose(env)
+      @closure_env = env.dup.freeze
+      self
+    end
+
+    def klass
+      @klass ||= Klass.new("Function", Klass.obj)
+    end
+
+    def introspect
+      param_str = @parameters.map { |p| p.is_a?(Symbol) ? p.to_s : p.inspect }.join(", ")
+      "fun #{@name}(#{param_str})"
+    end
+
+    def pretty
+      introspect
+    end
+
+    # Check if this function can be called with the given number of arguments
+    def callable_with?(arg_count)
+      @parameters.length == arg_count
+    end
+
+    # For first-class function support, we need to make functions callable
+    # This will be used by the VM when a function is called as a value
+    def call(vm, arguments)
+      vm.eval_user_function(self, arguments)
+    end
+
+    def json_schema
+      {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Name of the function" },
+          parameters: {
+            type: "array",
+            items: { type: "string" },
+            description: "Parameter names for the function"
+          },
+          body: {
+            type: "string",
+            description: "Valid Aura code for the function body"
+          }
+        },
+        required: %w[name parameters body],
+        description: "A user-defined function with parameters and body"
+      }
+    end
+
+    # Convert this Function object to the hash format expected by VM
+    def to_callable
+      {
+        type: :user_function,
+        name: @name,
+        parameters: @parameters,
+        body: @body,
+        closure_env: @closure_env
+      }
+    end
+
+    def self.json_schema
+      {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Name of the function" },
+          parameters: {
+            type: "array",
+            items: { type: "string" },
+            description: "Parameter names for the function"
+          },
+          body: {
+            type: "string",
+            description: "Valid Aura code for the function body"
+          }
+        },
+        required: %w[name parameters body],
+        description: "A user-defined function with parameters and body"
+      }
+    end
+
+    def self.klass
+      @klass ||= Klass.new("Function", Klass.obj)
+    end
+  end
 end

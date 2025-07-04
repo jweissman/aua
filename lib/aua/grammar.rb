@@ -21,15 +21,16 @@ module Aua
 
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
-      as: 0, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
-      tilde: 1, # enum selection has very low precedence, similar to assignment
-      or: 2, # logical OR has lowest precedence among operators
-      and: 3, # logical AND has higher precedence than OR
-      eq: 4, neq: 4, gt: 4, lt: 4, gte: 4, lte: 4, # comparison operators
-      plus: 5, minus: 5,
-      star: 6, slash: 6,
-      pow: 7,
-      dot: 8 # member access has high precedence
+      lambda: 0, # lambda has lowest precedence
+      as: 1, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
+      tilde: 2, # enum selection has very low precedence, similar to assignment
+      or: 3, # logical OR has lowest precedence among operators
+      and: 4, # logical AND has higher precedence than OR
+      eq: 5, neq: 5, gt: 5, lt: 5, gte: 5, lte: 5, # comparison operators
+      plus: 6, minus: 6,
+      star: 7, slash: 7,
+      pow: 8,
+      dot: 10 # member access has high precedence
     }.freeze
 
     def s(type, *values)

@@ -214,12 +214,23 @@ module Aua
               when :or then [SEND[left, :or, right]]
               when :as then handle_type_cast(left, right)
               when :tilde then handle_enum_selection(left, right)
+              when :lambda then handle_lambda(left, right)
               else
                 raise Error, "Unknown binary operator: #{operator}"
               end
             end
 
             private
+
+            def handle_lambda(left, right)
+              Aua.logger.info "Handling lambda: #{left.inspect} => #{right.inspect}"
+
+              args = left
+              body = right
+
+              # lhs is the arg list, rhs is the body
+              LAMBDA[ args, body ]
+            end
 
             def handle_type_cast(left, right)
               Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
