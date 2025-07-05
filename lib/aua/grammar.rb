@@ -21,15 +21,16 @@ module Aua
 
     # Operator precedence (higher number = higher precedence)
     BINARY_PRECEDENCE = {
-      lambda: 0, # lambda has lowest precedence
-      as: 1, # typecast has lowest precedence (looser than arithmetic, tighter than assignment)
-      tilde: 2, # enum selection has very low precedence, similar to assignment
-      or: 3, # logical OR has lowest precedence among operators
-      and: 4, # logical AND has higher precedence than OR
-      eq: 5, neq: 5, gt: 5, lt: 5, gte: 5, lte: 5, # comparison operators
-      plus: 6, minus: 6,
-      star: 7, slash: 7,
-      pow: 8,
+      equals: 0, # assignment has lowest precedence
+      lambda: 1, # lambda has very low precedence
+      as: 2, # typecast has low precedence (looser than arithmetic, tighter than assignment)
+      tilde: 3, # enum selection has low precedence, similar to assignment
+      or: 4, # logical OR has low precedence among operators
+      and: 5, # logical AND has higher precedence than OR
+      eq: 6, neq: 6, gt: 6, lt: 6, gte: 6, lte: 6, # comparison operators
+      plus: 7, minus: 7,
+      star: 8, slash: 8,
+      pow: 9,
       dot: 10 # member access has high precedence
     }.freeze
 

@@ -34,3 +34,22 @@ RSpec::Matchers.define :be_aua do |expected_value|
 
   attr_reader :code, :result, :expected_type
 end
+
+RSpec::Matchers.define :raise_aura do |expected_value|
+  match do |code|
+    @error = nil
+    Aua.run(code)
+    false # If no error is raised, the match fails
+  rescue Aua::Error => e
+    @error = e
+    @error.message == expected_value || (expected_value.is_a?(Regexp) && expected_value.match?(@error.message))
+  end
+
+  failure_message do
+    "expected Aua code to raise an error with message '#{expected_value}', but #{@error&.message || "no error raised"}"
+  end
+
+  description do
+    "raise an Aua error with message '#{expected_value}'"
+  end
+end

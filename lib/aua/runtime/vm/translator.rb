@@ -178,18 +178,58 @@ module Aua
 
         def translate_binop(node)
           Aua.logger.debug "Translating binop: #{node.inspect}"
-          op, left_node, right_node = node.value
+          op, left_node, right_node = node.value # Special handling for assignment - different from other binops
+          if op == :equals
+            # Handle different types of assignment
+            case left_node.type
+            when :id
+              # Simple variable assignment: x = value
+              name = left_node.value
+              value = translate(right_node)
+              return [Semantics.inst(:let, name, value)]
+            when :binop
+              # Check if it's member access assignment: obj.field = value
+              raise Error, "Unsupported assignment target: #{left_node.inspect}" unless left_node.value[0] == :dot
+
+              # Member assignment: obj.field = value
+              obj_node = left_node.value[1]
+              field_node = left_node.value[2]
+
+              # Object should be an ID for now (could be extended later)
+              unless obj_node.type == :id
+                raise Error, "Member assignment currently only supports variable objects, got #{obj_node.inspect}"
+              end
+
+              # Field should be an ID
+              raise Error, "Field name must be an identifier, got #{field_node.inspect}" unless field_node.type == :id
+
+              obj_name = obj_node.value
+              field_name = field_node.value
+              value = translate(right_node)
+
+              # Create a member assignment statement
+              return [Statement.new(type: :member_assignment, value: [obj_name, field_name, value])]
+
+            else
+              raise Error, "Left side of assignment must be a variable or member access, got #{left_node.inspect}"
+            end
+          end
 
           # Special handling for member access - don't translate the right side
           if op == :dot
             left = translate(left_node)
             # Right side should be an ID node representing the field name
-            unless right_node.type == :id
-              raise Error, "Right side of member access must be a field name, got #{right_node.inspect}"
+            if right_node.type == :id
+              field_name = right_node.value
+              return Binop.binary_operation(op, left, field_name)
+            elsif right_node.type == :call
+              meth, args = right_node.value
+              args.map! { |arg| translate(arg) }
+              return SEND[left, meth.to_sym, *args]
             end
 
-            field_name = right_node.value
-            return Binop.binary_operation(op, left, field_name)
+            raise Error,
+                  "Right side of member access must be a field name, got #{right_node.inspect} (#{right_node.type})"
           end
 
           left = translate(left_node)

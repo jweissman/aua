@@ -105,8 +105,11 @@ module Aua
       end
 
       # warn "CONSUME: #{@current_token.type} (#{@current_token.value}) at #{@current_token.at}"
+      token = @current_token
 
       advance
+
+      token
     end
 
     def next_token
@@ -152,9 +155,6 @@ module Aua
 
       maybe_function_definition = parse_function_definition
       return maybe_function_definition if maybe_function_definition
-
-      maybe_assignment = parse_assignment
-      return maybe_assignment if maybe_assignment
 
       maybe_conditional = parse_conditional
       return maybe_conditional if maybe_conditional
@@ -437,17 +437,6 @@ module Aua
       the_call
     end
 
-    def parse_assignment
-      return unless @current_token.type == :id && peek_token&.type == :equals
-
-      id = @current_token
-      consume(:id)
-      name = id.value
-      consume(:equals)
-      value = parse_expression
-      s(:assign, name, value)
-    end
-
     def parse_conditional
       return unless @current_token.type == :keyword && @current_token.value == "if"
 
@@ -593,7 +582,11 @@ module Aua
       # Special handling for tilde operator - parse the right side as a type expression
       if op == :tilde
         right = parse_type_expression
+      elsif op == :equals
+        # For assignment, the right side should be a full expression (including statements)
+        right = parse_expression
       else
+        # Assignment and power operators are right-associative
         next_min_prec = Set[:pow].include?(op) ? prec : prec + 1
         right = parse_binop(next_min_prec)
       end
@@ -612,16 +605,6 @@ module Aua
         return parse_primary
       end
 
-      # Check for lambda patterns before other parsing
-      # Pattern 1: () => expr (empty parameter list)
-      if @current_token.type == :lparen && peek_token&.type == :rparen
-        # This could be either empty lambda params or empty parens
-        # We'll parse it as empty parens for now and handle lambda in binary op
-        # Actually, let's just handle it as lambda params if we're in a lambda context
-        # For now, let's comment this out and handle it differently
-      end
-
-      # Check for function calls: identifier followed by (
       peek = peek_token
       Aua.logger.info "parse-primary" do
         "Parsing primary expression with current token: #{@current_token.type} (#{@current_token.value}) / peek token: #{peek&.type} (#{peek&.value}) [peek nil? #{peek.nil?}]"

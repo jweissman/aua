@@ -93,8 +93,8 @@ RSpec.describe Aua::Parse do
       expect(ast.value.size).to eq(3)
 
       lines = ast.value
-      expect(lines[0].type).to eq(:assign)
-      expect(lines[1].type).to eq(:assign)
+      expect(lines[0].type).to eq(:binop)
+      expect(lines[1].type).to eq(:binop)
       expect(lines[2].type).to eq(:call)
       expect(lines[2].value[0]).to eq("say")
 
@@ -121,7 +121,7 @@ RSpec.describe Aua::Parse do
       expect(ast.value.size).to eq(2)
 
       lines = ast.value
-      expect(lines[0].type).to eq(:assign)
+      expect(lines[0].type).to eq(:binop)
       expect(lines[1].type).to eq(:call)
       expect(lines[1].value[0]).to eq("say")
 
@@ -149,7 +149,7 @@ RSpec.describe Aua::Parse do
       expect(ast.value.size).to eq(2)
 
       lines = ast.value
-      expect(lines[0].type).to eq(:assign)
+      expect(lines[0].type).to eq(:binop)
       expect(lines[1].type).to eq(:call)
       expect(lines[1].value[0]).to eq("say")
 
@@ -193,17 +193,19 @@ RSpec.describe Aua::Parse do
       expect(lines[1].value[1]).to eq([s(:str,
                                          "this is a simple game that shows how to use the aura framework")])
 
-      expect(lines[2].type).to eq(:assign)
-      expect(lines[2].value[0]).to eq("name")
-      expect(lines[2].value[1]).to eq(s(:call, ["ask", [s(:str, "what is your name?")]]))
+      expect(lines[2].type).to eq(:binop)
+      expect(lines[2].value[0]).to eq(:equals)
+      expect(lines[2].value[1]).to eq(s(:id, "name"))
+      expect(lines[2].value[2]).to eq(s(:call, ["ask", [s(:str, "what is your name?")]]))
 
       expect(lines[3].type).to eq(:call)
       expect(lines[3].value[0]).to eq("say")
       expect(lines[3].value[1]).to eq([s(:structured_str, [s(:str, "Hello "), s(:id, "name")])])
 
-      expect(lines[4].type).to eq(:assign)
-      expect(lines[4].value[0]).to eq("profession")
-      expect(lines[4].value[1]).to eq(s(:structured_gen_lit,
+      expect(lines[4].type).to eq(:binop)
+      expect(lines[4].value[0]).to eq(:equals)
+      expect(lines[4].value[1]).to eq(s(:id, "profession"))
+      expect(lines[4].value[2]).to eq(s(:structured_gen_lit,
                                         [s(:str,
                                            "Please invent a short profession for a character")]))
     end
@@ -231,12 +233,15 @@ RSpec.describe Aua::Parse do
                                               s(:type_constant, s(:simple_str, "no"))
                                             ])
 
-      expect(lines[1].type).to eq(:assign)
-      expect(lines[1].value[0]).to eq("result")
-      expect(lines[1].value[1].type).to eq(:binop)
-      expect(lines[1].value[1].value[0]).to eq(:as)
-      expect(lines[1].value[1].value[1]).to eq(s(:bool, true))
-      expect(lines[1].value[1].value[2]).to eq(s(:id, "YesNo"))
+      expect(lines[1].type).to eq(:binop)
+      expect(lines[1].value[0]).to eq(:equals)
+      expect(lines[1].value[1].type).to eq(:id)
+      expect(lines[1].value[1].value).to eq("result")
+      expect(lines[1].value[2]).to eq(s(:binop, [
+                                          :as,
+                                          s(:bool, true),
+                                          s(:id, "YesNo")
+                                        ]))
     end
   end
 end

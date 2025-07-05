@@ -22,14 +22,7 @@ module Aua
     def initialize
       # Base initialization - can be extended by subclasses
     end
-  end
 
-  # The base object for all Aua values.
-  class Obj < Base
-    def klass = Klass.klass
-    def inspect = "<#{self.class.name} #{introspect}>"
-    def introspect = ""
-    def pretty = introspect
     def aura_methods = self.class.aura_methods
 
     def aura_respond_to?(method_name)
@@ -71,8 +64,17 @@ module Aua
     def self.define_aura_method(name, &block)
       aura_methods[name] = block # : aura_meth
     end
+  end
 
+  # The base object for all Aua values.
+  class Obj < Base
+    def klass = Klass.klass
+    def inspect = "<#{self.class.name} #{introspect}>"
+    def introspect = ""
+    def pretty = introspect
     def self.describe(message) = define_aura_method(:describe) { message }
+
+    define_aura_method(:dup) { "dup'd" }
   end
 
   # The class object for Aua types.
@@ -358,6 +360,8 @@ module Aua
 
   # Object literal for untyped record-like structures
   class ObjectLiteral < Obj
+    define_aura_method(:dup) { ObjectLiteral.new(@values.dup) }
+
     def initialize(values)
       super()
       @values = values || {}
@@ -373,6 +377,23 @@ module Aua
       raise Error, "Field '#{field_name}' not found in object literal" unless @values.key?(field_name)
 
       @values[field_name]
+    end
+
+    # Check if a field exists
+    def has_field?(field_name)
+      @values.key?(field_name)
+    end
+
+    # Create a new object with an updated field (functional update)
+    def set_field(field_name, new_value)
+      raise Error, "Field '#{field_name}' not found in object literal" unless @values.key?(field_name)
+
+      # if we wanted functional update
+      # new_values = @values.dup
+      # new_values[field_name] = new_value
+      # ObjectLiteral.new(new_values)
+
+      @values[field_name] = new_value
     end
 
     def klass

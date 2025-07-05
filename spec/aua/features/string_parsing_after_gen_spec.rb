@@ -17,11 +17,11 @@ RSpec.describe "String Type Parsing After Generative Strings" do
       statements = ast.value
 
       # statement 0: name = "Alice"
-      expect(statements[0].type).to eq(:assign)
+      expect(statements[0].type).to eq(:binop)
 
       # statement 1: profession = """...""" (should be structured_gen_lit)
-      expect(statements[1].type).to eq(:assign)
-      profession_assignment = statements[1].value[1]
+      expect(statements[1].type).to eq(:binop)
+      profession_assignment = statements[1].value[2]
       expect(profession_assignment.type).to eq(:structured_gen_lit)
 
       # statement 2: say "Hello ${name}" (should be structured_str, NOT structured_gen_lit)

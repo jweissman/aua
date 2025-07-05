@@ -267,6 +267,7 @@ module Aua
 
         case stmt.type
         when :id, :let, :send, :member_access then evaluate_simple(stmt)
+        when :member_assignment then eval_member_assignment(val[0], val[1], val[2])
         when :type_declaration then eval_type_declaration(val[0], val[1])
         when :function_definition then eval_function_definition(val)
         when :defun then eval_defun(val)
@@ -333,9 +334,7 @@ module Aua
           )
         end
 
-        unless receiver.is_a?(Obj) && receiver.aura_respond_to?(method)
-          raise Error, "Unknown aura method '#{method}' for #{receiver.class}"
-        end
+        raise Error, "Unknown aura method '#{method}' for #{receiver.class}" unless receiver.aura_respond_to?(method)
 
         ret = receiver.aura_send(method, *args)
         Aua.logger.info("vm:eval_send") do
@@ -533,6 +532,38 @@ module Aua
         end
       end
 
+      def eval_member_assignment(obj_name, field_name, value_statements)
+        # Evaluate the value to assign
+        new_value = if value_statements.is_a?(Array)
+                      value_statements.map { |stmt| evaluate_one(stmt) }.last
+                    else
+                      evaluate_one(value_statements)
+                    end
+
+        # Get the current object from the environment
+        raise Error, "Variable '#{obj_name}' not found" unless @env.key?(obj_name)
+
+        current_obj = @env[obj_name]
+
+        # Handle different object types - create NEW object, don't mutate original
+        case current_obj
+        when ObjectLiteral, RecordObject
+          # Check if the field exists (for type safety)
+          raise Error, "Field '#{field_name}' not found in object type" unless current_obj.has_field?(field_name)
+
+          # Create a new object with the updated field (FUNCTIONAL - don't mutate original)
+          current_obj.set_field(field_name, new_value)
+        else
+          raise Error,
+                "Cannot assign to field '#{field_name}' on #{current_obj.class.name} - not an object"
+        end
+
+        # DON'T update the original variable - this should be functional/immutable
+        # @env[obj_name] = updated_obj  # <-- Remove this line for functional behavior
+
+        # Return the NEW object (but original variable remains unchanged)
+      end
+
       def eval_while(condition, body)
         # While loops return nihil (null/void) like in most languages
         result = resolve(Nihil.new)
@@ -630,18 +661,13 @@ module Aua
       end
 
       def eval_defun(val)
-        Aua.logger.info("vm:eval_defun") { "Defining function with val: #{val.inspect}" }
         args, body = val
-        Aua.logger.info("vm:eval_defun") { "args: #{args.inspect}, body: #{body.inspect}" }
 
         # Extract parameter names from the args
         parameters = case args
                      when Array
                        if args.length == 1 && args.first.is_a?(Aua::Runtime::Statement) && args.first.type == :cons
                          # This is a CONS [param1, param2, ...] - extract parameters from the CONS value
-                         Aua.logger.info("vm:eval_defun") do
-                           "Found CONS statement with parameters, extracting from value"
-                         end
                          cons_statement = args.first
                          param_nodes = cons_statement.value # Array of parameter nodes
                          param_nodes.map { |node| extract_parameter_name(node) }
@@ -654,8 +680,6 @@ module Aua
                        [extract_parameter_name(args)]
                      end
 
-        Aua.logger.info("vm:eval_defun") { "Extracted parameters: #{parameters.inspect}" }
-
         # Create a Function object with a generated name for anonymous functions
         function_name = "lambda_#{object_id}_#{rand(1000)}"
 
@@ -665,31 +689,24 @@ module Aua
       end
 
       def extract_parameter_name(arg)
-        Aua.logger.info("vm:extract_param") { "Extracting param name from: #{arg.inspect} (#{arg.class})" }
+        # Unwrap single-element arrays (common wrapping pattern in AST)
         arg = arg.first if arg.is_a?(Array) && arg.length == 1
-        result = case arg
-                 when Array
-                   Aua.logger.info("vm:extract_param") { "Array first: #{arg.first.inspect} (#{arg.first.class})" }
-                   if (["ID", :ID].include?(arg.first) || arg.first.to_s == "ID") && arg.last.is_a?(Array)
-                     param_name = arg.last.first # Extract the parameter name
-                     Aua.logger.info("vm:extract_param") { "Found ID array, extracted: #{param_name}" }
-                     param_name
-                   else
-                     fallback = arg.to_s
-                     Aua.logger.info("vm:extract_param") { "Array fallback: #{fallback}" }
-                     fallback
-                   end
-                 when ->(a) { a.respond_to?(:type) && a.type == :id && a.respond_to?(:value) }
-                   param_name = arg.value.first
-                   Aua.logger.info("vm:extract_param") { "Found Statement, extracted: #{param_name}" }
-                   param_name
-                 else
-                   fallback = arg.to_s
-                   Aua.logger.info("vm:extract_param") { "Default fallback: #{fallback}" }
-                   fallback
-                 end
-        Aua.logger.info("vm:extract_param") { "Final result: #{result}" }
-        result
+
+        case arg
+        when Array
+          # Handle ID node format: ["ID", ["param_name"]] or [:ID, ["param_name"]]
+          if (["ID", :ID].include?(arg.first) || arg.first.to_s == "ID") && arg.last.is_a?(Array)
+            arg.last.first # Extract the parameter name
+          else
+            arg.to_s # Fallback for unexpected array formats
+          end
+        when ->(a) { a.respond_to?(:type) && a.type == :id && a.respond_to?(:value) }
+          # Handle Statement objects with :id type
+          arg.value.first
+        else
+          # Fallback for other types
+          arg.to_s
+        end
       end
 
       def eval_user_function(function_obj, args)

@@ -19,7 +19,7 @@ module Aua
     end
 
     def self.default(progname = "aura", outlet: self.outlet) = new(outlet, level:, progname:)
-    def self.level = ENV.fetch("AUA_LOG_LEVEL", "info").to_sym
+    def self.level = ENV.fetch("AUA_LOG_LEVEL", "warn").to_sym
 
     # Returns the appropriate output stream for logging.
     # If testing, it uses a file; otherwise, it uses $stdout.

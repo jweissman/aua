@@ -79,7 +79,7 @@ module Aua
     def with_property(arb, &block)
       Pbt.assert(num_runs:) do
         Pbt.property(arb) do |value|
-          puts value
+          # puts value
           block.call(value)
         end
       end
