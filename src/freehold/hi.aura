@@ -25,9 +25,9 @@
 # cards = jsonl 'cards.db'
 
 cards = [
-  { name: 'archon alpha, the noblissimus' },
-  { name: 'prince gulfregon, shield of ambria' },
-  { name: 'tharn kallix, terraqueous worldmage' }
+  { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
+  { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
+  { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 }
 ]
 
 say 'gathering two simulants from the multiverse'
@@ -39,11 +39,16 @@ while red.hp > 0 && blue.hp > 0
   # fight_one(red, blue)
   damage = red.attack - blue.defense
   blue.hp = blue.hp - damage
-  say "#{red.name} hit #{blue.name} for #{damage}"
+  say("${red.name} hit ${blue.name} for ${damage} (at ${blue.hp})")
   # fight_one(blue, red)
   damage = blue.attack - red.defense
   red.hp = red.hp - damage
+  say("${blue.name} hit ${red.name} for ${damage} (at ${red.hp})")
 end
+
+victor = if red.hp > blue.hp then red else blue
+
+say "The winner is ${victor.name}."
 
 # fn draw
 #   say a.hp

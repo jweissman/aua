@@ -1,3 +1,0 @@
-person = { name: "Alice", age: 30 }
-person.age = 31
-person.age

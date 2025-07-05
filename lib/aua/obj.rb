@@ -177,6 +177,8 @@ module Aua
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }
     define_aura_method(:lte) { Bool.new(@value <= _1.value) }
 
+    # define_aura_method(:to_i) { Int.new(@value) }
+    # define_aura_method(:to_s) { Str.new(@value.to_s) }
     define_aura_method(:to_i) { @value }
     define_aura_method(:to_s) { @value.to_s }
 
@@ -315,6 +317,20 @@ module Aua
 
     def name = "list"
     def introspect = "[#{@values.map(&:introspect).join(", ")}]"
+
+    # define_aura_method(:[]) do |index|
+    #   raise Error, "Index out of bounds" if index < 0 || index >= @values.length
+
+    #   @values[index]
+    # end
+
+    define_aura_method(:sample) do
+      return Nihil.new if @values.empty?
+
+      rng = Random.new
+      @values[rng.rand(@values.length)]
+    end
+
     def self.klass = @klass ||= Klass.new("List", Klass.obj)
 
     attr_reader :values
@@ -374,7 +390,11 @@ module Aua
 
     # Support member access
     def get_field(field_name)
-      raise Error, "Field '#{field_name}' not found in object literal" unless @values.key?(field_name)
+      unless @values.key?(field_name)
+        raise Error, "Field '#{field_name}' not found in object literal #{
+          @values.inspect
+        }"
+      end
 
       @values[field_name]
     end
