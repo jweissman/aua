@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         ruby:
-          - '3.4.4'
+          - "3.4.4"
 
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,9 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+      - name: Install dependencies (SDL)
+        run: sudo apt-get install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
+
       - name: Test aua
         run: bundle exec rake
       - name: List files RuboCop will inspect
