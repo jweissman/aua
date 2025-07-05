@@ -554,7 +554,8 @@ module Aua
           # Basic type checking - compare the type of the new value with the existing field
           existing_value = current_obj.get_field(field_name)
           if existing_value && !compatible_types?(existing_value, new_value)
-            raise Error, "Type mismatch: cannot assign #{type_name(new_value)} to field '#{field_name}' expecting #{type_name(existing_value)}"
+            raise Error,
+                  "Type mismatch: cannot assign #{type_name(new_value)} to field '#{field_name}' expecting #{type_name(existing_value)}"
           end
 
           # Create a new object with the updated field (or mutate if that's what set_field does)
@@ -770,7 +771,7 @@ module Aua
       def type_name(value)
         case value
         when Int then "Int"
-        when Str then "Str" 
+        when Str then "Str"
         when Bool then "Bool"
         when Float then "Float"
         else value.class.name.split("::").last
