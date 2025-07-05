@@ -49,7 +49,8 @@ module Aua
           ask: method(:builtin_ask),
           chat: method(:builtin_chat),
           see_url: method(:builtin_see_url),
-          cast: method(:builtin_cast)
+          cast: method(:builtin_cast),
+          typeof: method(:builtin_typeof)
         }
       end
 
@@ -233,6 +234,24 @@ module Aua
         Aua::Str.new(response.body)
       end
 
+      def builtin_typeof(obj)
+        raise Error, "typeof requires a single argument" unless obj.is_a?(Obj)
+
+        type_name = case obj
+                    when Int then "Int"
+                    when Str then "Str"
+                    when Bool then "Bool"
+                    when Float then "Float"
+                    when Function then "Function"
+                    when ObjectLiteral then "Object"
+                    when RecordObject then "Record"
+                    when List then "List"
+                    when Nihil then "Nihil"
+                    else obj.class.name.split("::").last
+                    end
+        Str.new(type_name)
+      end
+
       def reduce(ast) = @tx.translate(ast)
 
       def evaluate(_ctx, ast) = evaluate!(ast)
@@ -369,9 +388,16 @@ module Aua
 
         # Fall back to builtin functions
         fn = Aua.vm.builtins[fn_name.to_sym]
-        raise Error, "Unknown function: #{fn_name}" unless fn
+        raise Aua::Error, "Unknown function: #{fn_name}" unless fn
 
         evaluated_args = [*args].map { |a| evaluate_one(a) }
+
+        arity_match = fn.arity == evaluated_args.size || (fn.arity < 0 && evaluated_args.size >= -fn.arity)
+        unless arity_match
+          raise Aua::Error,
+                "Wrong number of arguments for #{fn_name}: expected #{fn.arity}, got #{evaluated_args.size}"
+        end
+
         ret = fn.call(*evaluated_args)
         Aua.logger.info("vm:eval_call") do
           "Calling builtin function: #{fn_name} with args: #{args.inspect} => #{ret.inspect}"
