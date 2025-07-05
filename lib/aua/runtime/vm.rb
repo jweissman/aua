@@ -551,7 +551,13 @@ module Aua
           # Check if the field exists (for type safety)
           raise Error, "Field '#{field_name}' not found in object type" unless current_obj.has_field?(field_name)
 
-          # Create a new object with the updated field (FUNCTIONAL - don't mutate original)
+          # Basic type checking - compare the type of the new value with the existing field
+          existing_value = current_obj.get_field(field_name)
+          if existing_value && !compatible_types?(existing_value, new_value)
+            raise Error, "Type mismatch: cannot assign #{type_name(new_value)} to field '#{field_name}' expecting #{type_name(existing_value)}"
+          end
+
+          # Create a new object with the updated field (or mutate if that's what set_field does)
           current_obj.set_field(field_name, new_value)
         else
           raise Error,
@@ -752,6 +758,22 @@ module Aua
           # Restore previous environment and pop call frame
           @env = previous_env
           @call_stack.pop
+        end
+      end
+
+      # Type checking helpers for member assignment
+      def compatible_types?(existing_value, new_value)
+        # Simple type compatibility check based on class
+        existing_value.class == new_value.class
+      end
+
+      def type_name(value)
+        case value
+        when Int then "Int"
+        when Str then "Str" 
+        when Bool then "Bool"
+        when Float then "Float"
+        else value.class.name.split("::").last
         end
       end
     end

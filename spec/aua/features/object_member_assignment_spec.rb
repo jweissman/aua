@@ -74,7 +74,7 @@ RSpec.describe "Object Member Assignment Features" do
       expect(code).to raise_aura(/invalid_field.*not.*found/)
     end
 
-    it "raises error when trying to assign incompatible type", :skip do
+    it "raises error when trying to assign incompatible type" do
       code = <<~AUA
         type Person = { name: Str, age: Int }
 
