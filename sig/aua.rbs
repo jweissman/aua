@@ -420,6 +420,11 @@ module Aua
     def parse_union_string_constant: () -> AST::Node
     def parse_union_string_part: () -> AST::Node
     def parse_union_type_reference: () -> AST::Node
+    def parse_function_definition: () -> AST::Node
+    def parse_while: () -> AST::Node
+    def parse_parenthesized_type_expression: () -> AST::Node
+    def parse_function_argument: () -> AST::Node
+    def parse_function_call: () -> AST::Node
   end
 
   module Registry
@@ -436,6 +441,12 @@ module Aua
 
   class Base
     def initialize: () -> void
+    def self.aura_methods: () -> Hash[Symbol, aura_meth]
+    def self.aura_method: (Symbol) -> aura_meth
+    def self.define_aura_method: (Symbol) { (*untyped) [self: self] -> Aua::Obj } -> void
+    def aura_methods: () -> Hash[Symbol, aura_meth]
+    def aura_send: (Symbol, *untyped) -> untyped
+    def aura_respond_to?: (Symbol) -> bool
   end
 
   class Obj < Base
@@ -472,6 +483,10 @@ module Aua
     def type_annotation: () -> String
     def type_arg_to_json_type: (untyped) -> String
     def type_arg_to_string: (untyped) -> String
+    def union_values: () -> Array[untyped]
+    def schema_classes: () -> Array[untyped]
+    def construct_list: (Array[untyped]) -> Aua::List
+    def validate_primitive_type!: (untyped) -> void
   end
 
   class Nihil < Obj
@@ -526,6 +541,7 @@ module Aua
     def json_schema: () -> untyped
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
+    def self.introspect: () -> String
   end
 
   class Time < Obj
@@ -547,6 +563,7 @@ module Aua
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
+    def type_name: () -> String
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
   end
@@ -667,6 +684,7 @@ module Aua
       def create_reference_type: (String, untyped) -> Runtime::Reference
       def create_record_type: (String, untyped) -> Runtime::RecordType
       def extract_field_definitions: (Array[untyped]) -> Array[Hash[Symbol, untyped]]
+      def create_generic_type: (String, Array[untyped]) -> Runtime::GenericType
     end
 
     module JsonSchema
@@ -735,6 +753,10 @@ module Aua
     class TypeConverter
       def self.convert_type_to_annotation_string: (untyped) -> String
       def self.describe_type_ast: (untyped) -> String
+      def self.ast_to_ir: (untyped) -> untyped
+      def self.ir_to_runtime: (untyped, TypeRegistry) -> untyped
+      def self.ast_to_runtime: (untyped, TypeRegistry) -> untyped
+      def self.ir_to_annotation_string: (untyped) -> String
     end
 
     class UnionType < Klass
@@ -770,16 +792,18 @@ module Aua
       end
 
       module Builtin
-        def builtin_cast: (Aua::Obj, Klass) -> Aua::Obj?
-        def schema_for: (Klass) -> untyped
-        def build_cast_prompt: (Aua::Obj, Klass) -> String
-        def builtin_inspect: (Aua::Obj) -> Aua::Str
-        def builtin_rand: (Aua::Int) -> Aua::Int
-        def builtin_time: (Aua::Str) -> Aua::Time
-        def builtin_say: (Aua::Str) -> Aua::Nihil
-        def builtin_ask: (Aua::Str) -> Aua::Str
-        def builtin_chat: (Aua::Str) -> Aua::Str
-        def builtin_see_url: (Aua::Str) -> Aua::Str
+        def self.builtin_cast: (Aua::Obj, Klass) -> Aua::Obj?
+        def self.schema_for: (Klass) -> untyped
+        def self.build_cast_prompt: (Aua::Obj, Klass) -> String
+        def self.builtin_inspect: (Aua::Obj) -> Aua::Str
+        def self.builtin_rand: (Aua::Int) -> Aua::Int
+        def self.builtin_time: (Aua::Str) -> Aua::Time
+        def self.builtin_say: (Aua::Str) -> Aua::Nihil
+        def self.builtin_ask: (Aua::Str) -> Aua::Str
+        def self.builtin_chat: (Aua::Str) -> Aua::Str
+        def self.builtin_see_url: (Aua::Str) -> Aua::Str
+        def self.handle_see_url_response: (URI, Net::HTTPResponse) -> Aua::Str
+        def self.builtin_typeof: (Aua::Obj) -> Aua::Str
       end
       module Commands
         LET: untyped
@@ -814,6 +838,11 @@ module Aua
           def self.access_field: (statement, String) -> statement
           def self.handle_type_cast: (statement, statement) -> statement
           def self.resolve_cast_target: (statement) -> (statement | Klass)
+          def self.binop_not_equals: (statement, statement) -> statement
+          def self.handle_type_annotation: (statement, statement) -> statement
+          def self.handle_enum_selection: (statement, statement) -> statement
+          def self.handle_lambda: (statement, statement) -> statement
+          def self.extract_choices_from_union_type: (untyped) -> Array[untyped]
         end
 
         TRANSLATIONS: Hash[Symbol, Array[Statement]]
@@ -840,6 +869,14 @@ module Aua
         def translate_type_declaration: (AST::Node) -> Array[Statement]
         def translate_object_literal: (AST::Node) -> Array[Statement]
         def translate_array_literal: (AST::Node) -> Array[Statement]
+        def translate_function_definition: (AST::Node) -> Array[Statement]
+        def translate_union_type: (AST::Node) -> Array[Statement]
+        def translate_type_reference: (AST::Node) -> Array[Statement]
+        def translate_type_constant: (AST::Node) -> Array[Statement]
+        def translate_generic_type: (AST::Node) -> Array[Statement]
+        def translate_tuple: (AST::Node) -> Array[Statement]
+        def translate_type_annotation: (AST::Node) -> Array[Statement]
+        def translate_while: (AST::Node) -> Array[Statement]
       end
 
       extend Semantics
@@ -866,12 +903,21 @@ module Aua
       def eval_if: (untyped, untyped, untyped?) -> untyped
       def eval_let: (String, Aua::Obj) -> Aua::Obj
       def eval_member_access: (Array[untyped], String) -> untyped
+      def eval_member_assignment: (Array[untyped], String, untyped) -> untyped
       def eval_object_literal: (Array[untyped]) -> Aua::ObjectLiteral
       def eval_send: (String | Symbol receiver, Symbol method, *untyped args) -> untyped
       def eval_type_declaration: (String, untyped) -> untyped
       def eval_type_lookup: (String) -> untyped
       def eval_user_function: (String, Array[untyped]) -> untyped
       def eval_generic_type_lookup: (untyped) -> untyped
+      def eval_function_definition: (String, Array[untyped], untyped) -> untyped
+      def eval_defun: (String, Array[untyped], untyped) -> untyped
+      def eval_union_type_lookup: (untyped) -> untyped
+      def eval_dynamic_union_class: (untyped) -> untyped
+      def eval_llm_select: (untyped) -> untyped
+      def eval_collapse: (untyped) -> untyped
+      def eval_typed_value: (untyped) -> untyped
+      def eval_while: (untyped, untyped) -> untyped
       def get_field_type_from_struct: (String, String) -> untyped
       def convert_type_to_annotation_string: (untyped) -> String
       def describe_type_ast: (untyped) -> String
