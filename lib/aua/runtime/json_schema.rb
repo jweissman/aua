@@ -72,6 +72,11 @@ module Aua
         # @param type_registry [TypeRegistry] Registry to look up nested types
         # @return [Hash] JSON schema fragment
         def schema_for_type(type_def, type_registry)
+          Aua.logger.info "Generating schema for type: #{type_def.inspect}"
+          #   {}
+          # end
+
+          # def schema_for_ast(type_def, type_registry)
           case type_def.type
           when :type_reference
             schema_for_type_reference(type_def.value, type_registry)

@@ -1,5 +1,5 @@
+require_relative "ir/types"
 require_relative "vm/commands"
-require_relative "vm/types"
 require_relative "vm/translator"
 require_relative "vm/call_frame"
 require_relative "vm/builtin"
@@ -606,7 +606,7 @@ module Aua
           type_annotation = nil
 
           # Handle direct generic types: List<String>, Dict<String, Int>
-          if type_stmt.is_a?(Array) && type_stmt.first.is_a?(Aua::Runtime::VM::Types::GenericType)
+          if type_stmt.is_a?(Array) && type_stmt.first.is_a?(IR::Types::GenericType)
             generic_type = type_stmt.first
             type_annotation = "#{generic_type.base_type}<#{generic_type.type_params.map(&:name).join(", ")}>"
 
@@ -616,7 +616,7 @@ module Aua
             end
 
           # Handle type references that might resolve to generic types: BookList
-          elsif type_stmt.is_a?(Array) && type_stmt.first.is_a?(Aua::Runtime::VM::Types::TypeReference)
+          elsif type_stmt.is_a?(Array) && type_stmt.first.is_a?(IR::Types::TypeReference)
             type_ref = type_stmt.first
             # Look up the type in the registry
             resolved_type = @type_registry.lookup(type_ref.name)
@@ -698,9 +698,9 @@ module Aua
 
       def convert_type_to_annotation_string(type_obj)
         case type_obj
-        when Aua::Runtime::VM::Types::TypeReference
+        when IR::Types::TypeReference
           type_obj.name
-        when Aua::Runtime::VM::Types::GenericType
+        when IR::Types::GenericType
           # Build the generic type string like "List<String>"
           type_arg_strings = type_obj.type_params.map { |param| convert_type_to_annotation_string(param) }
           "#{type_obj.base_type}<#{type_arg_strings.join(", ")}>"

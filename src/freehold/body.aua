@@ -1,0 +1,5 @@
+phi = 1.6
+
+fun body(rank, arch)
+  { name: 'finn the human' }
+end

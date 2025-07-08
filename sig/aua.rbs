@@ -162,6 +162,7 @@ module Aua
       def gte: (String) -> token?
       def tilde: (String) -> token?
       def neq: (String) -> token?
+      def fat_arrow: (String) -> token?
 
       def interpolation_end: (String) -> token?
       def eos: (String) -> token?
@@ -468,6 +469,9 @@ module Aua
     def lookup: (String) -> untyped
     def wrap_value: (untyped) -> Obj
     def name: () -> String
+    def type_annotation: () -> String
+    def type_arg_to_json_type: (untyped) -> String
+    def type_arg_to_string: (untyped) -> String
   end
 
   class Nihil < Obj
@@ -547,6 +551,16 @@ module Aua
     def self.json_schema: () -> untyped
   end
 
+  class Dict < Obj
+    attr_reader values: Hash[String, Obj]
+    def initialize: (?Hash[String, Obj], ?String) -> void
+    def klass: () -> Klass
+    def name: () -> String
+    def introspect: () -> String
+    def self.klass: () -> Klass
+    def self.json_schema: () -> untyped
+  end
+
   type fields = Array[Hash[Symbol, untyped]]
 
   class RecordObject < Obj
@@ -587,6 +601,41 @@ module Aua
 
 
   module Runtime
+    module IR
+      module Types
+        class UnionType
+          attr_reader types: Array[untyped]
+          def initialize: (Array[untyped]) -> void
+          def inspect: () -> String
+        end
+
+        class TypeReference
+          attr_reader name: String
+          def initialize: (String) -> void
+          def inspect: () -> String
+        end
+
+        class TypeConstant
+          attr_reader name: String
+          def initialize: (String) -> void
+          def inspect: () -> String
+        end
+
+        class GenericType
+          attr_reader base_type: untyped
+          attr_reader type_params: Array[untyped]
+          def initialize: (untyped, Array[untyped]) -> void
+          def inspect: () -> String
+        end
+
+        class RecordType
+          attr_reader fields: Array[untyped]
+          def initialize: (Array[untyped]) -> void
+          def inspect: () -> String
+        end
+      end
+    end
+
     class Statement
       attr_reader type: Symbol
       attr_reader value: untyped
@@ -672,6 +721,30 @@ module Aua
       def construct: (untyped) -> Aua::Str
     end
 
+    class GenericType < Klass
+      attr_reader base_type: untyped
+      attr_reader type_args: Array[untyped]
+      attr_reader type_registry: TypeRegistry
+
+      def initialize: (String, Array[untyped], TypeRegistry) -> void
+      def json_schema: () -> Hash[untyped, untyped]
+      def type_arg_to_json_type: (untyped) -> String
+      def type_arg_to_string: (untyped) -> String
+    end
+
+    class TypeConverter
+      def self.convert_type_to_annotation_string: (untyped) -> String
+      def self.describe_type_ast: (untyped) -> String
+    end
+
+    class UnionType < Klass
+      def initialize: (String, Array[untyped]) -> void
+    end
+
+    class TypeConstant < Klass
+      def initialize: (String, String) -> void
+    end
+
     type primary = Int | Float | Str | Bool | Nihil
     type environment = Hash[String, untyped]
 
@@ -684,13 +757,29 @@ module Aua
       end
       module Types
         class UnionType
+          def initialize: (Array[untyped]) -> void
         end
 
         class TypeReference
+          def initialize: (String) -> void
         end
 
         class TypeConstant
+          def initialize: (String) -> void
         end
+      end
+
+      module Builtin
+        def builtin_cast: (Aua::Obj, Klass) -> Aua::Obj?
+        def schema_for: (Klass) -> untyped
+        def build_cast_prompt: (Aua::Obj, Klass) -> String
+        def builtin_inspect: (Aua::Obj) -> Aua::Str
+        def builtin_rand: (Aua::Int) -> Aua::Int
+        def builtin_time: (Aua::Str) -> Aua::Time
+        def builtin_say: (Aua::Str) -> Aua::Nihil
+        def builtin_ask: (Aua::Str) -> Aua::Str
+        def builtin_chat: (Aua::Str) -> Aua::Str
+        def builtin_see_url: (Aua::Str) -> Aua::Str
       end
       module Commands
         LET: untyped
@@ -701,6 +790,8 @@ module Aua
         GEN: untyped
         CAST: untyped
         CONS: untyped
+        LOOKUP_TYPE: untyped
+        LAMBDA: untyped
       end
 
       class Translator
@@ -752,6 +843,7 @@ module Aua
       end
 
       extend Semantics
+      include Builtin
       @env: environment
       @tx: Translator
       @builtins: Hash[Symbol, untyped]
@@ -779,6 +871,10 @@ module Aua
       def eval_type_declaration: (String, untyped) -> untyped
       def eval_type_lookup: (String) -> untyped
       def eval_user_function: (String, Array[untyped]) -> untyped
+      def eval_generic_type_lookup: (untyped) -> untyped
+      def get_field_type_from_struct: (String, String) -> untyped
+      def convert_type_to_annotation_string: (untyped) -> String
+      def describe_type_ast: (untyped) -> String
 
       def interpolated: (Aua::Obj) -> Aua::Obj
       def reduce: (AST::Node) -> statement

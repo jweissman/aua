@@ -4,7 +4,7 @@ module Aua
     class VM
       # The translator class that converts Aua AST nodes into VM instructions.
       class Translator
-        include Types
+        include IR::Types
         include Commands
 
         def initialize(virtual_machine)
@@ -326,10 +326,11 @@ module Aua
               elsif right.is_a?(Statement) && right.type == :id
                 # Defer type lookup to execution time by creating a special statement
                 Statement.new(type: :type_lookup, value: right.value.first)
-              elsif right.is_a?(Aua::Runtime::VM::Types::TypeReference)
+              elsif right.is_a?(IR::Types::TypeReference)
                 # Type reference from parse_type_expression - defer lookup to execution time
                 Statement.new(type: :type_lookup, value: right.name)
-              elsif right.is_a?(Aua::Runtime::VM::Types::GenericType)
+              elsif right.is_a?(IR::Types::GenericType)
+
                 #   # Handle generic types like List<String>
                 # debugger
                 Statement.new(type: :generic_type_lookup, value: { base: right.base_type, args: right.type_params })
@@ -350,11 +351,11 @@ module Aua
               # Unwrap rhs until we get a single value
               right = right.first while right.is_a?(Array) && right.size == 1
 
-              if right.is_a?(Aua::Runtime::VM::Types::UnionType)
+              if right.is_a?(IR::Types::UnionType)
                 # Inline union type - create dynamic class immediately
                 choices = extract_choices_from_union_type(right)
                 union_class = Statement.new(type: :dynamic_union_class, value: choices)
-              elsif right.is_a?(Aua::Runtime::VM::Types::TypeReference)
+              elsif right.is_a?(IR::Types::TypeReference)
                 # Type reference - defer lookup to runtime
                 union_class = Statement.new(type: :union_type_lookup, value: right.name)
               else
@@ -367,7 +368,7 @@ module Aua
 
             def extract_choices_from_union_type(union_type)
               union_type.types.map do |type_obj|
-                if type_obj.is_a?(Aua::Runtime::VM::Types::TypeConstant)
+                if type_obj.is_a?(IR::Types::TypeConstant)
                   # Extract the actual value from the AST node
                   ast_node = type_obj.name
                   if ast_node.respond_to?(:value)
@@ -550,19 +551,19 @@ module Aua
         def translate_union_type(ast)
           # Union type is represented as an array of its constituent types
           types = ast.value.map { |child| translate(child).first }
-          [Aua::Runtime::VM::Types::UnionType.new(types)]
+          [IR::Types::UnionType.new(types)]
         end
 
         def translate_type_reference(ast)
           # Type reference to an existing type
           type_name = ast.value
-          [Aua::Runtime::VM::Types::TypeReference.new(type_name)]
+          [IR::Types::TypeReference.new(type_name)]
         end
 
         def translate_type_constant(ast)
           # Type constant (like String, Int, etc.)
           type_name = ast.value
-          [Aua::Runtime::VM::Types::TypeConstant.new(type_name)]
+          [IR::Types::TypeConstant.new(type_name)]
         end
 
         def translate_function_definition(node)
@@ -590,8 +591,8 @@ module Aua
         def translate_generic_type(ast)
           # Generic type like List<String> - represented as a generic type with base type and type parameters
           base_type, type_params = ast.value
-          translated_params = type_params.map { |param| translate(param).first }
-          [Aua::Runtime::VM::Types::GenericType.new(base_type, translated_params)]
+          translated_params = type_params.flat_map { |param| translate(param).first }
+          [IR::Types::GenericType.new(base_type, translated_params)]
         end
 
         def translate_type_annotation(ast)

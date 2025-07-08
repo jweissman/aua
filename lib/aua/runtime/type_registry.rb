@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../obj"
+require_relative "type_converter"
 
 module Aua
   module Runtime
@@ -14,7 +15,9 @@ module Aua
       # @param name [String] The name of the type
       # @param definition [AST::Node] The type definition AST node
       def register(name, definition)
+        # Convert AST to runtime type using TypeConverter to prevent AST leaks
         @types[name] = create_type_object(name, definition)
+        # TypeConverter.ast_to_runtime(definition, name, self)
       end
 
       # Look up a type by name
@@ -37,27 +40,36 @@ module Aua
         @types.keys
       end
 
+      # Legacy methods for backward compatibility - now redirected through TypeConverter
       private
 
-      # Create a type object from an AST definition
+      # Create a type object from an AST definition (legacy method)
       # @param name [String] The name of the type
       # @param definition [AST::Node] The type definition AST
       # @return [Aua::Klass] A type object
       def create_type_object(name, definition)
-        case definition.type
-        when :union_type
-          create_union_type(name, definition.value)
-        when :type_constant
-          create_constant_type(name, definition.value)
-        when :type_reference
-          create_reference_type(name, definition.value)
-        when :record_type
-          create_record_type(name, definition.value)
-        when :generic_type
-          create_generic_type(name, definition.value)
-        else
-          raise Error, "Unknown type definition: #{definition.type}"
-        end
+        # end
+        type_obj = case definition.type
+                   when :union_type
+                     create_union_type(name, definition.value)
+                   when :type_constant
+                     create_constant_type(name, definition.value)
+                   when :type_reference
+                     create_reference_type(name, definition.value)
+                   when :record_type
+                     create_record_type(name, definition.value)
+                   when :generic_type
+                     create_generic_type(name, definition.value)
+                   else
+                     raise Error, "Unknown type definition: #{definition.type}"
+                   end
+
+        # Now use TypeConverter instead of inline AST handling
+        actual_type = type_obj
+        converted_type = TypeConverter.ast_to_runtime(definition, name, self)
+        Aua.logger.info "Registered type: #{name} -> #{actual_type.inspect} [converted would be: #{converted_type.inspect}]"
+
+        type_obj
       end
 
       # Create a union type (enum-like: 'yes' | 'no' or Type1 | Type2)
