@@ -68,11 +68,15 @@ module Aua
 
   # The base object for all Aua values.
   class Obj < Base
+    attr_accessor :type_annotation
+
     def klass = Klass.klass
     def inspect = "<#{self.class.name} #{introspect}>"
     def introspect = ""
     def pretty = introspect
     def self.describe(message) = define_aura_method(:describe) { message }
+
+    # def type_annotation = @type_annotation ||= nil
 
     define_aura_method(:dup) { "dup'd" }
   end
@@ -310,13 +314,19 @@ module Aua
       Provides methods for accessing and manipulating the list.
     GUIDANCE
 
-    def initialize(values = [])
+    def initialize(values = [], type_annotation = nil)
       super()
       @values = values
+      @type_annotation = type_annotation
     end
 
     def name = "list"
     def introspect = "[#{@values.map(&:introspect).join(", ")}]"
+
+    # Return the type annotation if available, otherwise default to "List"
+    def type_name
+      @type_annotation || "List"
+    end
 
     # define_aura_method(:[]) do |index|
     #   raise Error, "Index out of bounds" if index < 0 || index >= @values.length
@@ -337,6 +347,54 @@ module Aua
 
     def self.json_schema
       { type: "object", properties: { value: { type: "array", items: { type: "string" } } }, required: ["value"] }
+    end
+  end
+
+  # Dictionary/Map value in Aua.
+  class Dict < Obj
+    describe <<~GUIDANCE
+      Represents a dictionary/map of key-value pairs in Aua.
+      Keys are typically strings, values can be any Aua objects.
+      Provides methods for accessing and manipulating the dictionary.
+    GUIDANCE
+
+    def initialize(values = {}, type_annotation = nil)
+      super()
+      @values = values
+      @type_annotation = type_annotation
+    end
+
+    def name = "dict"
+    def introspect = "{#{@values.map { |k, v| "#{k}: #{v.introspect}" }.join(", ")}}"
+
+    # Return the type annotation if available, otherwise default to "Dict"
+    def type_name
+      @type_annotation || "Dict"
+    end
+
+    def self.klass = @klass ||= Klass.new("Dict", Klass.obj)
+
+    attr_reader :values
+
+    def self.json_schema
+      { type: "object", properties: { value: { type: "object" } }, required: ["value"] }
+    end
+
+    # Support member access
+    def get_field(field_name)
+      raise Error, "Key '#{field_name}' not found in dictionary" unless @values.key?(field_name)
+
+      @values[field_name]
+    end
+
+    # Check if a key exists
+    def has_field?(field_name)
+      @values.key?(field_name)
+    end
+
+    # Set a key-value pair
+    def set_field(field_name, new_value)
+      @values[field_name] = new_value
     end
   end
 

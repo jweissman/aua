@@ -1,6 +1,8 @@
 require_relative "vm/commands"
 require_relative "vm/types"
 require_relative "vm/translator"
+require_relative "vm/call_frame"
+require_relative "vm/builtin"
 require_relative "type_classes"
 
 module Aua
@@ -8,30 +10,6 @@ module Aua
     # The virtual machine for executing Aua ASTs.
     class VM
       extend Semantics
-
-      # Represents a call frame on the Aura call stack
-      class CallFrame
-        attr_reader :function_name, :parameters, :arguments, :local_env, :caller_env
-
-        def initialize(function_name, parameters, arguments, caller_env)
-          @function_name = function_name
-          @parameters = parameters
-          @arguments = arguments
-          @caller_env = caller_env
-          @local_env = caller_env.dup
-
-          # Bind parameters to arguments in local environment
-          parameters.zip(arguments) do |param, arg|
-            @local_env[param] = arg
-          end
-        end
-
-        def to_s
-          args_str = @arguments.map(&:inspect).join(", ")
-          "#{@function_name}(#{args_str})"
-        end
-      end
-
       def initialize(env = {})
         @env = env
         @tx = Translator.new(self)
@@ -42,215 +20,19 @@ module Aua
 
       def builtins
         @builtins ||= {
-          inspect: method(:builtin_inspect),
-          rand: method(:builtin_rand),
-          time: method(:builtin_time),
-          say: method(:builtin_say),
-          ask: method(:builtin_ask),
-          chat: method(:builtin_chat),
-          see_url: method(:builtin_see_url),
-          cast: method(:builtin_cast),
-          typeof: method(:builtin_typeof)
+          inspect: Builtin.method(:builtin_inspect),
+          rand: Builtin.method(:builtin_rand),
+          time: Builtin.method(:builtin_time),
+          say: Builtin.method(:builtin_say),
+          ask: Builtin.method(:builtin_ask),
+          chat: Builtin.method(:builtin_chat),
+          see_url: Builtin.method(:builtin_see_url),
+          cast: Builtin.method(:builtin_cast),
+          typeof: Builtin.method(:builtin_typeof)
         }
       end
 
       private
-
-      def builtin_cast(obj, klass)
-        raise Error, "cast requires two arguments" unless obj.is_a?(Obj) && klass.is_a?(Klass)
-        raise Error, "Cannot cast to non-Klass: \\#{klass.inspect}" unless klass.is_a?(Klass)
-
-        # Generic casting using LLM + JSON schema
-        Aua.logger.info "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect}"
-
-        # Aua.logger.debug(
-        #   "Casting with schema: \\#{obj.introspect} (#{obj.class}) => " \
-        #   "\\#{klass.introspect} (#{klass.class})"
-        # )
-
-        chat = Aua::LLM.chat
-        ret = chat.with_json_guidance(schema_for(klass)) do
-          chat.ask(build_cast_prompt(obj, klass))
-        end
-        Aua.logger.info "Response from LLM: \\#{ret.inspect}"
-
-        value = JSON.parse(ret)["value"]
-        result = klass.construct(value)
-        Aua.logger.info "Cast result: \\#{result.inspect} (\\#{result.class})"
-        result
-      end
-
-      def schema_for(klass)
-        # All Klass objects should provide json_schema and construct methods
-        schema = {
-          name: klass.name,
-          strict: "true",
-          schema: {
-            **klass.json_schema,
-            required: ["value"]
-          }
-        }
-
-        Aua.logger.warn "Using schema: \\#{schema.inspect} for class: \\#{klass.name}"
-
-        schema
-      end
-
-      def build_cast_prompt(obj, klass)
-        base_prompt = <<~PROMPT
-          You are an English-language runtime.
-          Please provide a 'translation' of the given object in the requested type (#{klass.introspect}).
-          This should be a forgiving and humanizing cast into the spirit of the target type.
-
-          The object is '#{obj.introspect}'.
-        PROMPT
-
-        # Add type-specific guidance
-        # type_guidance = if klass.aura_respond_to?(:describe)
-        #                   klass.aura_send(:describe)
-        #                 else
-        #                   "This is a #{klass.name} type. Please provide a value that fits this type."
-        #                 end
-        type_guidance = case klass.name
-                        when "List"
-                          <<~GUIDANCE
-
-                            This is a List type. The result should be an array of strings.
-                            If the input contains multiple items (like in brackets or comma-separated),
-                            preserve them as separate array elements. If it's a single item, you can
-                            still make it an array, but consider if it represents multiple conceptual items.
-                          GUIDANCE
-                        when "Bool"
-                          <<~GUIDANCE
-
-                            This is a Boolean type.
-                            Return true for positive, affirmative, or 'yes-like' values
-                            (like "yes", "true", "yep", "ok", "sure", etc.) and false for negative, dismissive,
-                            or 'no-like' values (like null, false, or strings like "no", "nope", "nah", "never", etc.).
-                          GUIDANCE
-                        when "Int"
-                          <<~GUIDANCE
-
-                            This is an Integer type. Convert textual numbers to their numeric equivalents.
-                            For example: "one" → 1, "twenty-three" → 23, etc.
-                          GUIDANCE
-                        when "Str"
-                          <<~GUIDANCE
-
-                            For numbers, you might use written-out forms (like "3.14" → "π", "1" → "one").
-                          GUIDANCE
-                        when "Nihil"
-                          <<~GUIDANCE
-                            This is a Nihil type, which represents the absence of value.
-                            For instance, you might return an empty string.
-                          GUIDANCE
-                        else
-                          ""
-                        end
-
-        # Add context for union types
-        if klass.respond_to?(:union_values)
-          possible_values = klass.union_values
-          type_guidance += <<~ADDITIONAL
-
-            This is a union type with these possible values:
-            #{possible_values.map { |v| "- '#{v}'" }.join("\n")}
-
-            Please select the most appropriate value from this list.
-          ADDITIONAL
-        end
-
-        # base_prompt + type_guidance + "\n"
-        [base_prompt, type_guidance].join("\n").strip
-      end
-
-      def builtin_inspect(obj)
-        Aua.logger.info "Inspecting object: \\#{obj.inspect}"
-        raise Error, "inspect requires a single argument" unless obj.is_a?(Obj)
-
-        Aua.logger.info "Object class: \\#{obj.class}"
-        Str.new(obj.introspect)
-      end
-
-      def builtin_rand(max)
-        Aua.logger.info "Generating random number... (max: \\#{max.inspect})"
-        rng = Random.new
-        max = max.is_a?(Int) ? max.value : 100 if max.is_a?(Obj)
-        Aua.logger.info "Using max value: \\#{max}"
-        Aua::Int.new(rng.rand(0..max))
-      end
-
-      def builtin_time(_args)
-        Aua.logger.info "Current time: \\#{Time.now}"
-        Aua::Time.now
-      end
-
-      def builtin_say(arg)
-        value = arg
-        raise Error, "say only accepts Str arguments, got \\#{value.class}" unless value.is_a?(Str)
-
-        $stdout.puts value.value
-
-        Aua::Nihil.new
-      end
-
-      def builtin_ask(question)
-        question = question.aura_send(:to_s) if question.is_a?(Obj) && !question.is_a?(Str)
-        raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
-
-        Aua.logger.info "Asking question: \\#{question.value}"
-        $stdout.puts(question.value)
-        response = $stdin.gets
-        Aua.logger.info "Response: \\#{response}"
-        raise Error, "No response received" if response.nil?
-
-        Str.new(response.chomp)
-      end
-
-      def builtin_chat(question)
-        raise Error, "ask requires a single Str argument" unless question.is_a?(Str)
-
-        q = question.value
-        Aua.logger.info "Posing question to chat: \\#{q.inspect} (\\#{q.length} chars, \\#{q.class} => String)"
-        current_conversation = Aua::LLM.chat
-        response = current_conversation.ask(q)
-        Aua.logger.debug "Response: \\#{response}"
-        Aua::Str.new(response)
-      end
-
-      def builtin_see_url(url)
-        Aua.logger.info "Fetching URL: #{url.inspect}"
-        raise Error, "see_url requires a single Str argument" unless url.is_a?(Str)
-
-        uri = URI(url.value)
-        response = Net::HTTP.get_response(uri)
-        handle_see_url_response(uri, response)
-      end
-
-      def handle_see_url_response(url, response)
-        raise Error, "Failed to fetch URL: #{url} - #{response.message}" unless response.is_a?(Net::HTTPSuccess)
-
-        Aua.logger.debug "Response from #{url}: #{response.body}"
-        Aua::Str.new(response.body)
-      end
-
-      def builtin_typeof(obj)
-        raise Error, "typeof requires a single argument" unless obj.is_a?(Obj)
-
-        type_name = case obj
-                    when Int then "Int"
-                    when Str then "Str"
-                    when Bool then "Bool"
-                    when Float then "Float"
-                    when Function then "Function"
-                    when ObjectLiteral then "Object"
-                    when RecordObject then "Record"
-                    when List then "List"
-                    when Nihil then "Nihil"
-                    else obj.class.name.split("::").last
-                    end
-        Str.new(type_name)
-      end
 
       def reduce(ast) = @tx.translate(ast)
 
@@ -292,6 +74,7 @@ module Aua
         when :defun then eval_defun(val)
         when :object_literal then eval_object_literal(val)
         when :type_lookup, :lookup_type then eval_type_lookup(val)
+        when :generic_type_lookup then eval_generic_type_lookup(val)
         when :union_type_lookup then eval_union_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
@@ -300,6 +83,7 @@ module Aua
         when :dynamic_union_class then eval_dynamic_union_class(val)
         when :llm_select then eval_llm_select(val[0], val[1])
         when :collapse then eval_collapse(val[0], val[1])
+        when :typed_value then eval_typed_value(val[0], val[1])
         when :call
           fn_name, *args = val
           eval_call(fn_name, args.map { |a| evaluate_one(a) })
@@ -545,17 +329,26 @@ module Aua
               end
 
         # Access the field
-        case obj
-        when ObjectLiteral, RecordObject
-          obj.get_field(field_name)
-        else
-          # Try to access field via Aura method dispatch
-          unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
-            raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
-          end
+        field_value = case obj
+                      when ObjectLiteral, RecordObject
+                        obj.get_field(field_name)
+                      else
+                        # Try to access field via Aura method dispatch
+                        unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
+                          raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
+                        end
 
-          obj.aura_send(field_name.to_sym)
+                        obj.aura_send(field_name.to_sym)
+                      end
+
+        # Propagate type annotation from struct definition if available
+        if obj.instance_variable_defined?(:@type_annotation) && obj.instance_variable_get(:@type_annotation)
+          parent_type = obj.instance_variable_get(:@type_annotation)
+          field_type = get_field_type_from_struct(parent_type, field_name)
+          field_value.instance_variable_set(:@type_annotation, field_type) if field_type
         end
+
+        field_value
       end
 
       def eval_member_assignment(obj_name, field_name, value_statements)
@@ -801,6 +594,149 @@ module Aua
         when Bool then "Bool"
         when Float then "Float"
         else value.class.name.split("::").last
+        end
+      end
+
+      def eval_typed_value(value_stmt, type_stmt)
+        # Evaluate the value first
+        value = evaluate_one(value_stmt)
+
+        # Handle type annotations for different object types
+        if value.is_a?(Aua::List) || value.is_a?(Aua::ObjectLiteral) || value.is_a?(Aua::Dict)
+          type_annotation = nil
+
+          # Handle direct generic types: List<String>, Dict<String, Int>
+          if type_stmt.is_a?(Array) && type_stmt.first.is_a?(Aua::Runtime::VM::Types::GenericType)
+            generic_type = type_stmt.first
+            type_annotation = "#{generic_type.base_type}<#{generic_type.type_params.map(&:name).join(", ")}>"
+
+            # Convert ObjectLiteral to Dict if the type is a Dict type
+            if value.is_a?(Aua::ObjectLiteral) && generic_type.base_type == "Dict"
+              value = Aua::Dict.new(value.values, type_annotation)
+            end
+
+          # Handle type references that might resolve to generic types: BookList
+          elsif type_stmt.is_a?(Array) && type_stmt.first.is_a?(Aua::Runtime::VM::Types::TypeReference)
+            type_ref = type_stmt.first
+            # Look up the type in the registry
+            resolved_type = @type_registry.lookup(type_ref.name)
+            if resolved_type.is_a?(Aua::Runtime::GenericType)
+              # Extract type arg names from AST nodes
+              type_arg_names = resolved_type.type_args.map { |arg| describe_type_ast(arg) }
+              # debugger
+              type_annotation = "#{resolved_type.base_type}<#{type_arg_names.join(", ")}>"
+
+              # Convert ObjectLiteral to List if the type is a List type
+              if value.is_a?(Aua::ObjectLiteral) && resolved_type.base_type == "List"
+                # Convert empty object literal {} to empty list []
+                value = Aua::List.new([])
+              # Convert ObjectLiteral to Dict if the type is a Dict type
+              elsif value.is_a?(Aua::ObjectLiteral) && resolved_type.base_type == "Dict"
+                value = Aua::Dict.new(value.values, type_annotation)
+              end
+            else
+              type_annotation = type_ref.name
+            end
+          end
+
+          value.instance_variable_set(:@type_annotation, type_annotation) if type_annotation
+        end
+
+        value
+      end
+
+      def eval_generic_type_lookup(generic_info)
+        # Handle generic type lookup like List<String>
+        # generic_info is a hash with { base: "List", args: [TypeRef(String)] }
+        base_type = generic_info[:base]
+        type_args = generic_info[:args]
+
+        # Create a concrete GenericType instance that can be used for casting
+        # The GenericType class from type_classes.rb expects (name, type_info, type_registry)
+        type_info = [base_type, type_args]
+        generic_type = Aua::Runtime::GenericType.new("#{base_type}<...>", type_info, @type_registry)
+
+        # Update the name to use the proper introspect method
+        generic_type.instance_variable_set(:@name, generic_type.introspect)
+
+        generic_type
+      end
+
+      # def eval_generic_type_cast(generic_type)
+      #   # Handle casting to generic types like List<String>
+      #   # For now, we'll return the base type's class (e.g., List.klass for List<String>)
+
+      #   case generic_type.base_type
+      #   when "List"
+      #     Aua::List.klass
+      #   when "Dict"
+      #     Aua::Dict.klass
+      #   else
+      #     # Default to string for unknown generic types
+      #     Aua::Str.klass
+      #   end
+      # end
+
+      def get_field_type_from_struct(struct_type_name, field_name)
+        # Look up the struct definition in the type registry
+        struct_def = @type_registry.lookup(struct_type_name)
+        return nil unless struct_def
+
+        # Handle different types of struct definitions
+        case struct_def
+        when Aua::Runtime::RecordType
+          # Find the field in the record type field definitions
+          field_def = struct_def.field_definitions.find { |fd| fd[:name] == field_name }
+          return nil unless field_def
+
+          # Convert the field type to a string representation
+          convert_type_to_annotation_string(field_def[:type])
+        else
+          nil
+        end
+      end
+
+      def convert_type_to_annotation_string(type_obj)
+        case type_obj
+        when Aua::Runtime::VM::Types::TypeReference
+          type_obj.name
+        when Aua::Runtime::VM::Types::GenericType
+          # Build the generic type string like "List<String>"
+          type_arg_strings = type_obj.type_params.map { |param| convert_type_to_annotation_string(param) }
+          "#{type_obj.base_type}<#{type_arg_strings.join(", ")}>"
+        when Aua::AST::Node
+          # Handle AST nodes from struct definitions using describe_type_ast
+          describe_type_ast(type_obj)
+        else
+          type_obj.to_s
+        end
+      end
+
+      def describe_type_ast(node)
+        case node.type
+        when :record_type
+          introspection = "{ " + node.value.to_h(&method(:describe_type_ast)).map { |k, v|
+            "#{k} => #{v}"
+          }.join(", ") + " }"
+          if introspection.length > 80
+            "{...}"
+          else
+            introspection
+          end
+        when :generic_type
+          # Handle generic types like List<String>
+          base_type = node.value[0]
+          type_args = node.value[1] || []
+          type_arg_strings = type_args.map { |arg| describe_type_ast(arg) }
+          "#{base_type}<#{type_arg_strings.join(", ")}>"
+        when :field then [node.value[0], describe_type_ast(node.value[1])] # Field type is the second element
+        when :type_reference then node.value
+        else
+          Aua.logger.warn("vm:describe_type_ast") do
+            "Unknown AST node type for type description: #{node.type} - using value: #{node.value.inspect}"
+          end
+          # For other types, just return the value as a string
+          node.value.to_s
         end
       end
     end

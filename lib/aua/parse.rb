@@ -579,8 +579,15 @@ module Aua
       prec = BINARY_PRECEDENCE[op]
       consume(op)
 
-      # Special handling for tilde operator - parse the right side as a type expression
+      # Special handling for operators that expect type expressions on the right
       if op == :tilde
+        right = parse_type_expression
+      elsif op == :colon
+        # Type annotation: expr : Type
+        right = parse_type_expression
+        return s(:type_annotation, left, right)
+      elsif op == :as
+        # Type casting: expr as Type
         right = parse_type_expression
       elsif op == :equals
         # For assignment, the right side should be a full expression (including statements)
@@ -658,6 +665,38 @@ module Aua
       # Reference to another type
       type_name = @current_token.value
       consume(:id)
+
+      # Check for generic type syntax: List<String> (only in type contexts)
+      if @current_token.type == :lt
+        Aua.logger.info "parse-type-reference" do
+          "Parsing generic type reference: #{type_name} with current token: #{@current_token.type} (#{@current_token.value})"
+        end
+        consume(:lt)
+
+        # Parse generic type parameters
+        type_params = [] # : Array[untyped]
+
+        loop do
+          # Parse the type parameter (recursive type expression)
+          type_param = parse_type_expression
+          type_params << type_param
+
+          # Check for comma (multiple type parameters) or closing >
+          if @current_token.type == :comma
+            consume(:comma)
+          elsif @current_token.type == :gt
+            consume(:gt)
+            break
+          else
+            parse_failure("Expected ',' or '>' in generic type")
+          end
+        end
+
+        # Return a generic type node
+        return s(:generic_type, type_name, type_params)
+      end
+
+      # Regular type reference
       s(:type_reference, type_name)
     end
 

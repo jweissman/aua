@@ -28,8 +28,10 @@ module Aua
           when :union_type then translate_union_type(ast)
           when :type_reference then translate_type_reference(ast)
           when :type_constant then translate_type_constant(ast)
+          when :generic_type then translate_generic_type(ast)
           when :unit then translate_tuple(ast)
           when :tuple then translate_tuple(ast)
+          when :type_annotation then translate_type_annotation(ast)
           else
             raise Error, "Unknown AST node type: \\#{ast.type}"
           end
@@ -259,6 +261,7 @@ module Aua
               when :and then [SEND[left, :and, right]]
               when :or then [SEND[left, :or, right]]
               when :as then handle_type_cast(left, right)
+              when :colon then handle_type_annotation(left, right)
               when :tilde then handle_enum_selection(left, right)
               when :lambda then handle_lambda(left, right)
               else
@@ -294,7 +297,9 @@ module Aua
             end
 
             def handle_type_cast(left, right)
-              Aua.logger.info "Type casting: #{left.inspect} as #{right.inspect}"
+              Aua.logger.info("Binop#handle_type_cast") do
+                "Type casting: #{left.inspect} as #{right.inspect}"
+              end
 
               # Unwrap rhs until we get a single value
               right = right.first while right.is_a?(Array) && right.size == 1
@@ -302,7 +307,17 @@ module Aua
               # Aua.logger.info("binary_operation") { "Aua vm env => #{Aua.vm.instance_variable_get(:@env).inspect}" }
 
               klass = resolve_cast_target(right)
+              Aua.logger.info("Binop#handle_type_cast") { "Resolved cast target: #{klass.inspect}" }
               CAST[left, klass]
+            end
+
+            def handle_type_annotation(left, right)
+              Aua.logger.info "Type annotation: #{left.inspect} : #{right.inspect}"
+
+              # Type annotations for now just return the left side value
+              # In the future, this could be enhanced for type checking
+              # For now, we'll just return the left value and ignore the type annotation
+              left
             end
 
             def resolve_cast_target(right)
@@ -311,6 +326,16 @@ module Aua
               elsif right.is_a?(Statement) && right.type == :id
                 # Defer type lookup to execution time by creating a special statement
                 Statement.new(type: :type_lookup, value: right.value.first)
+              elsif right.is_a?(Aua::Runtime::VM::Types::TypeReference)
+                # Type reference from parse_type_expression - defer lookup to execution time
+                Statement.new(type: :type_lookup, value: right.name)
+              elsif right.is_a?(Aua::Runtime::VM::Types::GenericType)
+                #   # Handle generic types like List<String>
+                # debugger
+                Statement.new(type: :generic_type_lookup, value: { base: right.base_type, args: right.type_params })
+                #   # For now, we'll defer to runtime to handle the generic type casting
+                #   Statement.new(type: :generic_type_cast, value: right)
+                # right
               else
                 Aua::Str.klass
               end
@@ -559,6 +584,25 @@ module Aua
 
           # Store the function in the environment using assignment semantics
           [Semantics.inst(:let, function_name, function_obj)]
+        end
+
+        # Translation methods for generic types
+        def translate_generic_type(ast)
+          # Generic type like List<String> - represented as a generic type with base type and type parameters
+          base_type, type_params = ast.value
+          translated_params = type_params.map { |param| translate(param).first }
+          [Aua::Runtime::VM::Types::GenericType.new(base_type, translated_params)]
+        end
+
+        def translate_type_annotation(ast)
+          # Type annotations: expr : Type
+          # We need to preserve the type information for the left side
+          left, right = ast.value
+          left_stmt = translate(left)
+          right_stmt = translate(right)
+
+          # Create a special statement that carries both the value and type info
+          Statement.new(type: :typed_value, value: [left_stmt, right_stmt])
         end
       end
     end

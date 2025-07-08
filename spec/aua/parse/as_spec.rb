@@ -16,7 +16,7 @@ RSpec.describe Aua::Parse do
       expect(ast.value[0]).to eq(:as)
       expect(ast.value[1].type).to eq(:id)
       expect(ast.value[1].value).to eq("x")
-      expect(ast.value[2].type).to eq(:id)
+      expect(ast.value[2].type).to eq(:type_reference)
       expect(ast.value[2].value).to eq("T")
     end
   end

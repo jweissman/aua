@@ -240,7 +240,7 @@ RSpec.describe Aua::Parse do
       expect(lines[1].value[2]).to eq(s(:binop, [
                                           :as,
                                           s(:bool, true),
-                                          s(:id, "YesNo")
+                                          s(:type_reference, "YesNo")
                                         ]))
     end
   end

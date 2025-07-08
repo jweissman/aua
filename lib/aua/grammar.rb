@@ -24,6 +24,7 @@ module Aua
       equals: 0, # assignment has lowest precedence
       lambda: 1, # lambda has very low precedence
       as: 2, # typecast has low precedence (looser than arithmetic, tighter than assignment)
+      colon: 2, # type annotation has low precedence, similar to typecast
       tilde: 3, # enum selection has low precedence, similar to assignment
       or: 4, # logical OR has low precedence among operators
       and: 5, # logical AND has higher precedence than OR

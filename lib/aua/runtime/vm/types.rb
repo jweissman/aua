@@ -38,6 +38,19 @@ module Aua
             "TypeConst(#{@name})"
           end
         end
+
+        class GenericType
+          attr_reader :base_type, :type_params
+
+          def initialize(base_type, type_params)
+            @base_type = base_type
+            @type_params = type_params
+          end
+
+          def inspect
+            "GenericType(#{@base_type}<#{@type_params.map(&:inspect).join(", ")}>)"
+          end
+        end
       end
     end
   end

@@ -53,6 +53,8 @@ module Aua
           create_reference_type(name, definition.value)
         when :record_type
           create_record_type(name, definition.value)
+        when :generic_type
+          create_generic_type(name, definition.value)
         else
           raise Error, "Unknown type definition: #{definition.type}"
         end
@@ -80,6 +82,13 @@ module Aua
 
         # Create a proper RecordType class instead of metaprogramming
         Runtime::RecordType.new(name, field_defs, self)
+      end
+
+      # Create a generic type (like List<String>)
+      def create_generic_type(name, type_info)
+        # type_info should be [base_type, type_args]
+        # For now, create a simple reference that includes the generic info
+        Runtime::GenericType.new(name, type_info, self)
       end
 
       def extract_field_definitions(fields)

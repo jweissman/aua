@@ -16,7 +16,10 @@ module Aua
           field_type = field_def[:type]
           required << field_name
 
+          # debugger
+
           properties[field_name] = schema_for_type(field_type, type_registry)
+          Aua.logger.info "Field: #{field_name} - Schema: #{properties[field_name].inspect}"
         end
 
         {
@@ -72,6 +75,32 @@ module Aua
           case type_def.type
           when :type_reference
             schema_for_type_reference(type_def.value, type_registry)
+          when :generic_type
+            # Handle generic types like List<String>, Dict<String, Int>
+            base_type = type_def.value[0]
+            type_args = type_def.value[1] || []
+
+            case base_type
+            when "List"
+              # Generate array schema with items type
+              item_type_schema = if type_args.any?
+                                   schema_for_type(type_args.first, type_registry)
+                                 else
+                                   { type: "object" }
+                                 end
+              { type: "array", items: item_type_schema }
+            when "Dict"
+              # Generate object schema with additionalProperties type
+              value_type_schema = if type_args.length >= 2
+                                    schema_for_type(type_args[1], type_registry)
+                                  else
+                                    { type: "object" }
+                                  end
+              { type: "object", additionalProperties: value_type_schema }
+            else
+              # For unknown generic types, default to object
+              { type: "object" }
+            end
           when :type_constant
             # For literal types like 'active' | 'inactive'
             { enum: [type_def.value.value] }
