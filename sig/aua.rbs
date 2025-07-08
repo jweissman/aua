@@ -425,6 +425,7 @@ module Aua
     def parse_parenthesized_type_expression: () -> AST::Node
     def parse_function_argument: () -> AST::Node
     def parse_function_call: () -> AST::Node
+    def parse_lambda_parameters: () -> Array[String]
   end
 
   module Registry
@@ -574,6 +575,10 @@ module Aua
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
+    def type_name: () -> String
+    def get_field: (String) -> Obj
+    def has_field?: (String) -> bool
+    def set_field: (String, Obj) -> void
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
   end
@@ -595,6 +600,8 @@ module Aua
     attr_reader values: Hash[String, Obj]
     def initialize: (Hash[String, Obj]) -> void
     def get_field: (String) -> Obj
+    def has_field?: (String) -> bool
+    def set_field: (String, Obj) -> void
     def introspect: () -> String
     def name: () -> String
   end
@@ -610,6 +617,7 @@ module Aua
     def pretty: () -> String
     def callable_with?: (Integer) -> bool
     def call: (untyped, Array[untyped]) -> untyped
+    def enclose: (Hash[String, untyped]) -> void
     def json_schema: () -> Hash[untyped, untyped]
     def to_callable: () -> Hash[Symbol, untyped]
     def self.klass: () -> Klass
@@ -843,6 +851,7 @@ module Aua
           def self.handle_enum_selection: (statement, statement) -> statement
           def self.handle_lambda: (statement, statement) -> statement
           def self.extract_choices_from_union_type: (untyped) -> Array[untyped]
+          def extract_union_choices: (untyped) -> Array[untyped]
         end
 
         TRANSLATIONS: Hash[Symbol, Array[Statement]]
@@ -918,6 +927,12 @@ module Aua
       def eval_collapse: (untyped) -> untyped
       def eval_typed_value: (untyped) -> untyped
       def eval_while: (untyped, untyped) -> untyped
+      def extract_union_choices_from_type: (untyped) -> Array[untyped]
+      def eval_branch: (untyped) -> untyped
+      def extract_parameter_name: (untyped) -> String
+      def eval_function_object: (Function, Array[untyped]) -> untyped
+      def compatible_types?: (untyped, untyped) -> bool
+      def type_name: (untyped) -> String
       def get_field_type_from_struct: (String, String) -> untyped
       def convert_type_to_annotation_string: (untyped) -> String
       def describe_type_ast: (untyped) -> String
