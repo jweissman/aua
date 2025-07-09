@@ -33,6 +33,7 @@ module Aua
           when :unit then translate_tuple(ast)
           when :tuple then translate_tuple(ast)
           when :type_annotation then translate_type_annotation(ast)
+          when :index then translate_index(ast)
           else
             raise Error, "Unknown AST node type: \\#{ast.type}"
           end
@@ -238,6 +239,16 @@ module Aua
           left = translate(left_node)
           right = translate(right_node)
           Binop.binary_operation(op, left, right) || SEND[left, op, right]
+        end
+
+        def translate_index(node)
+          Aua.logger.debug "Translating index: #{node.inspect}"
+          collection_node, index_node = node.value
+          
+          collection = translate(collection_node)
+          index = translate(index_node)
+          
+          [Semantics.inst(:index, collection, index)]
         end
 
         # Support translating binary operations.

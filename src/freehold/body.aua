@@ -1,5 +1,15 @@
-phi = 1.6
+phi = 1.26
 
-fun body(rank, arch)
-  { name: 'finn the human' }
+fun body(rank, color)
+  color = /#(\d{2})(\d{2})(\d{2})/
+  {
+    name: 'finn the human',
+    power: phi * rank,
+    toughness: phi * rank,
+    abilities: [],
+    color: color
+  }
 end
+
+him = body(3, '#f0a080')
+say("${him.name} (${him.power.to_i}/${him.toughness.to_i}) - ${him.color}")

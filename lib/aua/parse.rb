@@ -368,6 +368,8 @@ module Aua
 
       # Don't handle function calls with parentheses - those are handled by parse_primary
       return nil if peek_token&.type == :lparen
+      # Don't handle array indexing - that should be handled by postfix parsing
+      return nil if peek_token&.type == :lbracket
 
       id_token = @current_token
       save_token = @current_token
@@ -563,8 +565,22 @@ module Aua
         operand = parse_unary
         s(:not, operand)
       else
-        parse_primary
+        parse_postfix
       end
+    end
+
+    def parse_postfix
+      expr = parse_primary
+      
+      # Handle postfix operations like array indexing
+      while @current_token.type == :lbracket
+        consume(:lbracket)
+        index = parse_expression
+        consume(:rbracket)
+        expr = s(:index, expr, index)
+      end
+      
+      expr
     end
 
     def precedent?(operand, min_prec)

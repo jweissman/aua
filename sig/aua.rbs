@@ -380,6 +380,7 @@ module Aua
     def parse_assignment: () -> AST::Node?
     def parse_binop: (?Integer) -> AST::Node
     def parse_primary: () -> AST::Node
+    def parse_postfix: () -> AST::Node
     def parse_command: () -> AST::Node?
     def parse_unary: () -> AST::Node?
     def parse_conditional: () -> AST::Node?
@@ -872,6 +873,7 @@ module Aua
         def translate_assignment: (AST::Node) -> Array[Statement]
         def translate_basic: (AST::Node) -> statement
         def translate_binop: (AST::Node) -> statement
+        def translate_index: (AST::Node) -> Array[Statement]
         def translate_if: (AST::Node) -> statement
         def translate_not: (AST::Node) -> statement
         def translate_gen_lit: (untyped) -> Array[Aua::Str]
@@ -915,6 +917,7 @@ module Aua
       def eval_gen: (Array[untyped]) -> untyped
       def eval_id: (untyped) -> untyped
       def eval_if: (untyped, untyped, untyped?) -> untyped
+      def eval_index: (untyped, untyped) -> untyped
       def eval_let: (String, Aua::Obj) -> Aua::Obj
       def eval_member_access: (Array[untyped], String) -> untyped
       def eval_member_assignment: (Array[untyped], String, untyped) -> untyped

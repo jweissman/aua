@@ -169,10 +169,10 @@ module Aua
 
     attr_reader :value
 
-    define_aura_method(:+) { Int.new(@value + _1.aura_send(:to_i)) }
-    define_aura_method(:-) { Int.new(@value - _1.aura_send(:to_i)) }
-    define_aura_method(:*) { Int.new(@value * _1.aura_send(:to_i)) }
-    define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_i)) }
+    define_aura_method(:+) { Int.new(@value + _1.aura_send(:to_ruby_i)) }
+    define_aura_method(:-) { Int.new(@value - _1.aura_send(:to_ruby_i)) }
+    define_aura_method(:*) { Int.new(@value * _1.aura_send(:to_ruby_i)) }
+    define_aura_method(:/) { Int.new(@value / _1.aura_send(:to_ruby_i)) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
     define_aura_method(:gt) do |other|
       Bool.new(@value > other.value)
@@ -181,10 +181,11 @@ module Aua
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }
     define_aura_method(:lte) { Bool.new(@value <= _1.value) }
 
-    # define_aura_method(:to_i) { Int.new(@value) }
-    # define_aura_method(:to_s) { Str.new(@value.to_s) }
-    define_aura_method(:to_i) { @value }
-    define_aura_method(:to_s) { @value.to_s }
+    define_aura_method(:to_i) { Int.new(@value) }
+    define_aura_method(:to_s) { Str.new(@value.to_s) }
+    define_aura_method(:to_ruby_i) { @value }
+    define_aura_method(:to_ruby_s) { @value.to_s }
+    define_aura_method(:to_ruby_f) { @value.to_f }
 
     def self.json_schema
       { type: "object", properties: { value: { type: "integer" } }, required: ["value"] }
@@ -204,11 +205,20 @@ module Aua
 
     attr_reader :value
 
+    define_aura_method(:+) { Float.new(@value + _1.aura_send(:to_ruby_f)) }
+    define_aura_method(:-) { Float.new(@value - _1.aura_send(:to_ruby_f)) }
+    define_aura_method(:*) { Float.new(@value * _1.aura_send(:to_ruby_f)) }
+    define_aura_method(:/) { Float.new(@value / _1.aura_send(:to_ruby_f)) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
     define_aura_method(:gt) { Bool.new(@value > _1.value) }
     define_aura_method(:lt) { Bool.new(@value < _1.value) }
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }
     define_aura_method(:lte) { Bool.new(@value <= _1.value) }
+
+    define_aura_method(:to_i) { Int.new(@value.to_i) }
+    define_aura_method(:to_ruby_i) { @value.to_i }
+    define_aura_method(:to_ruby_s) { @value.to_s }
+    define_aura_method(:to_ruby_f) { @value }
 
     def self.json_schema
       { type: "object", properties: { value: { type: "number" } }, required: ["value"] }

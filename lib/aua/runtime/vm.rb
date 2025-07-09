@@ -87,6 +87,7 @@ module Aua
         when :dynamic_union_class then eval_dynamic_union_class(val)
         when :llm_select then eval_llm_select(val[0], val[1])
         when :typed_value then eval_typed_value(val[0], val[1])
+        when :index then eval_index(val[0], val[1])
         when :call
           fn_name, *args = val
           eval_call(fn_name, args.map { |a| evaluate_one(a) })
@@ -317,7 +318,7 @@ module Aua
           maybe_str.value
         when Obj
           Aua.logger.info "Converting object to string: #{maybe_str.inspect}"
-          maybe_str.aura_send(:to_s)
+          maybe_str.aura_send(:to_ruby_s)
         else
           raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
         end
@@ -452,6 +453,39 @@ module Aua
 
         Aua.logger.info("vm:eval_llm_select") { "Selected: #{result.value}" }
         result
+      end
+
+      def eval_index(collection_expr, index_expr)
+        Aua.logger.info("vm:eval_index") { "Evaluating array indexing" }
+
+        # Evaluate the collection and index
+        collection = evaluate_one(collection_expr)
+        index = evaluate_one(index_expr)
+
+        # Ensure the index is an integer
+        raise Error, "Array index must be an integer, got #{type_name(index)}" unless index.is_a?(Int)
+
+        index_value = index.value
+
+        # Handle different collection types
+        case collection
+        when List
+          # Check bounds
+          if index_value < 0 || index_value >= collection.values.size
+            raise Error, "Array index #{index_value} out of bounds for array of size #{collection.values.size}"
+          end
+
+          collection.values[index_value]
+        when Str
+          # Allow string indexing as well
+          if index_value < 0 || index_value >= collection.value.length
+            raise Error, "String index #{index_value} out of bounds for string of length #{collection.value.length}"
+          end
+
+          Str.new(collection.value[index_value])
+        else
+          raise Error, "Cannot index into #{type_name(collection)} (only arrays and strings are indexable)"
+        end
       end
 
       def eval_dynamic_union_class(choices)
@@ -746,15 +780,15 @@ module Aua
 
       def describe_ast_node(node)
         case node.type
-        when :record_type
-          introspection = "{ " + node.value.to_h(&method(:describe_type_ast)).map { |k, v|
-            "#{k} => #{v}"
-          }.join(", ") + " }"
-          if introspection.length > 80
-            "{...}"
-          else
-            introspection
-          end
+        when :record_type then describe_record_type(node)
+          # introspection = "{ " + node.value.to_h(&method(:describe_type_ast)).map { |k, v|
+          #   "#{k} => #{v}"
+          # }.join(", ") + " }"
+          # if introspection.length > 80
+          #   "{...}"
+          # else
+          #   introspection
+          # end
         when :generic_type
           # Handle generic types like List<String>
           base_type = node.value[0]
@@ -770,6 +804,17 @@ module Aua
           # For other types, just return the value as a string
           node.value.to_s
         end
+      end
+
+      def describe_record_type(node)
+        # Handle record types by describing their fields
+        field_strings = node.fields.map do |field|
+          "#{field[:name]} => #{describe_type_ast(field[:type])}"
+        end
+        "{ #{field_strings.join(", ")} }"
+      rescue StandardError => e
+        Aua.logger.error("vm:describe_record_type") { "Error describing record type: #{e.message}" }
+        "{...}"
       end
     end
   end

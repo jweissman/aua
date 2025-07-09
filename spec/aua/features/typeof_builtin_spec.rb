@@ -29,7 +29,7 @@ RSpec.describe "typeof built-in function" do
 
   context "collection types" do
     it "returns 'List' for arrays" do
-      expect("typeof [1, 2, 3]").to be_aua("List").and_be_a(Aua::Str)
+      expect("typeof([1, 2, 3])").to be_aua("List").and_be_a(Aua::Str)
     end
 
     it "returns 'Object' for object literals" do
