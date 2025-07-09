@@ -29,6 +29,7 @@ module Aua
           when :type_reference then translate_type_reference(ast)
           when :type_constant then translate_type_constant(ast)
           when :generic_type then translate_generic_type(ast)
+          when :record_type then translate_record_type(ast)
           when :unit then translate_tuple(ast)
           when :tuple then translate_tuple(ast)
           when :type_annotation then translate_type_annotation(ast)
@@ -593,6 +594,17 @@ module Aua
           base_type, type_params = ast.value
           translated_params = type_params.flat_map { |param| translate(param).first }
           [IR::Types::GenericType.new(base_type, translated_params)]
+        end
+
+        def translate_record_type(ast)
+          # Record type like { name: String, age: Int }
+          field_defs = ast.value.map do |field_node|
+            field_name = field_node.value[0]
+            field_type = field_node.value[1]
+            field_type_ir = translate(field_type).first
+            { name: field_name, type: field_type_ir }
+          end
+          [IR::Types::RecordType.new(field_defs)]
         end
 
         def translate_type_annotation(ast)

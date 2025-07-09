@@ -36,6 +36,65 @@ module Aua
 
         field_type = field_def[:type]
 
+        # Handle IR types (new approach)
+        if field_type.is_a?(Aua::Runtime::IR::Types::TypeReference)
+          handle_type_reference(field_type, field_value)
+        elsif field_type.is_a?(Aua::Runtime::IR::Types::TypeConstant)
+          # Handle built-in types like String, Int
+          @type_registry.wrap_value(field_value)
+        elsif field_type.is_a?(Aua::Runtime::IR::Types::GenericType)
+          handle_ir_generic_type(field_type, field_value)
+        # Legacy AST node support (fallback)
+        elsif field_type.respond_to?(:type)
+          handle_ast_field_type(field_type, field_value)
+        else
+          # For unknown field types, use regular wrapping
+          @type_registry.wrap_value(field_value)
+        end
+      end
+
+      def handle_type_reference(field_type, field_value)
+        field_type_name = field_type.name
+
+        # Check if this field should be a record type
+        return @type_registry.wrap_value(field_value) unless @type_registry.type?(field_type_name)
+
+        field_type_obj = @type_registry.lookup(field_type_name)
+
+        # If it's a record type and we have a hash, recursively cast it
+        if field_type_obj.respond_to?(:field_definitions) && field_value.is_a?(Hash)
+          field_type_obj.construct(field_value)
+        else
+          # For non-record types or non-hash values, use regular wrapping
+          @type_registry.wrap_value(field_value)
+        end
+      end
+
+      def handle_ir_generic_type(field_type, field_value)
+        base_type = field_type.base_type
+        type_params = field_type.type_params
+
+        # Create the wrapped value first
+        wrapped_value = @type_registry.wrap_value(field_value)
+
+        # Apply type annotation for generic types
+        if base_type == "List" && wrapped_value.is_a?(Aua::List)
+          # Generate type annotation string like "List<String>"
+          type_arg_strings = type_params.map do |param|
+            if param.respond_to?(:name)
+              param.name
+            else
+              param.to_s
+            end
+          end
+          type_annotation = "#{base_type}<#{type_arg_strings.join(", ")}>"
+          wrapped_value.instance_variable_set(:@type_annotation, type_annotation)
+        end
+
+        wrapped_value
+      end
+
+      def handle_ast_field_type(field_type, field_value)
         case field_type.type
         when :type_reference
           field_type_name = field_type.value
@@ -77,7 +136,7 @@ module Aua
 
           wrapped_value
         else
-          # For other field types, use regular wrapping
+          # For unknown field types, use regular wrapping (consolidate the fallback)
           @type_registry.wrap_value(field_value)
         end
       end

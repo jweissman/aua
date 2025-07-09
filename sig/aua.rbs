@@ -13,11 +13,15 @@ module Aua
     def info: (String) -> void
             | (String) { (untyped) -> String } -> void
     def warn: (String) -> void
+             | (String) { (untyped) -> String } -> void
     def error: (String) -> void
+             | (String) { (untyped) -> String } -> void
     def debug: (String) -> void
              | (String) { (untyped) -> String } -> void
     def trace: (String) -> void
+             | (String) { (untyped) -> String } -> void
     def fatal: (String) -> void
+             | (String) { (untyped) -> String } -> void
     def self.default: () -> Logger
     def self.level: () -> untyped
     def self.outlet: () -> untyped
@@ -501,44 +505,44 @@ module Aua
   end
 
   class Int < Obj
+    attr_reader value: Integer
     def initialize: (Integer) -> void
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
-    attr_reader value: Integer
     def json_schema: () -> untyped
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
   end
 
   class Float < Obj
+    attr_reader value: ::Float
     def initialize: (::Float) -> void
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
-    attr_reader value: ::Float
     def json_schema: () -> untyped
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
   end
 
   class Str < Obj
+    attr_reader value: String
     def initialize: (String) -> void
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
-    attr_reader value: String
     def json_schema: () -> untyped
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
   end
 
   class Bool < Obj
+    attr_reader value: bool
     def initialize: (bool) -> void
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
-    attr_reader value: bool
     def json_schema: () -> untyped
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
@@ -546,13 +550,12 @@ module Aua
   end
 
   class Time < Obj
+    attr_reader value: ::Time
     def initialize: (::Time) -> void
     def klass: () -> Klass
     def name: () -> String
     def introspect: () -> String
     def self.now: () -> Time
-
-    attr_reader value: ::Time
     def json_schema: () -> untyped
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
@@ -611,7 +614,7 @@ module Aua
     attr_reader parameters: Array[String]
     attr_reader body: untyped
     attr_reader closure_env: Hash[String, untyped]
-    def initialize: (name: String, parameters: Array[String], body: untyped, closure_env: Hash[String, untyped]) -> void
+    def initialize: (name: String, parameters: Array[String], body: untyped, ?closure_env: Hash[String, untyped]) -> void
     def klass: () -> Klass
     def introspect: () -> String
     def pretty: () -> String
@@ -884,6 +887,7 @@ module Aua
         def translate_type_reference: (AST::Node) -> Array[Statement]
         def translate_type_constant: (AST::Node) -> Array[Statement]
         def translate_generic_type: (AST::Node) -> Array[Statement]
+        def translate_record_type: (AST::Node) -> Array[Statement]
         def translate_tuple: (AST::Node) -> Array[Statement]
         def translate_type_annotation: (AST::Node) -> Array[Statement]
         def translate_while: (AST::Node) -> Array[Statement]
@@ -918,15 +922,14 @@ module Aua
       def eval_send: (String | Symbol receiver, Symbol method, *untyped args) -> untyped
       def eval_type_declaration: (String, untyped) -> untyped
       def eval_type_lookup: (String) -> untyped
-      def eval_user_function: (String, Array[untyped]) -> untyped
+      def eval_user_function: (Function, Array[untyped]) -> untyped
       def eval_generic_type_lookup: (untyped) -> untyped
       def eval_function_definition: (String, Array[untyped], untyped) -> untyped
       def eval_defun: (String, Array[untyped], untyped) -> untyped
       def eval_union_type_lookup: (untyped) -> untyped
       def eval_dynamic_union_class: (untyped) -> untyped
       def eval_llm_select: (untyped) -> untyped
-      def eval_collapse: (untyped) -> untyped
-      def eval_typed_value: (untyped) -> untyped
+      def eval_typed_value: (untyped, untyped) -> untyped
       def eval_while: (untyped, untyped) -> untyped
       def extract_union_choices_from_type: (untyped) -> Array[untyped]
       def eval_branch: (untyped) -> untyped
@@ -945,16 +948,9 @@ module Aua
       def build_cast_prompt: (Aua::Obj, Klass) -> String
       def to_ruby_str: (untyped) -> String
 
-      def builtin_cast: (Aua::Obj, Klass) -> Aua::Obj?
-      def builtin_inspect: (Aua::Obj) -> Aua::Str
-      def builtin_rand: (Aua::Obj) -> Aua::Int
-      def builtin_time: (Aua::Str) -> Aua::Time
-      def builtin_say: (Aua::Str) -> Aua::Nihil
-      def builtin_ask: (Aua::Str) -> Aua::Str
-      def builtin_chat: (Aua::Str) -> Aua::Str
-      def builtin_see_url: (Aua::Str) -> Aua::Str
-
       def handle_see_url_response: (URI, Net::HTTPResponse) -> Aua::Str
+
+      def describe_ast_node: (AST::Node) -> String
     end
 
     class PrettyPrinter

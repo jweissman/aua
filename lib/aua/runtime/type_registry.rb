@@ -7,6 +7,8 @@ module Aua
   module Runtime
     # Registry for storing and retrieving custom type definitions
     class TypeRegistry
+      attr_reader :types
+
       def initialize
         @types = {}
       end
@@ -99,8 +101,12 @@ module Aua
       # Create a generic type (like List<String>)
       def create_generic_type(name, type_info)
         # type_info should be [base_type, type_args]
-        # For now, create a simple reference that includes the generic info
-        Runtime::GenericType.new(name, type_info, self)
+        # Convert type_args from AST nodes to IR types to prevent AST leaks
+        base_type = type_info[0]
+        raw_type_args = type_info[1] || []
+        ir_type_args = raw_type_args.map { |arg| TypeConverter.ast_to_ir(arg) }
+
+        Runtime::GenericType.new(name, [base_type, ir_type_args], self)
       end
 
       def extract_field_definitions(fields)
@@ -108,9 +114,9 @@ module Aua
           field_name = field.value[0]
           field_type_def = field.value[1]
 
-          # For now, just store the field name and type reference
-          # In a full implementation, we'd resolve type references
-          { name: field_name, type: field_type_def }
+          # Convert AST type definition to IR type to prevent AST leaks
+          ir_type = TypeConverter.ast_to_ir(field_type_def)
+          { name: field_name, type: ir_type }
         end
       end
 

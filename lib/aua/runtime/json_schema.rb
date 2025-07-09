@@ -67,16 +67,36 @@ module Aua
       class << self
         private
 
-        # Generate schema for a single type
-        # @param type_def [AST::Node] Type definition
+        # Generate schema for a single type (supports both AST and IR types)
+        # @param type_def [AST::Node, IR::Types::*] Type definition (AST or IR)
         # @param type_registry [TypeRegistry] Registry to look up nested types
         # @return [Hash] JSON schema fragment
         def schema_for_type(type_def, type_registry)
           Aua.logger.info "Generating schema for type: #{type_def.inspect}"
-          #   {}
-          # end
 
-          # def schema_for_ast(type_def, type_registry)
+          # Handle IR types
+          if type_def.is_a?(IR::Types::TypeReference)
+            return schema_for_type_reference(type_def.name, type_registry)
+          elsif type_def.is_a?(IR::Types::TypeConstant)
+            # TypeConstant is similar to TypeReference but for built-in types
+            return schema_for_type_reference(type_def.name, type_registry)
+          elsif type_def.is_a?(IR::Types::GenericType)
+            return schema_for_ir_generic_type(type_def, type_registry)
+          elsif type_def.is_a?(IR::Types::RecordType)
+            return schema_for_ir_record_type(type_def, type_registry)
+          elsif type_def.is_a?(IR::Types::UnionType)
+            return schema_for_ir_union_type(type_def, type_registry)
+          end
+
+          # Handle AST nodes (legacy support)
+          return schema_for_ast(type_def, type_registry) if type_def.respond_to?(:type)
+
+          # Fallback for unknown types
+          { type: "string" }
+        end
+
+        # Generate schema for AST nodes (legacy support)
+        def schema_for_ast(type_def, type_registry)
           case type_def.type
           when :type_reference
             schema_for_type_reference(type_def.value, type_registry)
@@ -113,6 +133,57 @@ module Aua
             # For complex types, default to string
             { type: "string" }
           end
+        end
+
+        # Generate schema for IR generic types
+        def schema_for_ir_generic_type(generic_type, type_registry)
+          case generic_type.base_type
+          when "List"
+            # Generate array schema with items type
+            item_type_schema = if generic_type.type_params.any?
+                                 schema_for_type(generic_type.type_params.first, type_registry)
+                               else
+                                 { type: "object" }
+                               end
+            { type: "array", items: item_type_schema }
+          when "Dict"
+            # Generate object schema with additionalProperties type
+            value_type_schema = if generic_type.type_params.length >= 2
+                                  schema_for_type(generic_type.type_params[1], type_registry)
+                                else
+                                  { type: "object" }
+                                end
+            { type: "object", additionalProperties: value_type_schema }
+          else
+            # For unknown generic types, default to object
+            { type: "object" }
+          end
+        end
+
+        # Generate schema for IR record types
+        def schema_for_ir_record_type(record_type, type_registry)
+          properties = {} # : Hash[String, Hash[untyped, untyped]]
+          required = [] # : Array[String]
+
+          record_type.fields.each do |field|
+            field_name = field[:name]
+            field_type = field[:type]
+            required << field_name
+            properties[field_name] = schema_for_type(field_type, type_registry)
+          end
+
+          {
+            type: "object",
+            properties: properties,
+            required: required
+          }
+        end
+
+        # Generate schema for IR union types
+        def schema_for_ir_union_type(_union_type, _type_registry)
+          # For now, treat union types as string enums
+          # This is a simplified approach - we could make it more sophisticated
+          { type: "string" }
         end
 
         # Generate schema for a type reference

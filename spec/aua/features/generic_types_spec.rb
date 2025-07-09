@@ -77,7 +77,7 @@ RSpec.describe "Generic Types" do
         people = "Generate 2 fictional characters" as PersonList
         typeof people
       AURA
-      expect(code).to be_aua("List<Object>").and_be_a(Aua::Str)
+      expect(code).to be_aua("List<{ name => String, age => Int }>").and_be_a(Aua::Str)
     end
   end
 

@@ -201,8 +201,24 @@ module Aua
 
       def type_arg_to_string(type_arg)
         # Convert a type argument to a readable string representation
-        if type_arg.respond_to?(:name)
+
+        # Handle IR types (new approach)
+        if type_arg.is_a?(Aua::Runtime::IR::Types::TypeConstant) || type_arg.is_a?(Aua::Runtime::IR::Types::TypeReference)
           type_arg.name
+        elsif type_arg.is_a?(Aua::Runtime::IR::Types::GenericType)
+          param_strings = type_arg.type_params.map { |param| type_arg_to_string(param) }
+          "#{type_arg.base_type}<#{param_strings.join(", ")}>"
+        elsif type_arg.is_a?(Aua::Runtime::IR::Types::RecordType)
+          # For record types like { name: String, age: Int }, return detailed structure
+          field_strings = type_arg.fields.map do |field|
+            "#{field[:name]} => #{type_arg_to_string(field[:type])}"
+          end
+          "{ #{field_strings.join(", ")} }"
+        elsif type_arg.is_a?(Aua::Runtime::IR::Types::UnionType)
+          variant_strings = type_arg.types.map { |variant| type_arg_to_string(variant) }
+          variant_strings.join(" | ")
+
+        # Handle legacy AST nodes
         elsif type_arg.respond_to?(:type) && type_arg.respond_to?(:value)
           # Handle AST nodes properly
           case type_arg.type
@@ -214,11 +230,16 @@ module Aua
           else
             type_arg.value.to_s
           end
+
+        # Handle other objects with value or fallback
         elsif type_arg.respond_to?(:value)
           type_arg.value.to_s
         elsif type_arg.is_a?(Array)
           # Handle object/struct types like { name: String, age: Int }
           "Object"
+        elsif type_arg.respond_to?(:name)
+          # Catch-all for objects with name method
+          type_arg.name
         else
           type_arg.to_s
         end

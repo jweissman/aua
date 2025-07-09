@@ -10,6 +10,8 @@ module Aua
     # The virtual machine for executing Aua ASTs.
     class VM
       extend Semantics
+      attr_reader :tx, :type_registry
+
       def initialize(env = {})
         @env = env
         @tx = Translator.new(self)
@@ -71,7 +73,9 @@ module Aua
         when :member_assignment then eval_member_assignment(val[0], val[1], val[2])
         when :type_declaration then eval_type_declaration(val[0], val[1])
         when :function_definition then eval_function_definition(val)
-        when :defun then eval_defun(val)
+        when :defun
+          args, body = val
+          eval_defun(args, body)
         when :object_literal then eval_object_literal(val)
         when :type_lookup, :lookup_type then eval_type_lookup(val)
         when :generic_type_lookup then eval_generic_type_lookup(val)
@@ -82,7 +86,6 @@ module Aua
         when :cons then eval_cons(val)
         when :dynamic_union_class then eval_dynamic_union_class(val)
         when :llm_select then eval_llm_select(val[0], val[1])
-        when :collapse then eval_collapse(val[0], val[1])
         when :typed_value then eval_typed_value(val[0], val[1])
         when :call
           fn_name, *args = val
@@ -486,8 +489,8 @@ module Aua
         function_obj
       end
 
-      def eval_defun(val)
-        args, body = val
+      def eval_defun(args, body)
+        # args, body = val
 
         # Extract parameter names from the args
         parameters = case args
@@ -713,6 +716,35 @@ module Aua
       end
 
       def describe_type_ast(node)
+        # Handle both AST nodes and IR types
+        case node
+        when Aua::AST::Node
+          describe_ast_node(node)
+        when IR::Types::TypeConstant
+          node.name
+        when IR::Types::TypeReference
+          node.name
+        when IR::Types::GenericType
+          type_arg_strings = node.type_params.map { |arg| describe_type_ast(arg) }
+          "#{node.base_type}<#{type_arg_strings.join(", ")}>"
+        when IR::Types::RecordType
+          field_strings = node.fields.map do |field|
+            "#{field[:name]} => #{describe_type_ast(field[:type])}"
+          end
+          "{ #{field_strings.join(", ")} }"
+        when IR::Types::UnionType
+          variant_strings = node.types.map { |variant| describe_type_ast(variant) }
+          variant_strings.join(" | ")
+        else
+          # Fallback for unknown types
+          Aua.logger.warn("vm:describe_type_ast") do
+            "Unknown type object for type description: #{node.class} - using inspect: #{node.inspect}"
+          end
+          node.to_s
+        end
+      end
+
+      def describe_ast_node(node)
         case node.type
         when :record_type
           introspection = "{ " + node.value.to_h(&method(:describe_type_ast)).map { |k, v|

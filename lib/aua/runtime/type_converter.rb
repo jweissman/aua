@@ -7,10 +7,7 @@ module Aua
     class TypeConverter
       # Convert an AST type node to an IR type
       def self.ast_to_ir(ast_node)
-        unless ast_node.is_a?(AST::Node)
-          # raise "Invalid AST node: #{ast_node.inspect}"
-          return IR::Types::TypeConstant.new(ast_node)
-        end
+        return IR::Types::TypeConstant.new(ast_node) unless ast_node.is_a?(AST::Node)
 
         Aua.logger.info("type-conv") do
           "Converting AST node #{ast_node.inspect} to IR type"
