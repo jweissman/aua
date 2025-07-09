@@ -768,6 +768,7 @@ module Aua
     end
 
     class UnionType < Klass
+      attr_reader types: Array[untyped]
       def initialize: (String, Array[untyped]) -> void
     end
 
@@ -851,7 +852,7 @@ module Aua
           def self.handle_enum_selection: (statement, statement) -> statement
           def self.handle_lambda: (statement, statement) -> statement
           def self.extract_choices_from_union_type: (untyped) -> Array[untyped]
-          def extract_union_choices: (untyped) -> Array[untyped]
+          def self.extract_union_choices: (untyped) -> Array[untyped]
         end
 
         TRANSLATIONS: Hash[Symbol, Array[Statement]]
