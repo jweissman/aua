@@ -16,7 +16,7 @@ module Aua
         def translate(ast)
           case ast.type
           when :nihil, :int, :float, :bool, :simple_str, :str then reify_primary(ast)
-          when :if, :while, :negate, :not, :id, :assign, :binop then translate_basic(ast)
+          when :if, :while, :for, :negate, :not, :id, :assign, :binop then translate_basic(ast)
           when :gen_lit then translate_gen_lit(ast)
           when :call then translate_call(ast)
           when :seq then translate_sequence(ast)
@@ -109,6 +109,7 @@ module Aua
           case node.type
           when :if then translate_if(node)
           when :while then translate_while(node)
+          when :for then translate_for(node)
           when :negate then translate_negation(node)
           when :not then translate_not(node)
           when :id then [LOCAL_VARIABLE_GET[node.value]]
@@ -150,6 +151,13 @@ module Aua
           condition_stmt = translate(condition)
           body_stmt = translate(body)
           Statement.new(type: :while, value: [condition_stmt, body_stmt])
+        end
+
+        def translate_for(node)
+          loop_var, collection, body = node.value
+          collection_stmt = translate(collection)
+          body_stmt = translate(body)
+          Statement.new(type: :for, value: [loop_var, collection_stmt, body_stmt])
         end
 
         def translate_negation(node)
@@ -244,10 +252,10 @@ module Aua
         def translate_index(node)
           Aua.logger.debug "Translating index: #{node.inspect}"
           collection_node, index_node = node.value
-          
+
           collection = translate(collection_node)
           index = translate(index_node)
-          
+
           [Semantics.inst(:index, collection, index)]
         end
 

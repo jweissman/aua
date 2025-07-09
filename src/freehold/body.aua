@@ -1,15 +1,25 @@
-phi = 1.26
+phi = 3.14
 
 fun body(rank, color)
-  color = /#(\d{2})(\d{2})(\d{2})/
+  baseline = 100
+  tau_r = (color[1] + color[2]).to_i(16).to_f / baseline.to_f
+  tau_g = (color[3] + color[4]).to_i(16).to_f / baseline.to_f
+  tau_b = (color[5] + color[6]).to_i(16).to_f / baseline.to_f
+  if rank == 1
+    say("Color is ${color}; r: ${tau_r}, g: ${tau_g}, b: ${tau_b}")
+  end
   {
     name: 'finn the human',
-    power: phi * rank,
-    toughness: phi * rank,
+    power: (phi * rank) + (tau_r * rank),
+    toughness: (phi * rank) + (tau_g * rank),
     abilities: [],
     color: color
   }
 end
 
-him = body(3, '#f0a080')
-say("${him.name} (${him.power.to_i}/${him.toughness.to_i}) - ${him.color}")
+i = 0
+while i < 10
+  i = i + 1
+  creature = body(i, '#a0f080')
+  say("${creature.name} (${creature.power.to_i}/${creature.toughness.to_i})")
+end

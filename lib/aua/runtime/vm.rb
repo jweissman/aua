@@ -97,6 +97,9 @@ module Aua
         when :while
           cond, body = val
           eval_while(cond, body)
+        when :for
+          loop_var, collection, body = val
+          eval_for(loop_var, collection, body)
         else
           raise Error, "Unknown statement: #{stmt} (#{stmt.class})"
         end
@@ -420,6 +423,40 @@ module Aua
         result
       end
 
+      def eval_for(loop_var, collection_stmt, body)
+        # For loops return nihil (null/void) like while loops
+        result = resolve(Nihil.new)
+
+        # Evaluate the collection to iterate over
+        collection = evaluate_one(collection_stmt)
+
+        # Ensure we have a collection that can be iterated
+        unless collection.is_a?(List)
+          raise Error, "Can only iterate over List collections, got #{type_name(collection)}"
+        end
+
+        # Save the current value of the loop variable (if it exists)
+        old_value = @env[loop_var] if @env.key?(loop_var)
+
+        # Iterate over each item in the collection
+        collection.values.each do |item|
+          # Set the loop variable to the current item
+          @env[loop_var] = item
+
+          # Execute the body
+          eval_branch(body)
+        end
+
+        # Restore the previous value of the loop variable (or remove if it didn't exist)
+        if old_value
+          @env[loop_var] = old_value
+        else
+          @env.delete(loop_var)
+        end
+
+        result
+      end
+
       def eval_llm_select(prompt_text, choices)
         Aua.logger.info("vm:eval_llm_select") { "LLM selection: '#{prompt_text}' from #{choices.inspect}" }
 
@@ -482,7 +519,7 @@ module Aua
             raise Error, "String index #{index_value} out of bounds for string of length #{collection.value.length}"
           end
 
-          Str.new(collection.value[index_value])
+          Str.new(collection.value[index_value].to_s)
         else
           raise Error, "Cannot index into #{type_name(collection)} (only arrays and strings are indexable)"
         end
@@ -754,9 +791,7 @@ module Aua
         case node
         when Aua::AST::Node
           describe_ast_node(node)
-        when IR::Types::TypeConstant
-          node.name
-        when IR::Types::TypeReference
+        when IR::Types::TypeConstant, IR::Types::TypeReference
           node.name
         when IR::Types::GenericType
           type_arg_strings = node.type_params.map { |arg| describe_type_ast(arg) }
@@ -808,7 +843,7 @@ module Aua
 
       def describe_record_type(node)
         # Handle record types by describing their fields
-        field_strings = node.fields.map do |field|
+        field_strings = node.value.map do |field|
           "#{field[:name]} => #{describe_type_ast(field[:type])}"
         end
         "{ #{field_strings.join(", ")} }"

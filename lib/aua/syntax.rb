@@ -46,6 +46,6 @@ module Aua
       "||" => :or, "->" => :arrow, "=>" => :fat_arrow
     }.freeze
     THREE_CHAR_TOKEN_NAMES = { "\"\"\"" => :prompt }.freeze
-    KEYWORDS = Set.new(%i[if then else elif as type while end fun]).freeze
+    KEYWORDS = Set.new(%i[if then else elif as type while end fun for in do]).freeze
   end
 end

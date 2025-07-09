@@ -162,6 +162,9 @@ module Aua
       maybe_while = parse_while
       return maybe_while if maybe_while
 
+      maybe_for = parse_for
+      return maybe_for if maybe_for
+
       # Try commands first (for space-separated args like 'say "hi"')
       maybe_command = parse_command
       return maybe_command if maybe_command
@@ -571,7 +574,7 @@ module Aua
 
     def parse_postfix
       expr = parse_primary
-      
+
       # Handle postfix operations like array indexing
       while @current_token.type == :lbracket
         consume(:lbracket)
@@ -579,7 +582,7 @@ module Aua
         consume(:rbracket)
         expr = s(:index, expr, index)
       end
-      
+
       expr
     end
 
@@ -785,6 +788,43 @@ module Aua
 
       body = body_statements.size == 1 ? body_statements.first : s(:seq, body_statements)
       s(:while, condition, body)
+    end
+
+    def parse_for
+      return nil unless @current_token.type == :keyword && @current_token.value == "for"
+
+      consume(:keyword, "for")
+
+      # Parse the loop variable: for <variable> in ...
+      parse_failure("loop variable") unless @current_token.type == :id
+      loop_var = @current_token.value
+      consume(:id)
+
+      # Parse 'in' keyword
+      parse_failure("'in' keyword") unless @current_token.type == :keyword && @current_token.value == "in"
+      consume(:keyword, "in")
+
+      # Parse the collection expression
+      collection = parse_expression
+
+      # Parse 'do' keyword
+      parse_failure("'do' keyword") unless @current_token.type == :keyword && @current_token.value == "do"
+      consume(:keyword, "do")
+      advance while @current_token.type == :eos # Skip newlines
+
+      # Parse the body statements
+      body_statements = [] # : Array[untyped]
+      while @current_token.type != :keyword || @current_token.value != "end"
+        stmt = parse_expression
+        body_statements << stmt if stmt
+        advance while @current_token.type == :eos # Skip statement separators
+      end
+
+      # Consume the 'end' keyword
+      consume(:keyword, "end")
+
+      body = body_statements.size == 1 ? body_statements.first : s(:seq, body_statements)
+      s(:for, loop_var, collection, body)
     end
 
     def parse_parenthesized_type_expression

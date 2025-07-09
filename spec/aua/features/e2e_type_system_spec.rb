@@ -9,12 +9,12 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
-        
+
         people = [
           { name: "Alice", age: 30 },
           { name: "Bob", age: 25 }
         ] : PersonList
-        
+
         first_person = people[0]
         first_person.name
       AURA
@@ -28,14 +28,14 @@ RSpec.describe "End-to-End Type System Features" do
         type Address = { street: String, city: String }
         type Person = { name: String, address: Address }
         type PersonList = List<Person>
-        
+
         people = [
-          { 
-            name: "Charlie", 
+          {#{" "}
+            name: "Charlie",#{" "}
             address: { street: "123 Main St", city: "Portland" }
           }
         ] : PersonList
-        
+
         people[0].address.city
       AURA
 
@@ -46,7 +46,7 @@ RSpec.describe "End-to-End Type System Features" do
     it "can work with List<String> indexing" do
       code = <<~AURA
         type StringList = List<String>
-        
+
         names = ["Alice", "Bob", "Charlie"] : StringList
         names[1]
       AURA
@@ -57,17 +57,15 @@ RSpec.describe "End-to-End Type System Features" do
   end
 
   describe "For loops over typed collections" do
-    it "can iterate over List<String> with proper type inference" do
+    it "can iterate over str list" do
       code = <<~AURA
-        type StringList = List<String>
-        
         names = ["Alice", "Bob"] : StringList
         result = ""
-        
+
         for name in names do
           result = result + name + " "
         end
-        
+
         result
       AURA
 
@@ -79,18 +77,18 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
-        
+
         people = [
           { name: "Alice", age: 30 },
           { name: "Bob", age: 25 }
         ] : PersonList
-        
+
         total_age = 0
-        
+
         for person in people do
           total_age = total_age + person.age
         end
-        
+
         total_age
       AURA
 
@@ -103,18 +101,18 @@ RSpec.describe "End-to-End Type System Features" do
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
         type StringList = List<String>
-        
+
         people = [
           { name: "Alice", age: 30 },
           { name: "Bob", age: 25 }
         ] : PersonList
-        
+
         names = [] : StringList
-        
+
         for person in people do
           names = names + [person.name]
         end
-        
+
         names[0]
       AURA
 
@@ -128,12 +126,12 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type ScoreMap = Dict<String, Int>
         type ScoreList = List<ScoreMap>
-        
+
         game_scores = [
           { "Alice": 100, "Bob": 85 },
           { "Charlie": 95, "Dave": 88 }
         ] : ScoreList
-        
+
         game_scores[0]["Alice"]
       AURA
 
@@ -145,12 +143,12 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type StringList = List<String>
         type CategoryMap = Dict<String, StringList>
-        
+
         categories = {
           "fruits": ["apple", "banana"],
           "colors": ["red", "blue"]
         } : CategoryMap
-        
+
         categories["fruits"][0]
       AURA
 
@@ -164,7 +162,7 @@ RSpec.describe "End-to-End Type System Features" do
         type TaskList = List<Task>
         type Project = { name: String, tasks: TaskList }
         type ProjectList = List<Project>
-        
+
         projects = [
           {
             name: "Website",
@@ -174,7 +172,7 @@ RSpec.describe "End-to-End Type System Features" do
             ]
           }
         ] : ProjectList
-        
+
         projects[0].tasks[0].title
       AURA
 
@@ -188,7 +186,7 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Maybe<T> = T | Nihil
         type MaybeString = Maybe<String>
-        
+
         value = "hello" : MaybeString
         typeof value
       AURA
@@ -202,7 +200,7 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Pair<A, B> = { first: A, second: B }
         type StringIntPair = Pair<String, Int>
-        
+
         pair = { first: "answer", second: 42 } : StringIntPair
         pair.first + " is " + pair.second
       AURA
@@ -216,12 +214,12 @@ RSpec.describe "End-to-End Type System Features" do
         type Container<T> = { value: T }
         type StringContainer = Container<String>
         type ContainerList = List<StringContainer>
-        
+
         containers = [
           { value: "first" },
           { value: "second" }
         ] : ContainerList
-        
+
         containers[1].value
       AURA
 
@@ -234,11 +232,11 @@ RSpec.describe "End-to-End Type System Features" do
     it "can define functions that work with typed lists" do
       code = <<~AURA
         type StringList = List<String>
-        
+
         def get_first(items : StringList) do
           items[0]
         end
-        
+
         names = ["Alice", "Bob"] : StringList
         get_first(names)
       AURA
@@ -250,11 +248,11 @@ RSpec.describe "End-to-End Type System Features" do
     it "can define functions that work with custom types" do
       code = <<~AURA
         type Person = { name: String, age: Int }
-        
+
         def greet(person : Person) do
           "Hello, " + person.name + "!"
         end
-        
+
         alice = { name: "Alice", age: 30 } : Person
         greet(alice)
       AURA
@@ -267,18 +265,18 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
-        
+
         def create_person(name : String, age : Int) : Person do
           { name: name, age: age }
         end
-        
+
         def create_team() : PersonList do
           [
             create_person("Alice", 30),
             create_person("Bob", 25)
           ]
         end
-        
+
         team = create_team()
         team[0].name
       AURA
@@ -293,15 +291,15 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
-        
+
         def add_year(person : Person) : Person do
           { name: person.name, age: person.age + 1 }
         end
-        
+
         people = [
           { name: "Alice", age: 30 }
         ] : PersonList
-        
+
         older_person = add_year(people[0])
         older_person.age
       AURA
@@ -315,21 +313,21 @@ RSpec.describe "End-to-End Type System Features" do
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
         type StringList = List<String>
-        
+
         people = [
           { name: "Alice", age: 30 },
           { name: "Bob", age: 17 },
           { name: "Charlie", age: 25 }
         ] : PersonList
-        
+
         adult_names = [] : StringList
-        
+
         for person in people do
           if person.age >= 18 then
             adult_names = adult_names + [person.name]
           end
         end
-        
+
         adult_names[0]
       AURA
 
@@ -344,7 +342,7 @@ RSpec.describe "End-to-End Type System Features" do
         type Task = { title: String, priority: Int }
         type TaskList = List<Task>
         type Project = { name: String, tasks: TaskList }
-        
+
         project = "Create a simple web project with 2 tasks" as Project
         typeof project
       AURA
@@ -357,7 +355,7 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Person = { name: String, age: Int }
         type PersonList = List<Person>
-        
+
         team = "Generate 3 team members for a startup" as PersonList
         typeof team
       AURA
@@ -370,7 +368,7 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Container<T> = { value: T, metadata: String }
         type StringContainer = Container<String>
-        
+
         container = "A container holding a greeting message" as StringContainer
         typeof container
       AURA
@@ -417,18 +415,18 @@ RSpec.describe "End-to-End Type System Features" do
         type StatList = List<Stat>
         type Skill = { name: String, level: Int }
         type SkillList = List<Skill>
-        type Character = { 
-          name: String, 
+        type Character = {#{" "}
+          name: String,#{" "}
           level: Int,
           stats: StatList,
-          skills: SkillList 
+          skills: SkillList#{" "}
         }
         type Party = List<Character>
-        
+
         def create_stat(name : String, value : Int) : Stat do
           { name: name, value: value }
         end
-        
+
         def create_character(name : String) : Character do
           {
             name: name,
@@ -442,7 +440,7 @@ RSpec.describe "End-to-End Type System Features" do
             ]
           }
         end
-        
+
         hero = create_character("Aragorn")
         hero.stats[0].value
       AURA
@@ -455,23 +453,23 @@ RSpec.describe "End-to-End Type System Features" do
       code = <<~AURA
         type Character = { name: String, level: Int, health: Int }
         type Party = List<Character>
-        
+
         party = [
           { name: "Fighter", level: 5, health: 100 },
           { name: "Mage", level: 4, health: 60 },
           { name: "Rogue", level: 6, health: 80 }
         ] : Party
-        
+
         total_health = 0
         highest_level = 0
-        
+
         for character in party do
           total_health = total_health + character.health
           if character.level > highest_level then
             highest_level = character.level
           end
         end
-        
+
         # Return party size, total health, and highest level
         [party.length, total_health, highest_level]
       AURA

@@ -74,11 +74,11 @@ module Aua
     def inspect = "<#{self.class.name} #{introspect}>"
     def introspect = ""
     def pretty = introspect
-    def self.describe(message) = define_aura_method(:describe) { message }
+    def self.describe(message) = define_aura_method(:describe) { Str.new(message) }
 
     # def type_annotation = @type_annotation ||= nil
 
-    define_aura_method(:dup) { "dup'd" }
+    define_aura_method(:dup) { Str.new("dup'd") }
   end
 
   # The class object for Aua types.
@@ -123,7 +123,9 @@ module Aua
         schema_classes[@name].new(val)
       when "List" then construct_list(val)
       else
-        validate_primitive_type!
+        validate_primitive_type!(val)
+
+        nil
       end
     end
 
@@ -135,7 +137,7 @@ module Aua
       Aua::List.new(aua_values)
     end
 
-    def validate_primitive_type!
+    def validate_primitive_type!(val)
       raise "Not a primitive type: #{@name}" unless @parent.nil?
     end
   end
@@ -182,6 +184,7 @@ module Aua
     define_aura_method(:lte) { Bool.new(@value <= _1.value) }
 
     define_aura_method(:to_i) { Int.new(@value) }
+    define_aura_method(:to_f) { Float.new(@value.to_f) }
     define_aura_method(:to_s) { Str.new(@value.to_s) }
     define_aura_method(:to_ruby_i) { @value }
     define_aura_method(:to_ruby_s) { @value.to_s }
@@ -243,7 +246,7 @@ module Aua
 
     attr_reader :value
 
-    define_aura_method(:to_s) { introspect }
+    define_aura_method(:to_s) { Str.new(introspect) }
     define_aura_method(:to_i) { Int.new(@value ? 1 : 0) }
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
     define_aura_method(:gt) { Bool.new(@value && !_1.value) }  # true > false
@@ -287,6 +290,18 @@ module Aua
     define_aura_method(:lt) { Bool.new(@value < _1.value) }
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }
     define_aura_method(:lte) { Bool.new(@value <= _1.value) }
+    define_aura_method(:to_s) { Str.new(@value.to_s) } # Return self as Str
+    define_aura_method(:to_i) do |base|
+      # puts "Aua::Str#to_i called with base: #{base.inspect} [value = #{@value.inspect}]"
+      val = @value.to_i(base&.value || 10)
+      # puts "Aua::Str#to_i converted value: #{val.inspect} (#{val.class}) from #{@value.inspect}"
+
+      # If the string is not a valid integer, it will return 0
+      # We can return an Int object for consistency
+      raise ArgumentError, "Invalid string for conversion to Int: #{@value}" if val.nil?
+
+      Int.new(val)
+    end
 
     def self.json_schema
       { type: "object", properties: { value: { type: "string" } }, required: ["value"] }
@@ -429,6 +444,11 @@ module Aua
       @values[field_name]
     end
 
+    # Check if a field exists
+    def has_field?(field_name)
+      @values.key?(field_name)
+    end
+
     # Support setting field values (for construction)
     def set_field(field_name, value)
       @values[field_name] = value
@@ -493,12 +513,12 @@ module Aua
   class Function < Obj
     attr_reader :name, :parameters, :body, :closure_env
 
-    def initialize(name:, parameters:, body:) # , closure_env:)
+    def initialize(name:, parameters:, body:, closure_env: nil)
       super()
       @name = name
       @parameters = parameters
       @body = body
-      @closure_env = nil # closure_env
+      @closure_env = closure_env
     end
 
     def enclose(env)

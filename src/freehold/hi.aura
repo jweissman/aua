@@ -1,54 +1,54 @@
 #!/usr/bin/env aura
 
-# TODO classical structure and udfs?
-# class ECS
-#   def perform(command, source, action, target)
-#   end
+# # TODO classical structure and udfs?
+# # class ECS
+# #   def perform(command, source, action, target)
+# #   end
+# # end
+# # 
+# # ecs = new ECS
+# # 
+# # def fight_one(a, b)
+# #   a.ap += 2
+# #   action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
+# #   chosen_action = a.abilities[action_name]
+# #   events = ecs.perform(chosen_action.block, a, action_name, b)
+# #   events.each do
+# #     a.hp -= it.damage_splashback if it.damage_splashback
+# #     a.hp += it.health_absorbed   if it.health_absorbed
+# #     b.hp -= it.damage_inflicted  if it.damage_inflicted
+# #     b.hp += it.health_restored   it it.health_restored
+# #   end
+# # end
+# 
+# # say 'loading card database'
+# # cards = jsonl 'cards.db'
+# 
+# cards = [
+#   { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
+#   { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
+#   { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 }
+# ]
+# 
+# say 'gathering two simulants from the multiverse'
+# red = cards.sample
+# blue = cards.sample
+# 
+# # simple combat loop
+# while red.hp > 0 && blue.hp > 0
+#   # fight_one(red, blue)
+#   damage = red.attack - blue.defense
+#   blue.hp = blue.hp - damage
+#   say("${red.name} hit ${blue.name} for ${damage} (at ${blue.hp})")
+#   # fight_one(blue, red)
+#   damage = blue.attack - red.defense
+#   red.hp = red.hp - damage
+#   say("${blue.name} hit ${red.name} for ${damage} (at ${red.hp})")
 # end
 # 
-# ecs = new ECS
+# victor = if red.hp > blue.hp then red else blue
 # 
-# def fight_one(a, b)
-#   a.ap += 2
-#   action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
-#   chosen_action = a.abilities[action_name]
-#   events = ecs.perform(chosen_action.block, a, action_name, b)
-#   events.each do
-#     a.hp -= it.damage_splashback if it.damage_splashback
-#     a.hp += it.health_absorbed   if it.health_absorbed
-#     b.hp -= it.damage_inflicted  if it.damage_inflicted
-#     b.hp += it.health_restored   it it.health_restored
-#   end
-# end
-
-# say 'loading card database'
-# cards = jsonl 'cards.db'
-
-cards = [
-  { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
-  { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
-  { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 }
-]
-
-say 'gathering two simulants from the multiverse'
-red = cards.sample
-blue = cards.sample
-
-# simple combat loop
-while red.hp > 0 && blue.hp > 0
-  # fight_one(red, blue)
-  damage = red.attack - blue.defense
-  blue.hp = blue.hp - damage
-  say("${red.name} hit ${blue.name} for ${damage} (at ${blue.hp})")
-  # fight_one(blue, red)
-  damage = blue.attack - red.defense
-  red.hp = red.hp - damage
-  say("${blue.name} hit ${red.name} for ${damage} (at ${red.hp})")
-end
-
-victor = if red.hp > blue.hp then red else blue
-
-say "The winner is ${victor.name}."
+# say "The winner is ${victor.name}."
 
 # fn draw
 #   say a.hp
@@ -56,3 +56,30 @@ say "The winner is ${victor.name}."
 # end
 # 
 # game(&update, &draw)
+
+cards = [
+  { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
+  { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
+  { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 }
+]
+
+fun fight_one(attacker, defender)
+  damage = attacker.attack - defender.defense
+  damage = if damage < 0 then 0 else damage
+  defender.hp = defender.hp - damage
+  say("${attacker.name} hit ${defender.name} for ${damage} (at ${defender.hp})")
+end
+
+say 'gathering two simulants from the multiverse'
+red = cards.sample
+blue = cards.sample
+
+while red.hp > 0 && blue.hp > 0
+  fight_one(red, blue)
+  if blue.hp > 0
+    fight_one(blue, red)
+  end
+end
+
+victor = if red.hp > 0 then red else blue
+say "The winner is ${victor.name}."
