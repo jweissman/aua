@@ -369,7 +369,11 @@ module Aua
       return Nihil.new if @values.empty?
 
       rng = Random.new
-      @values[rng.rand(@values.length)]
+      ndx = rng.rand(@values.length)
+      Aua.logger.debug("List#sample") do
+        "Sampling from List with values: #{@values.inspect} (length: #{@values.length}) / random index: #{ndx}"
+      end
+      @values[ndx] # rng.rand(@values.length)]
     end
 
     def self.klass = @klass ||= Klass.new("List", Klass.obj)
@@ -470,8 +474,6 @@ module Aua
 
   # Object literal for untyped record-like structures
   class ObjectLiteral < Obj
-    define_aura_method(:dup) { ObjectLiteral.new(@values.dup) }
-
     def initialize(values)
       super()
       @values = values || {}
@@ -513,6 +515,9 @@ module Aua
     def klass
       @klass ||= Klass.new("Object", Klass.obj)
     end
+
+    define_aura_method(:dup) { ObjectLiteral.new(@values.dup) }
+    define_aura_method(:eq) { |other| Bool.new(@values == other.values) }
   end
 
   # Model for user-defined functions (first-class functions with closures)

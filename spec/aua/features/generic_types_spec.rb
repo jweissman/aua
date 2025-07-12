@@ -68,7 +68,8 @@ RSpec.describe "Generic Types" do
         tasks = """Generate 3 simple daily tasks""" as TaskList
         typeof tasks
       AURA
-      expect(code).to be_aua("List<String>").and_be_a(Aua::Str)
+      # expect(code).to be_aua("List<String>").and_be_a(Aua::Str)
+      expect(code).to be_aua("TaskList").and_be_a(Aua::Str)
     end
 
     it "can generate structured data for complex object lists" do
@@ -77,7 +78,8 @@ RSpec.describe "Generic Types" do
         people = "Generate 2 fictional characters" as PersonList
         typeof people
       AURA
-      expect(code).to be_aua("List<{ name => String, age => Int }>").and_be_a(Aua::Str)
+      # expect(code).to be_aua("List<{ name => String, age => Int }>").and_be_a(Aua::Str)
+      expect(code).to be_aua("PersonList").and_be_a(Aua::Str)
     end
   end
 

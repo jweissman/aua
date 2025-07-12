@@ -20,27 +20,49 @@ end
 
 fun creature_from_body(body)
   {
-    name: body.name,
-    hp: body.toughness,
-    attack: body.power,
+    color: body.color,
+    attack: body.power.to_i,
+    hp: body.toughness.to_i,
     defense: 0  # default baseline
   }
 end
 
-# fun hero_from_creature(creature)
-# end
+classes = ["Knight", "Regent", "Steward", "Rebel", "Rager", "Berserker", "Destroyer"]
+adjectives = ["Stalwart", "Zombie", "Hologram", "Diseased"]
+
+fun hero_from_creature(name, creature)
+  {
+    name: name, # "Algorius", # """Invent a name for a ${creature.attack.to_i}/${creature.hp.to_i} fantasy creature. One word only.""",
+    archetype: classes.sample,
+    subtype: adjectives.sample,
+    hp: creature.hp,
+    max_hp: creature.hp,
+    attack: creature.attack,
+    defense: creature.defense,
+    wins: 0
+    # would be nice to have ...creature for coalesce
+  }
+end
 
 cards = [
-  { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
-  { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
-  { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 },
+  hero_from_creature("Algorius", creature_from_body(body(1, '#0a9f34'))),
+  hero_from_creature("Tantalus", creature_from_body(body(1, '#ba0494'))),
+  hero_from_creature("Crexas", creature_from_body(body(1, '#a0b0d0'))),
+  # { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
+  # { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
+  # { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 },
 ]
+
+fun describe(hero)
+  "${hero.name} the ${hero.subtype} ${hero.archetype} (${hero.hp}/${hero.max_hp})"
+end
+
 
 fun fight_one(attacker, defender)
   damage = attacker.attack - defender.defense
   damage = if damage < 0 then 0 else damage
   defender.hp = defender.hp - damage
-  say("${attacker.name} hit ${defender.name} for ${damage} (at ${defender.hp})")
+  say("${describe(attacker)} hit ${describe(defender)} for ${damage} (at ${defender.hp})")
 end
 
 fun fight(red, blue)
@@ -52,10 +74,28 @@ fun fight(red, blue)
   end
   victor = if red.hp > 0 then red else blue
   say "The winner is ${victor.name}."
+  victor
 end
 
-say 'gathering two simulants from the multiverse'
-alpha = cards.sample
-beta = cards.sample
-fight(alpha, beta)
+fight_count = 100
 
+i = 0
+while i < fight_count
+  i = i + 1
+  say '=== gathering two simulants from the multiverse ==='
+  alpha = cards.sample
+  beta = cards.sample
+  while beta == alpha
+    beta = cards.sample
+  end
+  victor = fight(alpha.dup, beta.dup)
+  if victor == alpha
+    alpha.wins = alpha.wins + 1
+  else
+    beta.wins = beta.wins + 1
+  end
+end
+
+for fighter in cards do
+  say("${fighter.name} - ${fighter.wins}")
+end

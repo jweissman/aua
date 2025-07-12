@@ -23,9 +23,9 @@ module Aua
             result = klass.construct(value)
             Aua.logger.info "Cast result: \\#{result.inspect} (\\#{result.class})"
 
-            # For generic types, set the type annotation
-            if klass.is_a?(Aua::Runtime::GenericType)
-              type_annotation = klass.introspect
+            # Set the type annotation for both generic types and record types
+            if klass.is_a?(Aua::Runtime::GenericType) || klass.is_a?(Aua::Runtime::RecordType)
+              type_annotation = klass.name
               Aua.logger.info "Setting type annotation: #{type_annotation}"
               result.instance_variable_set(:@type_annotation, type_annotation)
             end

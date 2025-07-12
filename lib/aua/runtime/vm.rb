@@ -335,18 +335,20 @@ module Aua
                 evaluate_one(obj_statements)
               end
 
-        # Access the field
-        field_value = case obj
-                      when ObjectLiteral, RecordObject
-                        obj.get_field(field_name)
-                      else
-                        # Try to access field via Aura method dispatch
-                        unless obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
-                          raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
-                        end
-
+        field_value = if obj.respond_to?(:aura_respond_to?) && obj.aura_respond_to?(field_name.to_sym)
+                        # raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
                         obj.aura_send(field_name.to_sym)
                       end
+        # Access the field
+        field_value ||= case obj
+                        when ObjectLiteral, RecordObject
+                          obj.get_field(field_name)
+                        else
+                          raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
+                          # Try to access field via Aura method dispatch
+
+                          # obj.aura_send(field_name.to_sym)
+                        end
 
         # Propagate type annotation from struct definition if available
         if obj.instance_variable_defined?(:@type_annotation) && obj.instance_variable_get(:@type_annotation)
@@ -706,6 +708,9 @@ module Aua
         # Evaluate the value first
         value = evaluate_one(value_stmt)
 
+        # Validate the value matches the expected type before applying annotations
+        validate_type_assignment!(value, type_stmt)
+
         # Handle type annotations for different object types
         if value.is_a?(Aua::List) || value.is_a?(Aua::ObjectLiteral) || value.is_a?(Aua::Dict)
           type_annotation = nil
@@ -748,6 +753,86 @@ module Aua
         end
 
         value
+      end
+
+      def validate_type_assignment!(value, type_stmt)
+        # Skip validation for primitive types for now
+        return unless value.is_a?(Aua::ObjectLiteral)
+
+        # Handle type references (like Person)
+        if type_stmt.is_a?(Array) && type_stmt.first.is_a?(IR::Types::TypeReference)
+          type_ref = type_stmt.first
+          expected_type = @type_registry.lookup(type_ref.name)
+          
+          if expected_type.is_a?(Aua::Runtime::RecordType)
+            validate_record_type!(value, expected_type, type_ref.name)
+          end
+        end
+      end
+
+      def validate_record_type!(value, expected_type, type_name)
+        expected_fields = expected_type.field_definitions
+
+        # Check for missing fields
+        expected_fields.each do |field|
+          field_name = field[:name]
+          unless value.has_field?(field_name)
+            raise Error, "Missing required field '#{field_name}' for type #{type_name}"
+          end
+        end
+
+        # Check field types
+        expected_fields.each do |field|
+          field_name = field[:name]
+          expected_field_type = field[:type]
+          actual_value = value.get_field(field_name)
+
+          unless value_matches_type?(actual_value, expected_field_type)
+            actual_type = get_value_type_name(actual_value)
+            expected_type_name = get_type_name(expected_field_type)
+            raise Error, "Type mismatch in field '#{field_name}': expected #{expected_type_name}, got #{actual_type}"
+          end
+        end
+      end
+
+      def value_matches_type?(value, expected_type)
+        case expected_type
+        when IR::Types::TypeReference
+          case expected_type.name
+          when "String", "Str" then value.is_a?(Aua::Str)
+          when "Int", "Integer" then value.is_a?(Aua::Int)
+          when "Float", "Number" then value.is_a?(Aua::Float)
+          when "Bool", "Boolean" then value.is_a?(Aua::Bool)
+          else
+            # For custom types, we might need more complex validation
+            true
+          end
+        else
+          # For other type formats, default to true for now
+          true
+        end
+      end
+
+      def get_value_type_name(value)
+        case value
+        when Aua::Str then "String"
+        when Aua::Int then "Int"
+        when Aua::Float then "Float"
+        when Aua::Bool then "Bool"
+        when Aua::List then "List"
+        when Aua::Dict then "Dict"
+        when Aua::ObjectLiteral then "Object"
+        else value.class.name.split("::").last
+        end
+      end
+
+      def get_type_name(type_obj)
+        case type_obj
+        when IR::Types::TypeReference
+          type_obj.name
+        else
+          type_obj.to_s
+        end
       end
 
       def eval_generic_type_lookup(generic_info)
