@@ -212,16 +212,42 @@ module Aua
       end
 
       def parse_object_field
-        unless @parse.current_token.type == :id
+        case @parse.current_token.type
+        when :id
+          field_name = @parse.current_token.value
+          @parse.consume(:id)
+          @parse.consume(:colon)
+          field_value = @parse.send :parse_expression
+          s(:field, field_name, field_value)
+        when :str_part
+          # For string field names, we need to manually parse the string sequence
+          field_name = parse_field_name_string
+          @parse.consume(:colon)
+          field_value = @parse.send :parse_expression
+          s(:field, field_name, field_value)
+        else
           raise Error, "Expected field name in object literal, got #{@parse.current_token.type}"
+        end
+      end
+
+      def parse_field_name_string
+        # Parse a string that's used as a field name in an object literal
+        # This handles the str_part -> str_end sequence manually
+        unless @parse.current_token.type == :str_part
+          raise Error, "Expected string field name, got #{@parse.current_token.type}"
         end
 
         field_name = @parse.current_token.value
-        @parse.consume(:id)
-        @parse.consume(:colon)
+        @parse.consume(:str_part)
 
-        field_value = @parse.send :parse_expression
-        s(:field, field_name, field_value)
+        # Consume the str_end token to complete the string
+        unless @parse.current_token.type == :str_end
+          raise Error, "Expected end of string field name, got #{@parse.current_token.type}"
+        end
+
+        @parse.consume(:str_end)
+
+        field_name
       end
 
       def continue_object_parsing?

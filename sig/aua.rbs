@@ -902,6 +902,7 @@ module Aua
         def translate_tuple: (AST::Node) -> Array[Statement]
         def translate_type_annotation: (AST::Node) -> Array[Statement]
         def translate_while: (AST::Node) -> statement
+        def translate_for: (AST::Node) -> statement
       end
 
       extend Semantics

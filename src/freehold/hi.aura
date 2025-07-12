@@ -1,66 +1,39 @@
 #!/usr/bin/env aura
 
-# # TODO classical structure and udfs?
-# # class ECS
-# #   def perform(command, source, action, target)
-# #   end
-# # end
-# # 
-# # ecs = new ECS
-# # 
-# # def fight_one(a, b)
-# #   a.ap += 2
-# #   action_name = "Pick a good actions for #{a.name}" ~ (pluck(:name).from(a.abilities).where(ap_cost <= a.ap))
-# #   chosen_action = a.abilities[action_name]
-# #   events = ecs.perform(chosen_action.block, a, action_name, b)
-# #   events.each do
-# #     a.hp -= it.damage_splashback if it.damage_splashback
-# #     a.hp += it.health_absorbed   if it.health_absorbed
-# #     b.hp -= it.damage_inflicted  if it.damage_inflicted
-# #     b.hp += it.health_restored   it it.health_restored
-# #   end
-# # end
-# 
-# # say 'loading card database'
-# # cards = jsonl 'cards.db'
-# 
-# cards = [
-#   { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
-#   { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
-#   { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 }
-# ]
-# 
-# say 'gathering two simulants from the multiverse'
-# red = cards.sample
-# blue = cards.sample
-# 
-# # simple combat loop
-# while red.hp > 0 && blue.hp > 0
-#   # fight_one(red, blue)
-#   damage = red.attack - blue.defense
-#   blue.hp = blue.hp - damage
-#   say("${red.name} hit ${blue.name} for ${damage} (at ${blue.hp})")
-#   # fight_one(blue, red)
-#   damage = blue.attack - red.defense
-#   red.hp = red.hp - damage
-#   say("${blue.name} hit ${red.name} for ${damage} (at ${red.hp})")
-# end
-# 
-# victor = if red.hp > blue.hp then red else blue
-# 
-# say "The winner is ${victor.name}."
+phi = 3.14
 
-# fn draw
-#   say a.hp
-#   say b.hp
+fun body(rank, color)
+  baseline = 100
+  tau_r = (color[1] + color[2]).to_i(16).to_f / baseline.to_f
+  tau_g = (color[3] + color[4]).to_i(16).to_f / baseline.to_f
+  tau_b = (color[5] + color[6]).to_i(16).to_f / baseline.to_f
+  if rank == 1
+    say("Color is ${color}; r: ${tau_r}, g: ${tau_g}, b: ${tau_b}")
+  end
+  {
+    power: (phi * rank) + (tau_r * rank),
+    toughness: (phi * rank) + (tau_g * rank),
+    abilities: [],
+    color: color
+  }
+end
+
+fun creature_from_body(body)
+  {
+    name: body.name,
+    hp: body.toughness,
+    attack: body.power,
+    defense: 0  # default baseline
+  }
+end
+
+# fun hero_from_creature(creature)
 # end
-# 
-# game(&update, &draw)
 
 cards = [
   { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
   { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
-  { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 }
+  { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 },
 ]
 
 fun fight_one(attacker, defender)
@@ -70,16 +43,19 @@ fun fight_one(attacker, defender)
   say("${attacker.name} hit ${defender.name} for ${damage} (at ${defender.hp})")
 end
 
-say 'gathering two simulants from the multiverse'
-red = cards.sample
-blue = cards.sample
-
-while red.hp > 0 && blue.hp > 0
-  fight_one(red, blue)
-  if blue.hp > 0
-    fight_one(blue, red)
+fun fight(red, blue)
+  while red.hp > 0 && blue.hp > 0
+    fight_one(red, blue)
+    if blue.hp > 0
+      fight_one(blue, red)
+    end
   end
+  victor = if red.hp > 0 then red else blue
+  say "The winner is ${victor.name}."
 end
 
-victor = if red.hp > 0 then red else blue
-say "The winner is ${victor.name}."
+say 'gathering two simulants from the multiverse'
+alpha = cards.sample
+beta = cards.sample
+fight(alpha, beta)
+

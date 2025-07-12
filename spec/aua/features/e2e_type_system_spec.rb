@@ -59,6 +59,8 @@ RSpec.describe "End-to-End Type System Features" do
   describe "For loops over typed collections" do
     it "can iterate over str list" do
       code = <<~AURA
+        type StringList = List<String>
+
         names = ["Alice", "Bob"] : StringList
         result = ""
 
@@ -477,6 +479,21 @@ RSpec.describe "End-to-End Type System Features" do
       result = Aua.run(code)
       expect(result.value).to be_a(Aua::List)
       expect(result.values.map(&:value)).to eq([3, 240, 6])
+    end
+  end
+
+  describe "edge cases" do
+    it "empty fns" do
+      code = <<~AURA
+        def empty_function() : Int do
+          0
+        end
+
+        empty_function()
+      AURA
+
+      result = Aua.run(code)
+      expect(result.value).to eq(0)
     end
   end
 end

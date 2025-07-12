@@ -493,28 +493,59 @@ module Aua
       end
 
       def eval_index(collection_expr, index_expr)
-        Aua.logger.info("vm:eval_index") { "Evaluating array indexing" }
+        Aua.logger.info("vm:eval_index") { "Evaluating indexing operation" }
 
         # Evaluate the collection and index
         collection = evaluate_one(collection_expr)
         index = evaluate_one(index_expr)
 
-        # Ensure the index is an integer
-        raise Error, "Array index must be an integer, got #{type_name(index)}" unless index.is_a?(Int)
-
-        index_value = index.value
-
         # Handle different collection types
         case collection
         when List
+          # Array indexing requires integer index
+          raise Error, "Array index must be an integer, got #{type_name(index)}" unless index.is_a?(Int)
+
+          index_value = index.value
+
           # Check bounds
           if index_value < 0 || index_value >= collection.values.size
             raise Error, "Array index #{index_value} out of bounds for array of size #{collection.values.size}"
           end
 
           collection.values[index_value]
+        when Dict
+          # Dictionary indexing supports string keys
+          raise Error, "Dictionary key must be a string, got #{type_name(index)}" unless index.is_a?(Str)
+
+          key = index.value
+
+          raise Error, "Dictionary key '#{key}' not found" unless collection.has_field?(key)
+
+          collection.get_field(key)
+        when ObjectLiteral
+          # Object literal indexing supports string keys for field access
+          raise Error, "Object field key must be a string, got #{type_name(index)}" unless index.is_a?(Str)
+
+          key = index.value
+
+          raise Error, "Object field '#{key}' not found" unless collection.has_field?(key)
+
+          collection.get_field(key)
+        when RecordObject
+          # Record object indexing also supports string keys for field access
+          raise Error, "Record field key must be a string, got #{type_name(index)}" unless index.is_a?(Str)
+
+          key = index.value
+
+          raise Error, "Record field '#{key}' not found" unless collection.has_field?(key)
+
+          collection.get_field(key)
         when Str
-          # Allow string indexing as well
+          # String indexing requires integer index
+          raise Error, "String index must be an integer, got #{type_name(index)}" unless index.is_a?(Int)
+
+          index_value = index.value
+
           if index_value < 0 || index_value >= collection.value.length
             raise Error, "String index #{index_value} out of bounds for string of length #{collection.value.length}"
           end

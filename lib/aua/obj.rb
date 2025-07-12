@@ -353,6 +353,12 @@ module Aua
       @type_annotation || "List"
     end
 
+    define_aura_method(:+) do |other|
+      raise Error, "Cannot add List to non-List" unless other.is_a?(List)
+
+      List.new(@values + other.values, @type_annotation)
+    end
+
     # define_aura_method(:[]) do |index|
     #   raise Error, "Index out of bounds" if index < 0 || index >= @values.length
 

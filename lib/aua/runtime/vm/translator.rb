@@ -238,6 +238,25 @@ module Aua
               meth, args = right_node.value
               args.map! { |arg| translate(arg) }
               return SEND[left, meth.to_sym, *args]
+            elsif right_node.type == :index
+              # Handle chained member access with indexing: object.field[index]
+              # This should be parsed as (object.field)[index], not object.(field[index])
+              # So we need to restructure: object.field -> temp, then temp[index]
+              index_target, index_value = right_node.value
+
+              # The index_target should be an ID representing the field name
+              if index_target.type != :id
+                raise Error, "Expected field name in chained member access, got #{index_target.inspect}"
+              end
+
+              field_name = index_target.value
+
+              # First do the member access: object.field
+              member_access = Binop.binary_operation(:dot, left, field_name)
+
+              # Then apply the indexing: (object.field)[index]
+              index_ir = translate(index_value)
+              return [Statement.new(type: :index, value: [member_access, index_ir])]
             end
 
             raise Error,
