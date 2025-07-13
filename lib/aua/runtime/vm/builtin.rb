@@ -83,10 +83,15 @@ module Aua
                             when "Bool"
                               <<~GUIDANCE
 
-                                This is a Boolean type.
-                                Return true for positive, affirmative, or 'yes-like' values
-                                (like "yes", "true", "yep", "ok", "sure", etc.) and false for negative, dismissive,
-                                or 'no-like' values (like null, false, or strings like "no", "nope", "nah", "never", etc.).
+                                This is a Boolean type. Try to be conservative but intuitive about what constitutes true vs false.
+                                Return true ONLY for clearly positive, affirmative values:
+                                - "yes", "true", "yep", "ok", "sure", "affirmative", "positive"
+
+                                Return false for negative, dismissive, uncertain, or null-like values:
+                                - "no", "nope", "false", "negative", "never", "null", "nihil", "void", "empty"
+                                - Any form of negation or uncertainty
+
+                                When in doubt, prefer false over true.
                               GUIDANCE
                             when "Int"
                               <<~GUIDANCE
@@ -220,6 +225,80 @@ module Aua
                           end
             Aua.logger.info "Type of object: #{obj.inspect} is #{type_name}"
             Str.new(type_name)
+          end
+
+          def builtin_semantic_equality(left, right)
+            Aua.logger.info("builtin_semantic_equality") do
+              "Semantic equality: #{left.introspect} ~= #{right.introspect}"
+            end
+
+            # Use LLM to determine semantic equality, following existing patterns
+            chat = Aua::LLM.chat
+            prompt = <<~PROMPT
+              I want to evaluate the semantic equality between these two values.
+              This should be a fuzzy and humanizing semantic operator.
+              It is very, very, very important to be forgiving and humanizing in this evaluation.
+              Be liberal. Do not return false owing to slightly different connotations.
+              That said you must also discern obvious antonyms or clear opposites.
+              Consider the broad meaning and potential intent rather than exact representation.
+              Do not return true just because the items have a related context or similar structure.
+
+              ## Semantic Equality Guidance
+
+              Here are some significant examples of semantic equality and non-equality to help you.
+
+              Examples of semantic equality:
+              - "ok" and "okay" (nearly-identical responses)
+              - "hello" and "greetings" (synonyms)
+              - "house" and "home" (similar concepts)
+              - "yes" and "affirmative" (similar positive responses)
+              - "happy" and "joyful" (close emotions)
+
+              Examples of semantic NON-equality:
+              - "hello" and "goodbye" (opposite meanings)
+              - "good" and "bad" (plain antonyms)
+              - "cat" and "dog" (antithetical animals)
+              - "blue" and "red" (different colors)
+
+              ## Your Task
+
+              The left value is '#{left.introspect}'.
+              The right value is '#{right.introspect}'.
+
+              Are these two values semantically the same or very similar in meaning?
+
+              You must return true if they are semantically equivalent, or false if they are not.
+            PROMPT
+
+            json_schema = {
+              name: "semantic_equality",
+              strict: "true",
+              schema: {
+                type: "object",
+                properties: {
+                  value: {
+                    type: "boolean",
+                    description: "Whether the two values are semantically equivalent"
+                  },
+                  reason: {
+                    type: "string",
+                    description: "Explanation of the semantic equivalence or difference"
+                  }
+                },
+                required: %w[value reason],
+                additionalProperties: false
+              }
+            }
+
+            response = chat.with_json_guidance(json_schema) do
+              chat.ask(prompt)
+            end
+
+            Aua.logger.info("builtin_semantic_equality") { "Semantic equality response: #{response}" }
+
+            # Parse response and return Bool
+            result = JSON.parse(response)["value"]
+            Aua::Bool.new(result)
           end
         end
       end

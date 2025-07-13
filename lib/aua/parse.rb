@@ -198,7 +198,7 @@ module Aua
 
       # Parse parameter list
       consume(:lparen)
-      parameters = []
+      parameters = [] # : Array[untyped]
       unless @current_token.type == :rparen
         loop do
           parse_failure("parameter name") unless @current_token.type == :id
@@ -212,7 +212,7 @@ module Aua
       consume(:rparen)
 
       # Parse function body (until 'end')
-      body_statements = []
+      body_statements = [] # : Array[untyped]
 
       # Skip any newlines after the parameter list
       advance while @current_token.type == :eos
@@ -405,7 +405,7 @@ module Aua
       # consume(:id)
       consume(:lparen)
 
-      args = []
+      args = [] # : Array[untyped]
       while @current_token.type != :rparen
         # loop do
         # Skip whitespace within argument list
@@ -599,16 +599,17 @@ module Aua
       consume(op)
 
       # Special handling for operators that expect type expressions on the right
-      if op == :tilde
+      case op
+      when :tilde
         right = parse_type_expression
-      elsif op == :colon
+      when :colon
         # Type annotation: expr : Type
         right = parse_type_expression
         return s(:type_annotation, left, right)
-      elsif op == :as
+      when :as
         # Type casting: expr as Type
         right = parse_type_expression
-      elsif op == :equals
+      when :equals
         # For assignment, the right side should be a full expression (including statements)
         right = parse_expression
       else
@@ -852,7 +853,7 @@ module Aua
       # Handle parenthesized parameter list: (x, y, z)
       if @current_token.type == :lparen
         consume(:lparen)
-        params = []
+        params = [] # : Array[untyped]
 
         # Parse parameters separated by commas
         while @current_token.type == :id

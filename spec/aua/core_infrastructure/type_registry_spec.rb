@@ -98,7 +98,7 @@ RSpec.describe "TypeRegistry Core Infrastructure" do
 
     it "handles re-registration of existing types" do
       union_ast1 = s(:union_type, ["option1"])
-      union_ast2 = s(:union_type, ["option2"])
+      s(:union_type, ["option2"])
 
       registry.register("OverwriteTest", union_ast1)
       # Should use the latest registration

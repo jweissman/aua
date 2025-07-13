@@ -75,16 +75,17 @@ module Aua
           Aua.logger.info "Generating schema for type: #{type_def.inspect}"
 
           # Handle IR types
-          if type_def.is_a?(IR::Types::TypeReference)
+          case type_def
+          when IR::Types::TypeReference
             return schema_for_type_reference(type_def.name, type_registry)
-          elsif type_def.is_a?(IR::Types::TypeConstant)
+          when IR::Types::TypeConstant
             # TypeConstant is similar to TypeReference but for built-in types
             return schema_for_type_reference(type_def.name, type_registry)
-          elsif type_def.is_a?(IR::Types::GenericType)
+          when IR::Types::GenericType
             return schema_for_ir_generic_type(type_def, type_registry)
-          elsif type_def.is_a?(IR::Types::RecordType)
+          when IR::Types::RecordType
             return schema_for_ir_record_type(type_def, type_registry)
-          elsif type_def.is_a?(IR::Types::UnionType)
+          when IR::Types::UnionType
             return schema_for_ir_union_type(type_def, type_registry)
           end
 

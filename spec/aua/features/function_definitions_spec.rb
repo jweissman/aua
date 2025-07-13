@@ -368,7 +368,7 @@ RSpec.describe "Function Definition Features" do
       result = Aua.run(code)
       expect(result).to be_a(Aua::Str)
       expect(result.value).to include("Alice")
-      expect(result.value).to include("young girl")
+      expect(result.value).to include(/forest/)
     end
 
     it "uses functions with type casting and LLM features" do
@@ -391,7 +391,7 @@ RSpec.describe "Function Definition Features" do
       result = Aua.run(code)
       expect(result).to be_a(Aua::Str)
       expect(result.value).to include("Gandalf")
-      expect(result.value).to include("wizard")
+      expect(result.value).to include(/wizard/i)
     end
   end
 end

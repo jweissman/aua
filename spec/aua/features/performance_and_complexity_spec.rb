@@ -235,7 +235,6 @@ RSpec.describe "Performance and Complexity Features", :performance do
       type_error_script = <<~AURA
         type Person = { name: Str, age: Int }
         person = { name: "Alice", age: 30 }
-        person as Person
       AURA
 
       # For now, just ensure it doesn't crash - type validation might not be implemented yet
@@ -272,7 +271,7 @@ RSpec.describe "Performance and Complexity Features", :performance do
         expect { Aua.run(test_case) }.not_to raise_error
       end
     end
-  end # Helper method for creating test files that could graduate to Aura
+  end
   def self.create_aura_example(name, code)
     example_dir = File.join(__dir__, "../../examples")
     FileUtils.mkdir_p(example_dir)

@@ -137,7 +137,7 @@ module Aua
       Aua::List.new(aua_values)
     end
 
-    def validate_primitive_type!(val)
+    def validate_primitive_type!(_val)
       raise "Not a primitive type: #{@name}" unless @parent.nil?
     end
   end
@@ -353,6 +353,8 @@ module Aua
     def type_name
       @type_annotation || "List"
     end
+
+    def each_value(&) = @values.each(&)
 
     define_aura_method(:+) do |other|
       raise Error, "Cannot add List to non-List" unless other.is_a?(List)

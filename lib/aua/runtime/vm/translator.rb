@@ -231,14 +231,15 @@ module Aua
           if op == :dot
             left = translate(left_node)
             # Right side should be an ID node representing the field name
-            if right_node.type == :id
+            case right_node.type
+            when :id
               field_name = right_node.value
-              return Binop.binary_operation(op, left, field_name)
-            elsif right_node.type == :call
+              return Binop.binary_operation(op, left, field_name) # steep:ignore
+            when :call
               meth, args = right_node.value
               args.map! { |arg| translate(arg) }
               return SEND[left, meth.to_sym, *args]
-            elsif right_node.type == :index
+            when :index
               # Handle chained member access with indexing: object.field[index]
               # This should be parsed as (object.field)[index], not object.(field[index])
               # So we need to restructure: object.field -> temp, then temp[index]
@@ -252,7 +253,7 @@ module Aua
               field_name = index_target.value
 
               # First do the member access: object.field
-              member_access = Binop.binary_operation(:dot, left, field_name)
+              member_access = Binop.binary_operation(:dot, left, field_name) # steep:ignore
 
               # Then apply the indexing: (object.field)[index]
               index_ir = translate(index_value)
@@ -265,7 +266,7 @@ module Aua
 
           left = translate(left_node)
           right = translate(right_node)
-          Binop.binary_operation(op, left, right) || SEND[left, op, right]
+          Binop.binary_operation(op, left, right) || SEND[left, op, right] # steep:ignore
         end
 
         def translate_index(node)
@@ -318,13 +319,13 @@ module Aua
               args = case left
                      when ->(node) { node.respond_to?(:type) && node.type == :unit }
                        # Empty parameter list: () => expr
-                       []
+                       [] # steep:ignore
                      when ->(node) { node.respond_to?(:type) && node.type == :id }
                        # Single parameter: x => expr
                        [left]
                      when ->(node) { node.respond_to?(:type) && node.type == :tuple }
                        # Multiple parameters: (x, y, z) => expr
-                       left.value
+                       left.value # steep:ignore
                      else
                        # Default case
                        left
@@ -419,7 +420,7 @@ module Aua
                   # Extract the actual value from the AST node
                   ast_node = type_obj.name
                   if ast_node.respond_to?(:value)
-                    ast_node.value
+                    ast_node.value # steep:ignore
                   else
                     ast_node.inspect # Fallback
                   end

@@ -16,7 +16,7 @@ module Aua
         @env = env
         @tx = Translator.new(self)
         @type_registry = TypeRegistry.new
-        @call_stack = [] # Stack of CallFrame objects
+        @call_stack = [] # : Array[CallFrame]
         @max_stack_depth = 1000 # Prevent stack overflow
       end
 
@@ -30,7 +30,8 @@ module Aua
           chat: Builtin.method(:builtin_chat),
           see_url: Builtin.method(:builtin_see_url),
           cast: Builtin.method(:builtin_cast),
-          typeof: Builtin.method(:builtin_typeof)
+          typeof: Builtin.method(:builtin_typeof),
+          semantic_equality: Builtin.method(:builtin_semantic_equality)
         }
       end
 
@@ -45,7 +46,7 @@ module Aua
         stmts = reduce(ast)
         stmts = [stmts] unless stmts.is_a? Array
         stmts.each do |stmt|
-          ret = stmt.is_a?(Obj) ? stmt : evaluate_one(stmt)
+          ret = stmt.is_a?(Obj) ? stmt : evaluate_one(stmt) # steep:ignore
         end
         evaluate_one Commands::RECALL[ret]
         ret
@@ -81,7 +82,7 @@ module Aua
         when :generic_type_lookup then eval_generic_type_lookup(val)
         when :union_type_lookup then eval_union_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
-        when :semantic_equality then eval_semantic_equality(val[0], val[1])
+        when :semantic_equality then eval_call(:semantic_equality, [val[0], val[1]])
         when :gen then eval_call(:chat, [val])
         when :cat then eval_cat(val)
         when :cons then eval_cons(val)
@@ -171,11 +172,15 @@ module Aua
 
       def eval_call(fn_name, args)
         # First check if it's a user-defined function (Function object)
-        return eval_user_function(@env[fn_name], args) if @env.key?(fn_name) && @env[fn_name].is_a?(Aua::Function)
+        fn_name_str = fn_name.to_s
+        if @env.key?(fn_name_str) && @env[fn_name_str].is_a?(Aua::Function)
+          return eval_user_function(@env[fn_name_str],
+                                    args)
+        end
 
         # Check for legacy hash-based functions (for backward compatibility)
-        if @env.key?(fn_name) && @env[fn_name].is_a?(Hash) && @env[fn_name][:type] == :user_function
-          return eval_user_function(@env[fn_name], args)
+        if @env.key?(fn_name_str) && @env[fn_name_str].is_a?(Hash) && @env[fn_name_str][:type] == :user_function
+          return eval_user_function(@env[fn_name_str], args)
         end
 
         # Fall back to builtin functions
@@ -184,7 +189,7 @@ module Aua
 
         evaluated_args = [*args].map { |a| evaluate_one(a) }
 
-        arity_match = fn.arity == evaluated_args.size || (fn.arity < 0 && evaluated_args.size >= -fn.arity)
+        arity_match = fn.arity == evaluated_args.size || (fn.arity.negative? && evaluated_args.size >= -fn.arity)
         unless arity_match
           raise Aua::Error,
                 "Wrong number of arguments for #{fn_name}: expected #{fn.arity}, got #{evaluated_args.size}"
@@ -442,7 +447,7 @@ module Aua
         old_value = @env[loop_var] if @env.key?(loop_var)
 
         # Iterate over each item in the collection
-        collection.values.each do |item|
+        collection.each_value do |item|
           # Set the loop variable to the current item
           @env[loop_var] = item
 
@@ -511,7 +516,7 @@ module Aua
           index_value = index.value
 
           # Check bounds
-          if index_value < 0 || index_value >= collection.values.size
+          if index_value.negative? || index_value >= collection.values.size
             raise Error, "Array index #{index_value} out of bounds for array of size #{collection.values.size}"
           end
 
@@ -549,7 +554,7 @@ module Aua
 
           index_value = index.value
 
-          if index_value < 0 || index_value >= collection.value.length
+          if index_value.negative? || index_value >= collection.value.length
             raise Error, "String index #{index_value} out of bounds for string of length #{collection.value.length}"
           end
 
@@ -692,7 +697,7 @@ module Aua
       # Type checking helpers for member assignment
       def compatible_types?(existing_value, new_value)
         # Simple type compatibility check based on class
-        existing_value.class == new_value.class
+        existing_value.instance_of?(new_value.class)
       end
 
       def type_name(value)
@@ -774,19 +779,20 @@ module Aua
       def validate_record_type!(value, expected_type, type_name)
         expected_fields = expected_type.field_definitions
 
+        # Only validate objects that have field access methods
+        return unless value.respond_to?(:has_field?) && value.respond_to?(:get_field)
+
         # Check for missing fields
         expected_fields.each do |field|
           field_name = field[:name]
-          unless value.has_field?(field_name)
+          unless value.has_field?(field_name) # steep:ignore
             raise Error, "Missing required field '#{field_name}' for type #{type_name}"
           end
-        end
 
-        # Check field types
-        expected_fields.each do |field|
+          # Check field types
           field_name = field[:name]
           expected_field_type = field[:type]
-          actual_value = value.get_field(field_name)
+          actual_value = value.get_field(field_name) # steep:ignore
 
           next if value_matches_type?(actual_value, expected_field_type)
 
@@ -853,21 +859,6 @@ module Aua
         generic_type
       end
 
-      # def eval_generic_type_cast(generic_type)
-      #   # Handle casting to generic types like List<String>
-      #   # For now, we'll return the base type's class (e.g., List.klass for List<String>)
-
-      #   case generic_type.base_type
-      #   when "List"
-      #     Aua::List.klass
-      #   when "Dict"
-      #     Aua::Dict.klass
-      #   else
-      #     # Default to string for unknown generic types
-      #     Aua::Str.klass
-      #   end
-      # end
-
       def get_field_type_from_struct(struct_type_name, field_name)
         # Look up the struct definition in the type registry
         struct_def = @type_registry.lookup(struct_type_name)
@@ -882,8 +873,6 @@ module Aua
 
           # Convert the field type to a string representation
           convert_type_to_annotation_string(field_def[:type])
-        else
-          nil
         end
       end
 
@@ -933,14 +922,6 @@ module Aua
       def describe_ast_node(node)
         case node.type
         when :record_type then describe_record_type(node)
-          # introspection = "{ " + node.value.to_h(&method(:describe_type_ast)).map { |k, v|
-          #   "#{k} => #{v}"
-          # }.join(", ") + " }"
-          # if introspection.length > 80
-          #   "{...}"
-          # else
-          #   introspection
-          # end
         when :generic_type
           # Handle generic types like List<String>
           base_type = node.value[0]
@@ -968,139 +949,6 @@ module Aua
         Aua.logger.error("vm:describe_record_type") { "Error describing record type: #{e.message}" }
         "{...}"
       end
-
-      # def eval_semantic_comparison_pair(left, right)
-      #   # Evaluate both operands first
-      #   left_value = evaluate_one(left)
-      #   right_value = evaluate_one(right)
-
-      #   # Create a special object that represents the semantic comparison
-      #   # This will be passed to builtin_cast where the LLM will decide if they're equivalent
-      #   SemanticComparisonPair.new(left_value, right_value)
-      # end
-
-      def eval_semantic_equality(left, right)
-        Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality: #{left.inspect} ~= #{right.inspect}" }
-
-        # Evaluate both operands
-        left_value = evaluate_one(left)
-        right_value = evaluate_one(right)
-
-        # Use LLM to determine semantic equality, following existing patterns
-        chat = Aua::LLM.chat
-        prompt = <<~PROMPT
-          You are evaluating semantic equality between two values.
-
-          Are these two values semantically the same or very similar in meaning?
-          Consider the meaning and intent rather than exact representation. This is a fuzzy, humanzing and forgiving semantic operator.
-
-          Left value: #{left_value.introspect}
-          Right value: #{right_value.introspect}
-          Examples of semantic equality:
-          - "hello" and "greetings" (synonyms)
-          - "hello" and "Hello" (case differences)
-          - 5 and "five" (different representations of same concept)
-          - "empty" and [] (conceptual equivalence)
-          - "happy" and "joyful" (synonyms)
-          - "house" and "home" (similar concepts)
-
-          Examples of semantic inequality:
-          - "good" and "bad" (antonyms)
-          - "blue" and "red" (different colors)
-          - "hello" and "goodbye" (opposite senses)
-          - "cat" and "dog" (different animals)
-          - "apple" and "banana" (different objects)
-          - "hearth" and "home" (different concepts)
-
-          Be liberal but only return true if the values represent the same core concept or meaning.
-        PROMPT
-
-        json_schema = {
-          name: "semantic_equality",
-          strict: "true",
-          schema: {
-            type: "object",
-            properties: {
-              value: {
-                type: "boolean",
-                description: "Whether the two values are semantically equivalent"
-              }
-            },
-            required: ["value"],
-            additionalProperties: false
-          }
-        }
-
-        response = chat.with_json_guidance(json_schema) do
-          chat.ask(prompt)
-        end
-
-        Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality response: #{response}" }
-
-        # Parse response and return Bool
-        result = JSON.parse(response)["value"]
-        Aua::Bool.new(result)
-      end
-
-      # def eval_semantic_equality(left, right)
-      #   Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality: #{left.inspect} ~= #{right.inspect}" }
-
-      #   # Evaluate both operands
-      #   left_value = evaluate_one(left)
-      #   right_value = evaluate_one(right)
-
-      #   # Use LLM to determine semantic equality, following existing patterns
-      #   chat = Aua::LLM.chat
-      #   prompt = <<~PROMPT
-      #     You are evaluating semantic equality between two values.
-      #     Are these two values semantically the same?
-
-      #     Left value: #{left_value.introspect}
-      #     Right value: #{right_value.introspect}
-
-      #     Consider the meaning and intent rather than exact representation. This is a fuzzy, humanzing and forgiving semantic operator.
-
-      #     Examples of semantic equality:
-      #     Examples of semantic inequality:
-      #     - "good" and "bad" (antonyms)
-      #     - "blue" and "red" (different colors)
-      #     - "hello" and "goodbye" (opposite senses)
-      #     - "cat" and "dog" (different animals)
-      #     - "apple" and "banana" (different objects)
-
-      #     Return true if they are semantically equivalent, false otherwise.
-      #   PROMPT
-
-      #   json_schema = {
-      #     name: "semantic_equality",
-      #     strict: "true",
-      #     schema: {
-      #       type: "object",
-      #       properties: {
-      #         value: {
-      #           type: "boolean",
-      #           description: "Whether the two values are semantically equivalent"
-      #         },
-      #         reason: {
-      #           type: "string",
-      #           description: "Explanation of why the values are semantically equivalent or not"
-      #         }
-      #       },
-      #       required: ["value", "reason"],
-      #       additionalProperties: false
-      #     }
-      #   }
-
-      #   response = chat.with_json_guidance(json_schema) do
-      #     chat.ask(prompt)
-      #   end
-
-      #   Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality response: #{response}" }
-
-      #   # Parse response and return Bool
-      #   result = JSON.parse(response)["value"]
-      #   Aua::Bool.new(result)
-      # end
     end
   end
 end

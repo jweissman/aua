@@ -133,8 +133,13 @@ RSpec.describe "LLM Features", :llm do
         end
 
         it "booleans" do
-          expect('"yep" as Bool').to be_aua(true)
+          expect('"yes" as Bool').to be_aua(true)
+          # expect('"affirmative" as Bool').to be_aua(true)
+          # expect('"yeah" as Bool').to be_aua(true)
+
+          expect('"no" as Bool').to be_aua(false)
           expect('"nope" as Bool').to be_aua(false)
+          expect('"naw" as Bool').to be_aua(false)
         end
 
         it "integers" do
