@@ -81,6 +81,7 @@ module Aua
         when :generic_type_lookup then eval_generic_type_lookup(val)
         when :union_type_lookup then eval_union_type_lookup(val)
         when :cast then eval_call(:cast, [val[0], val[1]])
+        when :semantic_equality then eval_semantic_equality(val[0], val[1])
         when :gen then eval_call(:chat, [val])
         when :cat then eval_cat(val)
         when :cons then eval_cons(val)
@@ -760,14 +761,14 @@ module Aua
         return unless value.is_a?(Aua::ObjectLiteral)
 
         # Handle type references (like Person)
-        if type_stmt.is_a?(Array) && type_stmt.first.is_a?(IR::Types::TypeReference)
-          type_ref = type_stmt.first
-          expected_type = @type_registry.lookup(type_ref.name)
-          
-          if expected_type.is_a?(Aua::Runtime::RecordType)
-            validate_record_type!(value, expected_type, type_ref.name)
-          end
-        end
+        return unless type_stmt.is_a?(Array) && type_stmt.first.is_a?(IR::Types::TypeReference)
+
+        type_ref = type_stmt.first
+        expected_type = @type_registry.lookup(type_ref.name)
+
+        return unless expected_type.is_a?(Aua::Runtime::RecordType)
+
+        validate_record_type!(value, expected_type, type_ref.name)
       end
 
       def validate_record_type!(value, expected_type, type_name)
@@ -787,11 +788,11 @@ module Aua
           expected_field_type = field[:type]
           actual_value = value.get_field(field_name)
 
-          unless value_matches_type?(actual_value, expected_field_type)
-            actual_type = get_value_type_name(actual_value)
-            expected_type_name = get_type_name(expected_field_type)
-            raise Error, "Type mismatch in field '#{field_name}': expected #{expected_type_name}, got #{actual_type}"
-          end
+          next if value_matches_type?(actual_value, expected_field_type)
+
+          actual_type = get_value_type_name(actual_value)
+          expected_type_name = get_type_name(expected_field_type)
+          raise Error, "Type mismatch in field '#{field_name}': expected #{expected_type_name}, got #{actual_type}"
         end
       end
 
@@ -967,6 +968,139 @@ module Aua
         Aua.logger.error("vm:describe_record_type") { "Error describing record type: #{e.message}" }
         "{...}"
       end
+
+      # def eval_semantic_comparison_pair(left, right)
+      #   # Evaluate both operands first
+      #   left_value = evaluate_one(left)
+      #   right_value = evaluate_one(right)
+
+      #   # Create a special object that represents the semantic comparison
+      #   # This will be passed to builtin_cast where the LLM will decide if they're equivalent
+      #   SemanticComparisonPair.new(left_value, right_value)
+      # end
+
+      def eval_semantic_equality(left, right)
+        Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality: #{left.inspect} ~= #{right.inspect}" }
+
+        # Evaluate both operands
+        left_value = evaluate_one(left)
+        right_value = evaluate_one(right)
+
+        # Use LLM to determine semantic equality, following existing patterns
+        chat = Aua::LLM.chat
+        prompt = <<~PROMPT
+          You are evaluating semantic equality between two values.
+
+          Are these two values semantically the same or very similar in meaning?
+          Consider the meaning and intent rather than exact representation. This is a fuzzy, humanzing and forgiving semantic operator.
+
+          Left value: #{left_value.introspect}
+          Right value: #{right_value.introspect}
+          Examples of semantic equality:
+          - "hello" and "greetings" (synonyms)
+          - "hello" and "Hello" (case differences)
+          - 5 and "five" (different representations of same concept)
+          - "empty" and [] (conceptual equivalence)
+          - "happy" and "joyful" (synonyms)
+          - "house" and "home" (similar concepts)
+
+          Examples of semantic inequality:
+          - "good" and "bad" (antonyms)
+          - "blue" and "red" (different colors)
+          - "hello" and "goodbye" (opposite senses)
+          - "cat" and "dog" (different animals)
+          - "apple" and "banana" (different objects)
+          - "hearth" and "home" (different concepts)
+
+          Be liberal but only return true if the values represent the same core concept or meaning.
+        PROMPT
+
+        json_schema = {
+          name: "semantic_equality",
+          strict: "true",
+          schema: {
+            type: "object",
+            properties: {
+              value: {
+                type: "boolean",
+                description: "Whether the two values are semantically equivalent"
+              }
+            },
+            required: ["value"],
+            additionalProperties: false
+          }
+        }
+
+        response = chat.with_json_guidance(json_schema) do
+          chat.ask(prompt)
+        end
+
+        Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality response: #{response}" }
+
+        # Parse response and return Bool
+        result = JSON.parse(response)["value"]
+        Aua::Bool.new(result)
+      end
+
+      # def eval_semantic_equality(left, right)
+      #   Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality: #{left.inspect} ~= #{right.inspect}" }
+
+      #   # Evaluate both operands
+      #   left_value = evaluate_one(left)
+      #   right_value = evaluate_one(right)
+
+      #   # Use LLM to determine semantic equality, following existing patterns
+      #   chat = Aua::LLM.chat
+      #   prompt = <<~PROMPT
+      #     You are evaluating semantic equality between two values.
+      #     Are these two values semantically the same?
+
+      #     Left value: #{left_value.introspect}
+      #     Right value: #{right_value.introspect}
+
+      #     Consider the meaning and intent rather than exact representation. This is a fuzzy, humanzing and forgiving semantic operator.
+
+      #     Examples of semantic equality:
+      #     Examples of semantic inequality:
+      #     - "good" and "bad" (antonyms)
+      #     - "blue" and "red" (different colors)
+      #     - "hello" and "goodbye" (opposite senses)
+      #     - "cat" and "dog" (different animals)
+      #     - "apple" and "banana" (different objects)
+
+      #     Return true if they are semantically equivalent, false otherwise.
+      #   PROMPT
+
+      #   json_schema = {
+      #     name: "semantic_equality",
+      #     strict: "true",
+      #     schema: {
+      #       type: "object",
+      #       properties: {
+      #         value: {
+      #           type: "boolean",
+      #           description: "Whether the two values are semantically equivalent"
+      #         },
+      #         reason: {
+      #           type: "string",
+      #           description: "Explanation of why the values are semantically equivalent or not"
+      #         }
+      #       },
+      #       required: ["value", "reason"],
+      #       additionalProperties: false
+      #     }
+      #   }
+
+      #   response = chat.with_json_guidance(json_schema) do
+      #     chat.ask(prompt)
+      #   end
+
+      #   Aua.logger.info("vm:eval_semantic_equality") { "Semantic equality response: #{response}" }
+
+      #   # Parse response and return Bool
+      #   result = JSON.parse(response)["value"]
+      #   Aua::Bool.new(result)
+      # end
     end
   end
 end

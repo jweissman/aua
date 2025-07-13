@@ -167,6 +167,7 @@ module Aua
       def tilde: (String) -> token?
       def neq: (String) -> token?
       def fat_arrow: (String) -> token?
+      def fuzzy_eq: (String) -> token?
 
       def interpolation_end: (String) -> token?
       def eos: (String) -> token?

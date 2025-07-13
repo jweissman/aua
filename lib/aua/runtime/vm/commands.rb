@@ -34,6 +34,11 @@ module Aua
           Semantics.inst(:cast, obj, type)
         end
 
+        # Semantic equality comparison using LLM.
+        SEMANTIC_FUZZY_EQ = lambda do |left, right|
+          Semantics.inst(:semantic_fuzzy_eq, left, right)
+        end
+
         # Construct a list/array from elements.
         CONS = lambda do |elements|
           Semantics.inst(:cons, *elements)

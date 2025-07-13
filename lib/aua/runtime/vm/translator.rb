@@ -292,6 +292,7 @@ module Aua
               when :pow then binop_pow(left, right)
               when :eq then binop_equals(left, right)
               when :neq then binop_not_equals(left, right)
+              when :fuzzy_eq then handle_semantic_equality(left, right)
               when :gt then [SEND[left, :gt, right]]
               when :lt then [SEND[left, :lt, right]]
               when :gte then [SEND[left, :gte, right]]
@@ -403,6 +404,13 @@ module Aua
               end
 
               CAST[left, union_class]
+            end
+
+            def handle_semantic_equality(left, right)
+              Aua.logger.info "Semantic equality: #{left.inspect} ~= #{right.inspect}"
+
+              # Create a semantic equality operation directly
+              Semantics.inst(:semantic_equality, left, right)
             end
 
             def extract_choices_from_union_type(union_type)

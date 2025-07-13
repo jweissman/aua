@@ -28,7 +28,7 @@ module Aua
       tilde: 3, # enum selection has low precedence, similar to assignment
       or: 4, # logical OR has low precedence among operators
       and: 5, # logical AND has higher precedence than OR
-      eq: 6, neq: 6, gt: 6, lt: 6, gte: 6, lte: 6, # comparison operators
+      eq: 6, neq: 6, gt: 6, lt: 6, gte: 6, lte: 6, fuzzy_eq: 6, # comparison operators
       plus: 7, minus: 7,
       star: 8, slash: 8,
       pow: 9,

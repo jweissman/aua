@@ -132,6 +132,11 @@ module Aua
         t(:neq)
       end
 
+      def fuzzy_eq(_)
+        2.times { advance }
+        t(:fuzzy_eq)
+      end
+
       def interpolation_end(_)
         # Context-aware brace handling using the context stack
         Aua.logger.debug("interpolation_end") do

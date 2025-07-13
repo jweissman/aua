@@ -45,9 +45,10 @@ fun hero_from_creature(name, creature)
 end
 
 cards = [
-  hero_from_creature("Algorius", creature_from_body(body(1, '#0a9f34'))),
-  hero_from_creature("Tantalus", creature_from_body(body(1, '#ba0494'))),
-  hero_from_creature("Crexas", creature_from_body(body(1, '#a0b0d0'))),
+  creature_from_body()
+  # hero_from_creature("Algorius", creature_from_body(body(1, '#000'))),
+  # hero_from_creature("Tantalus", creature_from_body(body(1, '#ba0494'))),
+  # hero_from_creature("Crexas", creature_from_body(body(1, '#a0b0d0'))),
   # { name: 'archon alpha, the noblissimus', hp: 100, attack: 24, defense: 1 },
   # { name: 'prince gulfregon, shield of ambria', hp: 250, attack: 15, defense: 2 },
   # { name: 'tharn kallix, terraqueous worldmage', hp: 50, attack: 8, defense: 1 },

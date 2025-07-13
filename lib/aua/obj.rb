@@ -290,6 +290,7 @@ module Aua
     define_aura_method(:lt) { Bool.new(@value < _1.value) }
     define_aura_method(:gte) { Bool.new(@value >= _1.value) }
     define_aura_method(:lte) { Bool.new(@value <= _1.value) }
+    # NOTE: fuzzy_eq is now handled at VM level for architectural consistency
     define_aura_method(:to_s) { Str.new(@value.to_s) } # Return self as Str
     define_aura_method(:to_i) do |base|
       # puts "Aua::Str#to_i called with base: #{base.inspect} [value = #{@value.inspect}]"
