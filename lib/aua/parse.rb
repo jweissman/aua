@@ -192,11 +192,21 @@ module Aua
       return unless @current_token.type == :keyword && @current_token.value == "fun"
 
       consume(:keyword, "fun")
+      function_name = parse_function_name
+      parameters = parse_function_parameters
+      body = parse_function_body
+      
+      s(:function_definition, function_name, parameters, body)
+    end
+
+    def parse_function_name
       parse_failure("function name") unless @current_token.type == :id
       function_name = @current_token.value
       consume(:id)
+      function_name
+    end
 
-      # Parse parameter list
+    def parse_function_parameters
       consume(:lparen)
       parameters = [] # : Array[untyped]
       unless @current_token.type == :rparen
@@ -210,17 +220,16 @@ module Aua
         end
       end
       consume(:rparen)
+      parameters
+    end
 
-      # Parse function body (until 'end')
+    def parse_function_body
       body_statements = [] # : Array[untyped]
-
-      # Skip any newlines after the parameter list
       advance while @current_token.type == :eos
 
       while @current_token.type != :keyword || @current_token.value != "end"
         break if @current_token.type == :eof
 
-        # Skip newlines/whitespace within function body
         if @current_token.type == :eos
           advance
           next
@@ -228,15 +237,11 @@ module Aua
 
         statement = parse_expression
         body_statements << statement if statement
-
-        # Skip newlines after each statement
         advance while @current_token.type == :eos
       end
 
       consume(:keyword, "end")
-
-      body = body_statements.size == 1 ? body_statements.first : s(:seq, body_statements.compact)
-      s(:function_definition, function_name, parameters, body)
+      body_statements.size == 1 ? body_statements.first : s(:seq, body_statements.compact)
     end
 
     def parse_type_expression
@@ -398,7 +403,8 @@ module Aua
     # Parses function calls: identifier(arg1, arg2, ...)
     def parse_function_call(ident)
       Aua.logger.info "parse-function-call" do
-        "Parsing function call with identifier: #{ident.value}, current token: #{@current_token.type} (#{@current_token.value})"
+        "Parsing function call with identifier: #{ident.value}, " \
+          "current token: #{@current_token.type} (#{@current_token.value})"
       end
 
       function_name = ident.value
@@ -634,7 +640,9 @@ module Aua
 
       peek = peek_token
       Aua.logger.info "parse-primary" do
-        "Parsing primary expression with current token: #{@current_token.type} (#{@current_token.value}) / peek token: #{peek&.type} (#{peek&.value}) [peek nil? #{peek.nil?}]"
+        "Parsing primary expression with current token: #{@current_token.type} " \
+          "(#{@current_token.value}) / peek token: #{peek&.type} (#{peek&.value}) " \
+          "[peek nil? #{peek.nil?}]"
       end
       if @current_token.type == :id && peek&.type == :lparen
         Aua.logger.info "parse-primary" do
@@ -689,7 +697,8 @@ module Aua
       # Check for generic type syntax: List<String> (only in type contexts)
       if @current_token.type == :lt
         Aua.logger.info "parse-type-reference" do
-          "Parsing generic type reference: #{type_name} with current token: #{@current_token.type} (#{@current_token.value})"
+          "Parsing generic type reference: #{type_name} " \
+            "with current token: #{@current_token.type} (#{@current_token.value})"
         end
         consume(:lt)
 

@@ -30,8 +30,7 @@ module Aua
           when :type_constant then translate_type_constant(ast)
           when :generic_type then translate_generic_type(ast)
           when :record_type then translate_record_type(ast)
-          when :unit then translate_tuple(ast)
-          when :tuple then translate_tuple(ast)
+          when :unit, :tuple then translate_tuple(ast)
           when :type_annotation then translate_type_annotation(ast)
           when :index then translate_index(ast)
           else

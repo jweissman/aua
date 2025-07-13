@@ -426,13 +426,17 @@ module Aua
     end
 
     # Check if a key exists
-    def has_field?(field_name)
+    def field?(field_name)
       @values.key?(field_name)
     end
 
     # Set a key-value pair
     def set_field(field_name, new_value)
       @values[field_name] = new_value
+    end
+
+    def fields
+      @values.keys
     end
   end
 
@@ -458,7 +462,7 @@ module Aua
     end
 
     # Check if a field exists
-    def has_field?(field_name)
+    def field?(field_name)
       @values.key?(field_name)
     end
 
@@ -498,8 +502,12 @@ module Aua
       @values[field_name]
     end
 
+    def fields
+      @values.keys
+    end
+
     # Check if a field exists
-    def has_field?(field_name)
+    def field?(field_name)
       @values.key?(field_name)
     end
 
@@ -560,8 +568,8 @@ module Aua
 
     # For first-class function support, we need to make functions callable
     # This will be used by the VM when a function is called as a value
-    def call(vm, arguments)
-      vm.eval_user_function(self, arguments)
+    def call(virtual_machine, arguments)
+      virtual_machine.eval_user_function(self, arguments)
     end
 
     def json_schema

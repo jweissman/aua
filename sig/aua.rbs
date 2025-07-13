@@ -585,7 +585,7 @@ module Aua
     def introspect: () -> String
     def type_name: () -> String
     def get_field: (String) -> Obj
-    def has_field?: (String) -> bool
+    def field?: (String) -> bool
     def set_field: (String, Obj) -> void
     def self.klass: () -> Klass
     def self.json_schema: () -> untyped
@@ -599,7 +599,7 @@ module Aua
     attr_reader values: Hash[String, Obj]
     def initialize: (String, fields, Hash[String, Obj]) -> void
     def get_field: (String) -> Obj
-    def has_field?: (String) -> bool
+    def field?: (String) -> bool
     def set_field: (String, Obj) -> void
     def introspect: () -> String
     def name: () -> String
@@ -609,7 +609,7 @@ module Aua
     attr_reader values: Hash[String, Obj]
     def initialize: (Hash[String, Obj]) -> void
     def get_field: (String) -> Obj
-    def has_field?: (String) -> bool
+    def field?: (String) -> bool
     def set_field: (String, Obj) -> void
     def introspect: () -> String
     def name: () -> String

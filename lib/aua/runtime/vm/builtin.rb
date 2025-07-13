@@ -12,7 +12,8 @@ module Aua
             klass = target
             # Generic casting using LLM + JSON schema
             Aua.logger.info("builtin_cast") do
-              "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect} (\\#{klass.name} annotated as '#{klass.type_annotation}')"
+              "Casting object: \\#{obj.inspect} to class: \\#{klass.inspect} " \
+                "(\\#{klass.name} annotated as '#{klass.type_annotation}')"
             end
             chat = Aua::LLM.chat
             ret = chat.with_json_guidance(schema_for(klass)) do
@@ -202,7 +203,8 @@ module Aua
           def builtin_typeof(obj)
             raise Error, "typeof requires a single argument" unless obj.is_a?(Obj)
 
-            type_name = if obj.instance_variable_defined?(:@type_annotation) && obj.instance_variable_get(:@type_annotation)
+            type_name = if obj.instance_variable_defined?(:@type_annotation) &&
+                           obj.instance_variable_get(:@type_annotation)
                           note = obj.instance_variable_get(:@type_annotation)
                           Aua.logger.info "Type annotation found: #{note.inspect}"
                           note

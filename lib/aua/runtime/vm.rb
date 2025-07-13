@@ -383,13 +383,14 @@ module Aua
         case current_obj
         when ObjectLiteral, RecordObject
           # Check if the field exists (for type safety)
-          raise Error, "Field '#{field_name}' not found in object type" unless current_obj.has_field?(field_name)
+          raise Error, "Field '#{field_name}' not found in object type" unless current_obj.field?(field_name)
 
           # Basic type checking - compare the type of the new value with the existing field
           existing_value = current_obj.get_field(field_name)
           if existing_value && !compatible_types?(existing_value, new_value)
             raise Error,
-                  "Type mismatch: cannot assign #{type_name(new_value)} to field '#{field_name}' expecting #{type_name(existing_value)}"
+                  "Type mismatch: cannot assign #{type_name(new_value)} " \
+                  "to field '#{field_name}' expecting #{type_name(existing_value)}"
           end
 
           # Create a new object with the updated field (or mutate if that's what set_field does)
@@ -507,60 +508,37 @@ module Aua
         collection = evaluate_one(collection_expr)
         index = evaluate_one(index_expr)
 
-        # Handle different collection types
+        index_value = if index.is_a?(Int)
+                        index.value
+                      elsif index.is_a?(Str)
+                        index.value
+                      elsif index.aua_respond_to?(:to_ruby_i)
+                        index.aura_send(:to_ruby_i)
+                      elsif index.aua_respond_to?(:to_i)
+                        index.aura_send(:to_i).value
+                      end
+
+        collection_size = case collection
+                          when List then collection.values.size
+                          when Dict, ObjectLiteral then collection.fields.size
+                          when Str then collection.value.length
+                          else 0
+                          end
+
+        if index_value.is_a?(Integer) && (index_value.nil? || index_value < 0 || index_value >= collection_size)
+          raise Error, "Index #{index_value} out of bounds for collection of size #{collection_size}"
+        end
+
+        Aua.logger.info("vm:eval_index") do
+          "Evaluating indexing operation on #{type_name(collection)} at index #{index_value}"
+        end
+
         case collection
-        when List
-          # Array indexing requires integer index
-          raise Error, "Array index must be an integer, got #{type_name(index)}" unless index.is_a?(Int)
-
-          index_value = index.value
-
-          # Check bounds
-          if index_value.negative? || index_value >= collection.values.size
-            raise Error, "Array index #{index_value} out of bounds for array of size #{collection.values.size}"
-          end
-
-          collection.values[index_value]
-        when Dict
-          # Dictionary indexing supports string keys
-          raise Error, "Dictionary key must be a string, got #{type_name(index)}" unless index.is_a?(Str)
-
-          key = index.value
-
-          raise Error, "Dictionary key '#{key}' not found" unless collection.has_field?(key)
-
-          collection.get_field(key)
-        when ObjectLiteral
-          # Object literal indexing supports string keys for field access
-          raise Error, "Object field key must be a string, got #{type_name(index)}" unless index.is_a?(Str)
-
-          key = index.value
-
-          raise Error, "Object field '#{key}' not found" unless collection.has_field?(key)
-
-          collection.get_field(key)
-        when RecordObject
-          # Record object indexing also supports string keys for field access
-          raise Error, "Record field key must be a string, got #{type_name(index)}" unless index.is_a?(Str)
-
-          key = index.value
-
-          raise Error, "Record field '#{key}' not found" unless collection.has_field?(key)
-
-          collection.get_field(key)
-        when Str
-          # String indexing requires integer index
-          raise Error, "String index must be an integer, got #{type_name(index)}" unless index.is_a?(Int)
-
-          index_value = index.value
-
-          if index_value.negative? || index_value >= collection.value.length
-            raise Error, "String index #{index_value} out of bounds for string of length #{collection.value.length}"
-          end
-
-          Str.new(collection.value[index_value].to_s)
+        when List then collection.values[index_value]
+        when Dict, ObjectLiteral then collection.get_field(index_value)
+        when Str then Str.new(collection.value[index_value].to_s)
         else
-          raise Error, "Cannot index into #{type_name(collection)} (only arrays and strings are indexable)"
+          raise Error, "Cannot index into #{type_name(collection)}"
         end
       end
 
@@ -780,12 +758,12 @@ module Aua
         expected_fields = expected_type.field_definitions
 
         # Only validate objects that have field access methods
-        return unless value.respond_to?(:has_field?) && value.respond_to?(:get_field)
+        return unless value.respond_to?(:field?) && value.respond_to?(:get_field)
 
         # Check for missing fields
         expected_fields.each do |field|
           field_name = field[:name]
-          unless value.has_field?(field_name) # steep:ignore
+          unless value.field?(field_name) # steep:ignore
             raise Error, "Missing required field '#{field_name}' for type #{type_name}"
           end
 
