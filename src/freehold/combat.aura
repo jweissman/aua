@@ -1,0 +1,105 @@
+#!/usr/bin/env aura
+
+# === COMBAT SIMULATION SYSTEM ===
+# Load creatures and run faction warfare
+
+# Basic combat function
+fun combat_round(attacker, defender)
+  damage = attacker.attack - defender.defense
+  damage = if damage < 1 then 1 else damage  # Minimum 1 damage
+  defender.hp = defender.hp - damage
+  
+  if defender.hp <= 0
+    say("${attacker.name} defeats ${defender.name}!")
+    return attacker
+  end
+  
+  nil  # No winner yet
+end
+
+fun full_combat(creature1, creature2)
+  fighter1 = creature1.dup
+  fighter2 = creature2.dup
+  
+  round = 1
+  while fighter1.hp > 0 && fighter2.hp > 0
+    # Fighter 1 attacks
+    winner = combat_round(fighter1, fighter2)
+    if winner != nil then return winner end
+    
+    # Fighter 2 counter-attacks
+    winner = combat_round(fighter2, fighter1)
+    if winner != nil then return winner end
+    
+    round = round + 1
+    if round > 50  # Prevent infinite loops
+      # Tie goes to higher HP
+      return if fighter1.hp > fighter2.hp then fighter1 else fighter2
+    end
+  end
+  
+  if fighter1.hp > 0 then fighter1 else fighter2
+end
+
+# Run tournament between factions
+fun faction_tournament(white_army, black_army, num_fights)
+  white_wins = 0
+  black_wins = 0
+  
+  fight = 0
+  while fight < num_fights
+    white_fighter = white_army.sample
+    black_fighter = black_army.sample
+    
+    winner = full_combat(white_fighter, black_fighter)
+    
+    if winner.faction == "White"
+      white_wins = white_wins + 1
+    else
+      black_wins = black_wins + 1
+    end
+    
+    fight = fight + 1
+  end
+  
+  say("=== TOURNAMENT RESULTS ===")
+  say("White wins: ${white_wins}")
+  say("Black wins: ${black_wins}")
+  say("Win rate - White: ${(white_wins.to_f / num_fights.to_f * 100).to_i}%, Black: ${(black_wins.to_f / num_fights.to_f * 100).to_i}%")
+  
+  {
+    white_wins: white_wins,
+    black_wins: black_wins,
+    total_fights: num_fights
+  }
+end
+
+# Generate test armies (simplified for now)
+phi = 3.14159
+
+fun quick_creature(name, faction, attack, hp, defense)
+  {
+    name: name,
+    faction: faction,
+    attack: attack,
+    hp: hp,
+    defense: defense,
+    max_hp: hp
+  }
+end
+
+# Create sample armies
+white_test_army = [
+  quick_creature("Knight-Alpha", "White", 12, 25, 3),
+  quick_creature("Paladin-Beta", "White", 10, 30, 4),
+  quick_creature("Guardian-Gamma", "White", 8, 35, 5)
+]
+
+black_test_army = [
+  quick_creature("Wraith-X", "Black", 15, 20, 1),
+  quick_creature("Reaver-Y", "Black", 13, 22, 2),
+  quick_creature("Shadow-Z", "Black", 11, 24, 3)
+]
+
+# Run the tournament
+results = faction_tournament(white_test_army, black_test_army, 100)

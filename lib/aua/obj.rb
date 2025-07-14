@@ -284,6 +284,16 @@ module Aua
 
     attr_reader :value
 
+    define_aura_method(:gsub) do |pattern, replacement|
+      # Ensure pattern is a Str
+      raise TypeError, "Pattern must be a Str" unless pattern.is_a?(Str)
+      # Ensure replacement is a Str
+      raise TypeError, "Replacement must be a Str" unless replacement.is_a?(Str)
+
+      # Perform the substitution
+      new_value = @value.gsub(pattern.value, replacement.value)
+      Str.new(new_value)
+    end
     define_aura_method(:eq) { Bool.new(@value == _1.value) }
     define_aura_method(:+) { Str.new(@value + _1.value.to_s) } # String concatenation
     define_aura_method(:gt) { Bool.new(@value > _1.value) } # lexicographic comparison
@@ -356,17 +366,25 @@ module Aua
 
     def each_value(&) = @values.each(&)
 
+    define_aura_method(:include) do |value|
+      Bool.new(@values.any? { |v| v.aura_send(:eq, value).value })
+    end
+
+    define_aura_method(:length) do
+      Int.new(@values.length)
+    end
+
     define_aura_method(:+) do |other|
       raise Error, "Cannot add List to non-List" unless other.is_a?(List)
 
       List.new(@values + other.values, @type_annotation)
     end
 
-    # define_aura_method(:[]) do |index|
-    #   raise Error, "Index out of bounds" if index < 0 || index >= @values.length
-
-    #   @values[index]
-    # end
+    define_aura_method(:to_s) do
+      Str.new(
+        "[#{@values.map { |v| v.aura_send(:to_s).value }.join(", ")}]"
+      )
+    end
 
     define_aura_method(:sample) do
       return Nihil.new if @values.empty?
@@ -529,6 +547,16 @@ module Aua
 
     define_aura_method(:dup) { ObjectLiteral.new(@values.dup) }
     define_aura_method(:eq) { |other| Bool.new(@values == other.values) }
+    define_aura_method(:to_s) do
+      # Convert the object literal to a Ruby hash string representation
+      Str.new(
+        "{#{@values.map { |k, v| "#{k}: #{v.aura_send(:to_s).value}" }.join(", ")}}"
+      )
+    end
+    define_aura_method(:to_ruby_s) do
+      aura_send(:to_s).value
+    end
+
   end
 
   # Model for user-defined functions (first-class functions with closures)

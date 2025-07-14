@@ -1,0 +1,365 @@
+#!/usr/bin/env aura
+
+# === CREATURE GENERATION SYSTEM ===
+# Generate diverse creatures across White (orderly) and Black (chaotic) factions
+
+phi = 3.14159
+tau = 6.28318
+
+# Color palettes for factions
+white_colors = ["#ffffff", "#f0f0f0", "#e8e8e8", "#d0d0d0", "#c0c0c0"]
+black_colors = ["#000000", "#1a1a1a", "#2a2a2a", "#3a3a3a", "#4a4a4a"]
+chaotic_colors = ["#8b0000", "#4b0082", "#008b8b", "#8b4513", "#556b2f"]
+
+# Archetype definitions with their own modifiers
+archetypes = {
+  "Knight": {
+    physical: { power: 0, toughness: 2, agility: 0 },
+    mental: { intelligence: 0, cunning: 0, perception: 1 },
+    spiritual: { willpower: 1, charisma: 1, faith: 1 }
+  },
+  "Paladin": {
+    physical: { power: 1, toughness: 1, agility: 0 },
+    mental: { intelligence: 1, cunning: 0, perception: 1 },
+    spiritual: { willpower: 2, charisma: 1, faith: 3 }
+  },
+  "Guardian": {
+    physical: { power: 0, toughness: 3, agility: -1 },
+    mental: { intelligence: 0, cunning: 0, perception: 2 },
+    spiritual: { willpower: 2, charisma: 0, faith: 1 }
+  },
+  "Sentinel": {
+    physical: { power: 0, toughness: 0, agility: 2 },
+    mental: { intelligence: 1, cunning: 1, perception: 3 },
+    spiritual: { willpower: 1, charisma: 0, faith: 0 }
+  },
+  "Crusader": {
+    physical: { power: 2, toughness: 0, agility: 0 },
+    mental: { intelligence: 0, cunning: 0, perception: 1 },
+    spiritual: { willpower: 2, charisma: 1, faith: 2 }
+  },
+  "Wraith": {
+    physical: { power: 0, toughness: -1, agility: 3 },
+    mental: { intelligence: 1, cunning: 2, perception: 2 },
+    spiritual: { willpower: -2, charisma: -1, faith: -3 }
+  },
+  "Reaver": {
+    physical: { power: 2, toughness: -1, agility: 1 },
+    mental: { intelligence: 0, cunning: 2, perception: 1 },
+    spiritual: { willpower: 0, charisma: -1, faith: -1 }
+  },
+  "Shadow": {
+    physical: { power: 1, toughness: 0, agility: 2 },
+    mental: { intelligence: 1, cunning: 3, perception: 2 },
+    spiritual: { willpower: 0, charisma: 1, faith: -1 }
+  },
+  "Necromancer": {
+    physical: { power: 1, toughness: 1, agility: 0 },
+    mental: { intelligence: 3, cunning: 2, perception: 1 },
+    spiritual: { willpower: 1, charisma: 0, faith: -2 }
+  },
+  "Cultist": {
+    physical: { power: -1, toughness: -1, agility: 0 },
+    mental: { intelligence: 0, cunning: 1, perception: 0 },
+    spiritual: { willpower: 0, charisma: -1, faith: 2 }
+  }
+}
+
+# Creature modifiers
+adjectives = ["Swift", "Mighty", "Ancient", "Blessed", "Cursed", "Ethereal", "Savage", "Noble"]
+
+# Abilities by faction
+white_abilities = ["Heal", "Shield", "Bless", "Rally", "Purify"]
+black_abilities = ["Drain", "Curse", "Summon", "Fear", "Decay"]
+
+fun generate_color_stats(color, rank)
+  baseline = 255
+  red = (color[1] + color[2]).to_i(16)
+  green = (color[3] + color[4]).to_i(16)
+  blue = (color[5] + color[6]).to_i(16)
+
+  tau_r = red.to_f / baseline.to_f
+  tau_g = green.to_f / baseline.to_f
+  tau_b = blue.to_f / baseline.to_f
+
+  # Note: could compare stats to get other values?
+  # gamma as red vs blue
+  # interesting color flags would be metallicity, neon
+  # theta could be a hue value if we want that??
+
+  # Generate stats with more variety
+  base_power = (phi * rank).to_i
+  base_tough = (phi * rank).to_i
+  base_agil = (phi * rank).to_i
+  
+  {
+    power: base_power + (tau_r * rank * 2).to_i,
+    toughness: base_tough + (tau_g * rank * 3).to_i,
+    agility: base_agil + (tau_b * rank * 2).to_i,
+    r: red,
+    g: green,
+    b: blue,
+    color: color
+  }
+end
+
+fun body(archetype, color, rank)
+  stats = generate_color_stats(color, rank)
+  
+  # Get archetype modifiers from data structure
+  arch_data = archetypes[archetype]
+  if arch_data
+    phys_mods = arch_data["physical"]
+    power_mod = phys_mods["power"]
+    tough_mod = phys_mods["toughness"] 
+    agil_mod = phys_mods["agility"]
+  else
+    power_mod = 0
+    tough_mod = 0
+    agil_mod = 0
+  end
+
+  {
+    power: stats.power + power_mod,
+    toughness: stats.toughness + tough_mod,
+    agility: stats.agility + agil_mod
+  }
+end
+
+fun mind(archetype, color, rank)
+  base_intel = rank * 2
+  base_cunning = rank * 2
+  base_perception = rank * 2
+  
+  # Archetype mental modifiers
+  intel_mod = 0
+  cunning_mod = 0
+  perception_mod = 0
+  
+  if archetype == "Necromancer"
+    intel_mod = 3    # High intelligence
+    cunning_mod = 2
+  end
+  if archetype == "Shadow"
+    cunning_mod = 3  # Very cunning
+    perception_mod = 2
+  end
+  if archetype == "Sentinel"
+    perception_mod = 3  # High awareness
+  end
+  if archetype == "Paladin"
+    intel_mod = 1
+    perception_mod = 1  # Balanced mental stats
+  end
+  
+  {
+    intelligence: base_intel + intel_mod,
+    cunning: base_cunning + cunning_mod,
+    perception: base_perception + perception_mod
+  }
+end
+
+fun spirit(archetype, color, rank)
+  base_will = rank * 2
+  base_charisma = rank * 2
+  base_faith = rank * 2
+  
+  # Archetype spiritual modifiers
+  will_mod = 0
+  charisma_mod = 0
+  faith_mod = 0
+  
+  if archetype == "Paladin"
+    faith_mod = 3    # Very faithful
+    will_mod = 2
+  end
+  if archetype == "Crusader"
+    faith_mod = 2
+    will_mod = 2     # Strong conviction
+  end
+  if archetype == "Wraith"
+    will_mod = -2    # Weakened spirit
+    faith_mod = -3
+  end
+  if archetype == "Cultist"
+    faith_mod = 2    # Devoted to dark powers
+    charisma_mod = -1
+  end
+  
+  {
+    willpower: base_will + will_mod,
+    charisma: base_charisma + charisma_mod,
+    faith: base_faith + faith_mod
+  }
+end
+
+fun generate_creature(colors, archetypes)
+  archetype = archetypes.sample
+  color = colors.sample
+  rank = 1 + rand(5)  # Ranks 1-5
+  
+  physical = body(archetype, color, rank)
+  mental = mind(archetype, color, rank)
+  spiritual = spirit(archetype, color, rank)
+  
+  # Add abilities based on rank and faction
+  abilities = []
+  if rank >= 3
+    if white_colors.include(color)
+      abilities = abilities + [white_abilities.sample]
+    else
+      abilities = abilities + [black_abilities.sample]
+    end
+  end
+  if rank >= 5
+    # High-rank creatures get a second ability
+    if white_colors.include(color)
+      abilities = abilities + [white_abilities.sample]
+    else
+      abilities = abilities + [black_abilities.sample]
+    end
+  end
+  
+  # Generate creative names using LLM with tight constraints
+  faction_style = if white_colors.include(color) then "orderly military" else "chaotic warband"
+  
+  military_descriptor = """You will be asked to provide one word as a response. Please suggest a single-word prefix for a ${archetype} unit with stats ${physical}. Examples: Elite, Veteran, Iron, Storm. You may only suggest one name. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with one word."""
+  
+  flavor_term = """You will be asked to provide one word as a response. Please suggest a single expressive suffix describing a ${archetype} unit with stats ${physical}. Examples: Blade, Fang, Wing, Ember. You may only suggest one name. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with one word."""
+  
+  prefix = military_descriptor.gsub("\"", "").gsub(".", "")
+  suffix = flavor_term.gsub("\"", "").gsub(".", "")
+  unit_name = "${prefix} ${archetype}, ${suffix}"
+  faction = if white_colors.include(color) then "White" else "Black"
+  
+  # Create complete card structure
+  card = {
+    name: unit_name,
+    archetype: archetype,
+    rank: rank,
+    color: color,
+    faction: faction,
+    stats: {
+      # Physical
+      attack: physical.power,
+      hp: physical.toughness,
+      defense: physical.agility,
+      # Mental  
+      intelligence: mental.intelligence,
+      cunning: mental.cunning,
+      perception: mental.perception,
+      # Spiritual
+      willpower: spiritual.willpower,
+      charisma: spiritual.charisma,
+      faith: spiritual.faith
+    },
+    abilities: abilities,
+    cost: rank + (abilities.length * 2),  # Simple cost calculation
+    rarity: if rank >= 5 then "Rare" else if rank >= 3 then "Uncommon" else "Common"
+  }
+  
+  say("Generated: ${unit_name} (R${rank})")
+  card
+end
+
+# fun generate_black_creature()
+#   # name = "BK-" + rand(1000).to_s
+#   archetype = black_archetypes.sample
+#   color = (black_colors + chaotic_colors).sample
+#   rank = 1 + rand(5)  # Ranks 1-5
+#   modifier = if rank >= 4 then adjectives.sample else ""
+#   # full_name = if modifier != "" then "${modifier} ${name}" else name
+#   
+#   creature = create_creature(full_name, archetype, color, rank)
+#   creature
+# end
+
+# Generate initial populations
+white_army = []
+white_archetypes = ["Knight"]
+black_army = []
+black_archetypes = ["Shadow"]
+
+# Generate 5 creatures per faction for testing
+i = 0
+while i < 5
+  white_army = white_army + [generate_creature(white_colors, white_archetypes)]
+  black_army = black_army + [generate_creature(black_colors, black_archetypes)]
+  i = i + 1
+end
+
+say "Generated ${white_army.length} White creatures and ${black_army.length} Black creatures"
+
+# Export cards to JSON
+# all_cards = white_army + black_army
+# json_output = "["
+# i = 0
+# while i < all_cards.length
+#   card = all_cards[i]
+#   # Build abilities JSON manually to avoid nested interpolation
+#   abilities_json = ""
+#   j = 0
+#   while j < card.abilities.length
+#     abilities_json = abilities_json + "\"" + card.abilities[j] + "\""
+#     if j < card.abilities.length - 1
+#       abilities_json = abilities_json + ", "
+#     end
+#     j = j + 1
+#   end
+#   
+#   json_card = """{
+#   "name": "${card.name}",
+#   "archetype": "${card.archetype}",
+#   "rank": ${card.rank},
+#   "color": "${card.color}",
+#   "faction": "${card.faction}",
+#   "stats": {
+#     "attack": ${card.stats.attack},
+#     "hp": ${card.stats.hp},
+#     "defense": ${card.stats.defense},
+#     "intelligence": ${card.stats.intelligence},
+#     "cunning": ${card.stats.cunning},
+#     "perception": ${card.stats.perception},
+#     "willpower": ${card.stats.willpower},
+#     "charisma": ${card.stats.charisma},
+#     "faith": ${card.stats.faith}
+#   },
+#   "abilities": [${abilities_json}],
+#   "cost": ${card.cost},
+#   "rarity": "${card.rarity}"
+# }"""
+#   
+#   json_output = json_output + json_card
+#   if i < all_cards.length - 1
+#     json_output = json_output + ","
+#   end
+#   json_output = json_output + "\n"
+#   i = i + 1
+# end
+# json_output = json_output + "]"
+# 
+# # Output JSON to console
+# say ""
+# say "=== CARD EXPORT (JSON) ==="
+# say json_output
+
+# Show some sample creatures with abilities
+say ""
+say "=== WHITE FACTION SAMPLES ==="
+for i in [0, 1, 2] do
+  creature = white_army[i]
+  abilities_str = if creature.abilities.length > 0 then " [abilities]" else ""
+  say("${creature.name} the ${creature.archetype} (R${creature.rank}) - ATK:${creature.stats.attack} HP:${creature.stats.hp} DEF:${creature.stats.defense}${abilities_str}")
+end
+
+say ""
+say "=== BLACK FACTION SAMPLES ==="
+for i in [0, 1, 2] do
+  creature = black_army[i]
+  abilities_str = if creature.abilities.length > 0 then " [abilities]" else ""
+  say("${creature.name} the ${creature.archetype} (R${creature.rank}) - ATK:${creature.stats.attack} HP:${creature.stats.hp} DEF:${creature.stats.defense}${abilities_str}")
+end
+
+# Return summary instead of raw data
+say ""
+say "Creature generation complete. Ready for combat simulation."

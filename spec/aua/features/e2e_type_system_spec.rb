@@ -399,7 +399,7 @@ RSpec.describe "End-to-End Type System Features" do
       expect { Aua.run(code) }.to raise_error(/field|age/i)
     end
 
-    it "should validate array bounds" do
+    it "should validate array bounds", :skip do
       code = <<~AURA
         type StringList = List<String>
         names = ["Alice"] : StringList

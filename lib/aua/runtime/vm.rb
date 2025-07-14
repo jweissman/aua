@@ -59,7 +59,8 @@ module Aua
         stmt = stmt.first while stmt.is_a?(Array) && stmt.size == 1
         return resolve(stmt) if stmt.is_a? Obj
 
-        raise Error, "Expected a Statement, got: #{stmt.inspect[...80]}... (#{stmt.class})" unless stmt.is_a? Statement
+        # raise Error, "Expected a Statement, got: #{stmt.inspect[...80]}... (#{stmt.class})" unless stmt.is_a? Statement
+        interpreter_error("Expected a Statement, got: #{stmt.inspect[0..80]}... (#{stmt.class})") unless stmt.is_a? Aua::Runtime::Statement
 
         evaluate_one!(stmt)
       end
@@ -103,7 +104,8 @@ module Aua
           loop_var, collection, body = val
           eval_for(loop_var, collection, body)
         else
-          raise Error, "Unknown statement: #{stmt} (#{stmt.class})"
+          # raise Error, "Unknown statement: #{stmt} (#{stmt.class})"
+          interpreter_error("Unknown statement: #{stmt.inspect} (#{stmt.class})")
         end
       end
 
@@ -116,7 +118,8 @@ module Aua
         when :member_access then eval_member_access(val[0], val[1])
         else
 
-          raise Error, "Unknown simple statement: #{stmt} (#{stmt.class})"
+          # raise Error, "Unknown simple statement: #{stmt} (#{stmt.class})"
+          interpreter_error("Unknown simple statement: #{stmt.inspect} (#{stmt.class})")
         end
       end
 
@@ -146,7 +149,8 @@ module Aua
           )
         end
 
-        raise Error, "Unknown aura method '#{method}' for #{receiver.class}" unless receiver.aura_respond_to?(method)
+        # raise Error, "Unknown aura method '#{method}' for #{receiver.class}" unless receiver.aura_respond_to?(method)
+        interpreter_error("Unknown aura method '#{method}' for #{receiver.class}") unless receiver.aura_respond_to?(method)
 
         ret = receiver.aura_send(method, *args)
         Aua.logger.info("vm:eval_send") do
@@ -185,14 +189,15 @@ module Aua
 
         # Fall back to builtin functions
         fn = Aua.vm.builtins[fn_name.to_sym]
-        raise Aua::Error, "Unknown function: #{fn_name}" unless fn
+        # raise Aua::Error, "Unknown function: #{fn_name}" unless fn
+        interpreter_error("Unknown function: #{fn_name}") unless fn
 
         evaluated_args = [*args].map { |a| evaluate_one(a) }
 
         arity_match = fn.arity == evaluated_args.size || (fn.arity.negative? && evaluated_args.size >= -fn.arity)
         unless arity_match
-          raise Aua::Error,
-                "Wrong number of arguments for #{fn_name}: expected #{fn.arity}, got #{evaluated_args.size}"
+          # raise Aua::Error,
+          interpreter_error "Wrong number of arguments for #{fn_name}: expected #{fn.arity}, got #{evaluated_args.size}"
         end
 
         ret = fn.call(*evaluated_args)
@@ -205,7 +210,8 @@ module Aua
       def eval_id(identifier)
         identifier = identifier.first if identifier.is_a?(Array)
         Aua.logger.info("vm:eval_id") { "Getting variable #{identifier}" }
-        raise Error, "Undefined variable: #{identifier}" unless @env.key?(identifier)
+        # raise Error, "Undefined variable: #{identifier}" unless @env.key?(identifier)
+        interpreter_error("Undefined variable: #{identifier}") unless @env.key?(identifier)
 
         @env[identifier]
       end
@@ -239,7 +245,8 @@ module Aua
           type_obj = @env[type_name]
         end
 
-        raise Error, "Type '#{type_name}' not found" unless type_obj
+        # raise Error, "Type '#{type_name}' not found" unless type_obj
+        interpreter_error("Type '#{type_name}' not found") unless type_obj
 
         type_obj
       end
@@ -249,7 +256,8 @@ module Aua
         type_obj = @type_registry.lookup(type_name)
         type_obj = @env[type_name] if type_obj.nil?
 
-        raise Error, "Type '#{type_name}' not found" unless type_obj
+        # raise Error, "Type '#{type_name}' not found" unless type_obj
+        interpreter_error("Type '#{type_name}' not found") unless type_obj
 
         # Extract choices from the union type and create dynamic class
         choices = extract_union_choices_from_type(type_obj)
@@ -329,7 +337,8 @@ module Aua
           Aua.logger.info "Converting object to string: #{maybe_str.inspect}"
           maybe_str.aura_send(:to_ruby_s)
         else
-          raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
+          # raise Error, "Cannot concatenate non-string object: #{maybe_str.inspect}"
+          interpreter_error "Cannot concatenate non-string object: #{maybe_str.inspect}"
         end
       end
 
@@ -526,7 +535,8 @@ module Aua
                           end
 
         if index_value.is_a?(Integer) && (index_value.nil? || index_value < 0 || index_value >= collection_size)
-          raise Error, "Index #{index_value} out of bounds for collection of size #{collection_size}"
+          # raise Error, "Index #{index_value} out of bounds for collection of size #{collection_size}"
+          warn "Index #{index_value} out of bounds for collection of size #{collection_size}\n\n#{backtrace}"
         end
 
         Aua.logger.info("vm:eval_index") do
@@ -926,6 +936,21 @@ module Aua
       rescue StandardError => e
         Aua.logger.error("vm:describe_record_type") { "Error describing record type: #{e.message}" }
         "{...}"
+      end
+
+      def backtrace
+        # gather the call stack for debugging
+        @call_stack.map do |frame|
+          "#{frame.function_name}(#{frame.parameters.join(", ")}) at __FILE__:#{frame.line}"
+        rescue StandardError => e
+          Aua.logger.error("vm:backtrace") { "Error gathering backtrace: #{e.message}" }
+          "Unknown function at unknown location"
+        end
+      end
+
+      def interpreter_error(message)
+        # Raise an error with a formatted message and backtrace
+        raise Error, "#{message}\n\nCall stack:\n#{backtrace.join("\n")}"
       end
     end
   end
