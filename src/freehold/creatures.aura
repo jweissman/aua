@@ -220,16 +220,15 @@ fun generate_creature(colors, archetypes)
     end
   end
   
-  # Generate creative names using LLM with tight constraints
-  faction_style = if white_colors.include(color) then "orderly military" else "chaotic warband"
+  # Generate creative names using LLM generative literals with full stat context
+  guidelines = "You may only suggest one name. It must be expressive and suggestive but brief. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with one word."
+ 
+  # Generate creative names using LLM generative literals
+  military_descriptor = """You will be asked to provide one word as a response. Please suggest a single-word prefix for a ${archetype} unit with stats ${physical} ${mental}. Examples: Elite, Veteran, Iron, Storm. ${guidelines}"""
   
-  military_descriptor = """You will be asked to provide one word as a response. Please suggest a single-word prefix for a ${archetype} unit with stats ${physical}. Examples: Elite, Veteran, Iron, Storm. You may only suggest one name. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with one word."""
-  
-  flavor_term = """You will be asked to provide one word as a response. Please suggest a single expressive suffix describing a ${archetype} unit with stats ${physical}. Examples: Blade, Fang, Wing, Ember. You may only suggest one name. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with one word."""
-  
-  prefix = military_descriptor.gsub("\"", "").gsub(".", "")
-  suffix = flavor_term.gsub("\"", "").gsub(".", "")
-  unit_name = "${prefix} ${archetype}, ${suffix}"
+  flavor_term = """You will be asked to provide one word as a response. Please suggest a single expressive suffix describing a ${archetype} unit with stats ${physical} ${spiritual}. Examples: Blade, Fang, Wing, Ember. ${guidelines}""" 
+
+  unit_name = "${military_descriptor} ${flavor_term}"
   faction = if white_colors.include(color) then "White" else "Black"
   
   # Create complete card structure
@@ -258,7 +257,7 @@ fun generate_creature(colors, archetypes)
     rarity: if rank >= 5 then "Rare" else if rank >= 3 then "Uncommon" else "Common"
   }
   
-  say("Generated: ${unit_name} (R${rank})")
+  say("Generated: ${unit_name} (${physical.power}/${physical.toughness}) (R${rank})")
   card
 end
 
