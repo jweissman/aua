@@ -68,6 +68,13 @@ archetypes = {
 # Creature modifiers
 adjectives = ["Swift", "Mighty", "Ancient", "Blessed", "Cursed", "Ethereal", "Savage", "Noble"]
 
+# Temperament and terrain type definitions for barred union selection
+type Temperament = 'stoic' | 'fierce' | 'cunning' | 'zealous' | 'melancholic' | 'manic'
+type Terrain = 'plains' | 'hills' | 'temple' | 'citadel' | 'sanctuary' | 'moors' | 'swamp' | 'wasteland' | 'crypt' | 'shadowlands'
+
+# Legacy array for backwards compatibility
+temperaments = ["stoic", "fierce", "cunning", "zealous", "melancholic", "manic"]
+
 # Abilities by faction
 white_abilities = ["Heal", "Shield", "Bless", "Rally", "Purify"]
 black_abilities = ["Drain", "Curse", "Summon", "Fear", "Decay"]
@@ -103,7 +110,7 @@ fun generate_color_stats(color, rank)
   }
 end
 
-fun body(archetype, color, rank)
+fun body(archetype, color, rank, body_type)
   stats = generate_color_stats(color, rank)
   
   # Get archetype modifiers from data structure
@@ -118,11 +125,50 @@ fun body(archetype, color, rank)
     tough_mod = 0
     agil_mod = 0
   end
+  
+  # Body type modifiers for physical stats
+  body_power_mod = 0
+  body_tough_mod = 0
+  body_agil_mod = 0
+  
+  if body_type == "brute"
+    body_power_mod = 3
+    body_tough_mod = 2
+    body_agil_mod = -2
+  elif body_type == "pixie"
+    body_power_mod = -2
+    body_tough_mod = -1
+    body_agil_mod = 4
+  elif body_type == "leviathan"
+    body_power_mod = 2
+    body_tough_mod = 4
+    body_agil_mod = -3
+  elif body_type == "titan"
+    body_power_mod = 4
+    body_tough_mod = 3
+    body_agil_mod = -1
+  elif body_type == "sprite"
+    body_power_mod = -1
+    body_tough_mod = 0
+    body_agil_mod = 3
+  elif body_type == "wraith-form"
+    body_power_mod = 0
+    body_tough_mod = -2
+    body_agil_mod = 2
+  elif body_type == "behemoth"
+    body_power_mod = 3
+    body_tough_mod = 4
+    body_agil_mod = -2
+  elif body_type == "buyer"
+    body_power_mod = 1
+    body_tough_mod = 1
+    body_agil_mod = 1
+  end
 
   {
-    power: stats.power + power_mod,
-    toughness: stats.toughness + tough_mod,
-    agility: stats.agility + agil_mod
+    power: stats.power + power_mod + body_power_mod,
+    toughness: stats.toughness + tough_mod + body_tough_mod,
+    agility: stats.agility + agil_mod + body_agil_mod
   }
 end
 
@@ -193,12 +239,114 @@ fun spirit(archetype, color, rank)
   }
 end
 
+fun apply_temperament_modifiers(stats, temperament)
+  # Temperament affects creature stats
+  if temperament == "fierce"
+    # Check if this is physical stats
+    if stats.power
+      stats.power = stats.power + 2
+      stats.agility = stats.agility + 1
+    end
+    # Check if this is mental stats
+    if stats.cunning
+      stats.cunning = stats.cunning + 1
+    end
+    # Check if this is spiritual stats  
+    if stats.charisma
+      stats.charisma = stats.charisma + 2
+    end
+  elif temperament == "stoic"
+    if stats.toughness
+      stats.toughness = stats.toughness + 3
+      stats.agility = stats.agility - 1
+    end
+    if stats.willpower
+      stats.willpower = stats.willpower + 3
+    end
+  elif temperament == "cunning"
+    if stats.agility
+      stats.agility = stats.agility + 2
+    end
+    if stats.intelligence
+      stats.intelligence = stats.intelligence + 1
+      stats.cunning = stats.cunning + 3
+      stats.perception = stats.perception + 1
+    end
+    if stats.faith
+      stats.faith = stats.faith - 1
+    end
+  elif temperament == "zealous"
+    if stats.power
+      stats.power = stats.power + 1
+      stats.toughness = stats.toughness + 1
+    end
+    if stats.willpower
+      stats.willpower = stats.willpower + 2
+      stats.charisma = stats.charisma + 1
+      stats.faith = stats.faith + 3
+    end
+  elif temperament == "melancholic"
+    if stats.power
+      stats.power = stats.power - 1
+      stats.toughness = stats.toughness + 1
+    end
+    if stats.intelligence
+      stats.intelligence = stats.intelligence + 2
+      stats.cunning = stats.cunning + 1
+      stats.perception = stats.perception + 1
+    end
+    if stats.charisma
+      stats.charisma = stats.charisma - 1
+      stats.faith = stats.faith + 1
+    end
+  elif temperament == "manic"
+    if stats.power
+      stats.power = stats.power + 1
+      stats.toughness = stats.toughness - 1
+      stats.agility = stats.agility + 2
+    end
+    if stats.cunning
+      stats.cunning = stats.cunning + 2
+    end
+    if stats.willpower
+      stats.willpower = stats.willpower - 1
+      stats.charisma = stats.charisma + 2
+    end
+  end
+  
+  stats
+end
+
 fun generate_creature(colors, archetypes)
   archetype = archetypes.sample
   color = colors.sample
   rank = 1 + rand(5)  # Ranks 1-5
   
-  physical = body(archetype, color, rank)
+  # Add body type selection for more creature variety
+  body_types = ["pixie", "brute", "buyer", "leviathan", "wraith-form", "titan", "sprite", "behemoth"]
+  body_type = body_types.sample
+  
+  # Add microfaction and background for more character depth
+  microfactions = ["devoted", "rogue", "exile", "champion", "outcast", "elite", "veteran", "novice"]
+  microfaction = microfactions.sample
+  
+  background_traits = ["war-scarred", "mystically-touched", "battle-tested", "shadow-born", "light-blessed", "chaos-marked", "ancient", "feral"]
+  background = background_traits.sample
+  
+  # Brief, controlled temperament selection with more context
+  guidelines = "You may only respond with one word from the available options. Do not explain or respond conversationally."
+  temperament_prompt = """Select temperament for ${background} ${microfaction} ${archetype} (rank ${rank}): stoic, fierce, cunning, zealous, melancholic, or manic. ${guidelines}"""
+  temperament = temperament_prompt ~ Temperament
+  
+  # Brief, controlled terrain selection
+  if white_colors.include(color)
+    terrain_prompt = """Select sacred terrain for ${background} ${body_type} ${temperament} ${archetype}: plains, hills, temple, citadel, or sanctuary. ${guidelines}"""
+  else
+    terrain_prompt = """Select dark terrain for ${background} ${body_type} ${temperament} ${archetype}: moors, swamp, wasteland, crypt, or shadowlands. ${guidelines}"""
+  end
+  terrain = terrain_prompt ~ Terrain
+  
+  physical = body(archetype, color, rank, body_type)
   mental = mind(archetype, color, rank)
   spiritual = spirit(archetype, color, rank)
   
@@ -220,21 +368,33 @@ fun generate_creature(colors, archetypes)
     end
   end
   
-  # Generate creative names using LLM generative literals with full stat context
+  # Generate creative names using LLM generative literals with careful prompting
   guidelines = "You may only suggest one name. It must be expressive and suggestive but brief. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with one word."
- 
-  # Generate creative names using LLM generative literals
-  military_descriptor = """You will be asked to provide one word as a response. Please suggest a single-word prefix for a ${archetype} unit with stats ${physical} ${mental}. Examples: Elite, Veteran, Iron, Storm. ${guidelines}"""
   
-  flavor_term = """You will be asked to provide one word as a response. Please suggest a single expressive suffix describing a ${archetype} unit with stats ${physical} ${spiritual}. Examples: Blade, Fang, Wing, Ember. ${guidelines}""" 
+  # Generate first part with careful prompt structure  
+  if white_colors.include(color)
+    military_descriptor = """You will be asked to provide one word as a response. Please suggest a single-word prefix for a ${archetype} unit with stats ${physical.power}/${physical.toughness}/${physical.agility}. Examples: Elite, Veteran, Iron, Storm. ${guidelines}"""
+  else
+    military_descriptor = """You will be asked to provide one word as a response. Please suggest a single-word prefix for a ${archetype} unit with stats ${physical.power}/${physical.toughness}/${physical.agility}. Examples: Dark, Vile, Cursed, Shadow. ${guidelines}"""
+  end
+  
+  flavor_term = """You will be asked to provide one word as a response. Please suggest a single expressive suffix describing a ${background} ${body_type} ${archetype} unit. Examples: Blade, Fang, Wing, Ember. ${guidelines}"""
 
   unit_name = "${military_descriptor} ${flavor_term}"
+  
+  # Clean up name using gsub to remove unwanted punctuation
+  clean_name = unit_name.gsub(".", "").gsub("\"", "").gsub(",", "")
   faction = if white_colors.include(color) then "White" else "Black"
   
   # Create complete card structure
   card = {
-    name: unit_name,
+    name: clean_name,
     archetype: archetype,
+    body_type: body_type,
+    temperament: temperament,
+    terrain: terrain,
+    microfaction: microfaction,
+    background: background,
     rank: rank,
     color: color,
     faction: faction,
@@ -257,7 +417,27 @@ fun generate_creature(colors, archetypes)
     rarity: if rank >= 5 then "Rare" else if rank >= 3 then "Uncommon" else "Common"
   }
   
-  say("Generated: ${unit_name} (${physical.power}/${physical.toughness}) (R${rank})")
+  say("Generated: ${clean_name} [${temperament}|${body_type}] {${terrain}} (${physical.power}/${physical.toughness}) (R${rank})")
+  
+  # Output detailed card information for evaluation
+  say("  └─ ${background} ${microfaction} ${archetype} - ATK:${physical.power} HP:${physical.toughness} DEF:${physical.agility}")
+  say("     Mental: INT:${mental.intelligence} CUN:${mental.cunning} PER:${mental.perception}")
+  say("     Spirit: WIL:${spiritual.willpower} CHA:${spiritual.charisma} FAI:${spiritual.faith}")
+  if abilities.length > 0
+    abilities_list = ""
+    i = 0
+    while i < abilities.length
+      abilities_list = abilities_list + abilities[i]
+      if i < abilities.length - 1
+        abilities_list = abilities_list + ", "
+      end
+      i = i + 1
+    end
+    say("     Abilities: ${abilities_list}")
+  end
+  say("     Cost: ${card.cost} | Rarity: ${card.rarity}")
+  say("")
+  
   card
 end
 
@@ -275,11 +455,11 @@ end
 
 # Generate initial populations
 white_army = []
-white_archetypes = ["Knight"]
+white_archetypes = ["Knight", "Paladin", "Guardian", "Sentinel", "Crusader"]
 black_army = []
-black_archetypes = ["Shadow"]
+black_archetypes = ["Shadow", "Wraith", "Reaver", "Necromancer", "Cultist"]
 
-# Generate 5 creatures per faction for testing
+# Generate 5 creatures per faction for detailed evaluation
 i = 0
 while i < 5
   white_army = white_army + [generate_creature(white_colors, white_archetypes)]
@@ -289,58 +469,49 @@ end
 
 say "Generated ${white_army.length} White creatures and ${black_army.length} Black creatures"
 
-# Export cards to JSON
-# all_cards = white_army + black_army
-# json_output = "["
-# i = 0
-# while i < all_cards.length
-#   card = all_cards[i]
-#   # Build abilities JSON manually to avoid nested interpolation
-#   abilities_json = ""
-#   j = 0
-#   while j < card.abilities.length
-#     abilities_json = abilities_json + "\"" + card.abilities[j] + "\""
-#     if j < card.abilities.length - 1
-#       abilities_json = abilities_json + ", "
-#     end
-#     j = j + 1
-#   end
-#   
-#   json_card = """{
-#   "name": "${card.name}",
-#   "archetype": "${card.archetype}",
-#   "rank": ${card.rank},
-#   "color": "${card.color}",
-#   "faction": "${card.faction}",
-#   "stats": {
-#     "attack": ${card.stats.attack},
-#     "hp": ${card.stats.hp},
-#     "defense": ${card.stats.defense},
-#     "intelligence": ${card.stats.intelligence},
-#     "cunning": ${card.stats.cunning},
-#     "perception": ${card.stats.perception},
-#     "willpower": ${card.stats.willpower},
-#     "charisma": ${card.stats.charisma},
-#     "faith": ${card.stats.faith}
-#   },
-#   "abilities": [${abilities_json}],
-#   "cost": ${card.cost},
-#   "rarity": "${card.rarity}"
-# }"""
-#   
-#   json_output = json_output + json_card
-#   if i < all_cards.length - 1
-#     json_output = json_output + ","
-#   end
-#   json_output = json_output + "\n"
-#   i = i + 1
-# end
-# json_output = json_output + "]"
-# 
-# # Output JSON to console
-# say ""
-# say "=== CARD EXPORT (JSON) ==="
-# say json_output
+# Export cards to JSON - simplified approach
+all_cards = white_army + black_army
+
+# say "We have ${all_cards} cards"
+
+# Simple JSON output - just show first card as example
+if all_cards.length > 0
+  sample_card = all_cards[0]
+  say ""
+  say "=== SAMPLE CARD JSON ==="
+  say "{"
+  say "  \"name\": \"${sample_card.name}\","
+  say "  \"archetype\": \"${sample_card.archetype}\","
+  say "  \"rank\": ${sample_card.rank},"
+  say "  \"faction\": \"${sample_card.faction}\","
+  say "  \"color\": \"${sample_card.color}\","
+  say "  \"stats\": {"
+  say "    \"attack\": ${sample_card.stats.attack},"
+  say "    \"hp\": ${sample_card.stats.hp},"
+  say "    \"defense\": ${sample_card.stats.defense},"
+  say "    \"intelligence\": ${sample_card.stats.intelligence},"
+  say "    \"cunning\": ${sample_card.stats.cunning},"
+  say "    \"perception\": ${sample_card.stats.perception},"
+  say "    \"willpower\": ${sample_card.stats.willpower},"
+  say "    \"charisma\": ${sample_card.stats.charisma},"
+  say "    \"faith\": ${sample_card.stats.faith}"
+  say "  },"
+  # Format abilities array properly
+  abilities_str = "["
+  i = 0
+  while i < sample_card.abilities.length
+    abilities_str = abilities_str + "\"" + sample_card.abilities[i] + "\""
+    if i < sample_card.abilities.length - 1
+      abilities_str = abilities_str + ", "
+    end
+    i = i + 1
+  end
+  abilities_str = abilities_str + "]"
+  say "  \"abilities\": ${abilities_str},"
+  say "  \"cost\": ${sample_card.cost},"
+  say "  \"rarity\": \"${sample_card.rarity}\""
+  say "}"
+end
 
 # Show some sample creatures with abilities
 say ""
@@ -362,3 +533,4 @@ end
 # Return summary instead of raw data
 say ""
 say "Creature generation complete. Ready for combat simulation."
+

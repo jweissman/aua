@@ -1,0 +1,12 @@
+id: Leviathan_R3_White
+name: Elite Leviathan
+body_type: mythical
+rank: 3
+faction: White
+color: #ffffff
+stats:
+  attack: 15
+  hp: 19
+  defense: 4
+abilities: 0
+cost: 9

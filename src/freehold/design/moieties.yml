@@ -1,0 +1,22 @@
+# Simple Moiety List
+# Just the names and basic descriptions - logic stays in code
+
+white_moieties:
+  - name: "priests"
+    description: "Divine servants focused on healing and protection"
+  - name: "army" 
+    description: "Disciplined military forces maintaining order"
+  - name: "scholars"
+    description: "Keepers of knowledge and arcane wisdom"
+  - name: "merchants"
+    description: "Trade guilds and economic powers"
+
+black_moieties:
+  - name: "shadow"
+    description: "Assassins and spies operating from darkness"
+  - name: "chaos"
+    description: "Forces of destruction and corruption"
+  - name: "necromancy"
+    description: "Death magic practitioners and undead masters"
+  - name: "rebellion"
+    description: "Outcasts and revolutionaries against order"

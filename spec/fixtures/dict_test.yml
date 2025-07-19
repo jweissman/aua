@@ -1,0 +1,10 @@
+# Test YAML file for Dict field access tests
+field1: "value1"
+field2: "value2"
+nested:
+  inner: "nested_value"
+items:
+  - name: "item1"
+    value: 100
+  - name: "item2"
+    value: 200

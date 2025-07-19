@@ -1,0 +1,41 @@
+# Border Patrol - Mobile reconnaissance unit
+name: "Border Patrol"
+description: "Fast-moving scouts defending frontier regions"
+microfaction: "republican_guard"
+size: 8
+composition: "mobile_recon"
+
+# Preferred body types for mobility
+preferred_bodies: ["sprite", "pixie", "buyer"]
+rare_bodies: ["wraith-form", "brute"]
+
+# Squad-specific stat modifiers
+stat_modifiers:
+  agility: 3
+  perception: 2
+  power: 1
+  toughness: -1  # Light armor for speed
+
+# Equipment and abilities focus  
+equipment_focus: "mobility"
+ability_preferences: ["Rally", "Shield", "Heal"]
+
+# Squad characteristics
+temperament_bias: ["fierce", "cunning"]
+terrain_specialization: ["plains", "hills"]
+
+# Tactical role
+role: "scout"
+formation: "spread_line"
+specialization: "early_warning"
+
+# Unit naming
+unit_patterns:
+  - "Patrol Scout #{number}"
+  - "Border Guard {surname}"
+  - "Ranger {callsign}"
+
+# Leadership  
+squad_leader: "Lieutenant Sara Swiftarrow"
+founded: 923
+mission_types: ["border_watch", "rapid_response", "intelligence_gathering"]

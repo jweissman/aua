@@ -1,0 +1,43 @@
+# Night Stalkers - Assassination specialists
+name: "Night Stalkers"
+description: "Elite shadow operatives specializing in elimination"
+microfaction: "shadow_brotherhood"
+size: 6
+composition: "stealth_strike"
+
+# Preferred body types for stealth
+preferred_bodies: ["wraith-form", "sprite", "pixie"]
+rare_bodies: ["shadow-touched", "void-walker"]
+
+# Squad-specific stat modifiers
+stat_modifiers:
+  agility: 4
+  cunning: 3
+  perception: 2
+  power: 1
+  toughness: -2  # Glass cannon approach
+
+# Equipment and abilities focus
+equipment_focus: "stealth"
+ability_preferences: ["Fear", "Curse", "Drain"]
+
+# Squad characteristics  
+temperament_bias: ["cunning", "fierce"]
+terrain_specialization: ["shadowlands", "crypt", "wasteland"]
+
+# Tactical role
+role: "assassin"
+formation: "independent_cells"
+specialization: "high_value_targets"
+
+# Unit naming
+unit_patterns:
+  - "Stalker #{codename}"
+  - "The {epithet} Shadow"
+  - "{rank} {alias}"
+
+# Leadership
+cell_master: "Whisper of the Void"
+founded: "Time Immemorial"
+kill_count: "Classified"
+signature_techniques: ["throat_slit", "poison_dart", "heart_stop"]

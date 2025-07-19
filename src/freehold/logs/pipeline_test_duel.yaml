@@ -1,0 +1,15 @@
+---
+duel_id: TestWarrior_R2_White_vs_TestMage_R3_Black
+participants:
+  creature_a:
+    id: TestWarrior_R2_White
+    name: Test Warrior
+    power_rating: 28
+  creature_b:
+    id: TestMage_R3_Black
+    name: Test Mage
+    power_rating: 20
+result:
+  winner: creature_a
+  victor_name: Test Warrior
+  method: power_calculation

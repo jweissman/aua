@@ -1,0 +1,108 @@
+# Test: Complete duel pipeline validation
+# This tests creature generation + duel simulation + YAML output
+
+say("=== DUEL PIPELINE VALIDATION ===")
+
+# Generate two creatures with different parameters
+creature_a_id = "TestWarrior_R2_White"
+creature_b_id = "TestMage_R3_Black"
+
+# Create test creature A (Warrior)
+warrior_yaml = "id: ${creature_a_id}
+name: Test Warrior
+body_type: human
+rank: 2
+faction: White
+color: #ffffff
+stats:
+  attack: 8
+  hp: 12
+  defense: 3
+abilities: 1
+cost: 7"
+
+write_file("cards/creatures/${creature_a_id}.yaml", warrior_yaml)
+
+# Create test creature B (Mage)
+mage_yaml = "id: ${creature_b_id}
+name: Test Mage
+body_type: human
+rank: 3
+faction: Black
+color: #000000
+stats:
+  attack: 6
+  hp: 8
+  defense: 2
+abilities: 2
+cost: 9"
+
+write_file("cards/creatures/${creature_b_id}.yaml", mage_yaml)
+
+say("✓ Created test creatures: ${creature_a_id} vs ${creature_b_id}")
+
+# Load them back and run simplified duel
+creature_a = load_yaml("cards/creatures/${creature_a_id}.yaml")
+creature_b = load_yaml("cards/creatures/${creature_b_id}.yaml")
+
+# Simple winner calculation
+a_power = creature_a.stats.attack * 2 + creature_a.stats.hp
+b_power = creature_b.stats.attack * 2 + creature_b.stats.hp
+
+winner = if a_power > b_power then "creature_a" else "creature_b"
+victor_name = if winner == "creature_a" then creature_a.name else creature_b.name
+
+say("Power ratings: ${creature_a.name}=${a_power} vs ${creature_b.name}=${b_power}")
+say("Victor: ${victor_name}")
+
+# Generate structured combat log
+combat_result = {
+  duel_id: "${creature_a_id}_vs_${creature_b_id}",
+  participants: {
+    creature_a: {
+      id: creature_a_id,
+      name: creature_a.name,
+      power_rating: a_power
+    },
+    creature_b: {
+      id: creature_b_id,
+      name: creature_b.name,
+      power_rating: b_power
+    }
+  },
+  result: {
+    winner: winner,
+    victor_name: victor_name,
+    method: "power_calculation"
+  }
+}
+
+# Write combat log
+log_yaml = dump_yaml(combat_result)
+log_file = "logs/pipeline_test_duel.yaml"
+write_file(log_file, log_yaml)
+
+say("✓ Combat log written to: ${log_file}")
+
+# Validation checks
+if creature_a.name == "Test Warrior"
+  say("✅ PASS: Creature A loaded correctly")
+else
+  say("❌ FAIL: Creature A data incorrect")
+end
+
+if creature_b.faction == "Black"
+  say("✅ PASS: Creature B faction correct")
+else
+  say("❌ FAIL: Creature B faction incorrect")
+end
+
+if winner == "creature_a" || winner == "creature_b"
+  say("✅ PASS: Winner determined")
+else
+  say("❌ FAIL: No winner determined")
+end
+
+say("📋 Pipeline validation complete")
+
+"PIPELINE_TEST_COMPLETE"

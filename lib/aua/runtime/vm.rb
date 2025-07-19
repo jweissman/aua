@@ -11,6 +11,7 @@ module Aua
     class VM
       extend Semantics
       attr_reader :tx, :type_registry
+      attr_accessor :env
 
       def initialize(env = {})
         @env = env
@@ -31,7 +32,14 @@ module Aua
           see_url: Builtin.method(:builtin_see_url),
           cast: Builtin.method(:builtin_cast),
           typeof: Builtin.method(:builtin_typeof),
-          semantic_equality: Builtin.method(:builtin_semantic_equality)
+          semantic_equality: Builtin.method(:builtin_semantic_equality),
+          list_files: Builtin.method(:builtin_list_files),
+          write_file: Builtin.method(:builtin_write_file),
+          load_yaml: Builtin.method(:builtin_load_yaml),
+          parse_yaml: Builtin.method(:builtin_parse_yaml),
+          dump_yaml: Builtin.method(:builtin_dump_yaml),
+          import: method(:import_script),
+          sizeof: Builtin.method(:builtin_size),
         }
       end
 
@@ -356,7 +364,7 @@ module Aua
                       end
         # Access the field
         field_value ||= case obj
-                        when ObjectLiteral, RecordObject
+                        when ObjectLiteral, RecordObject, Dict
                           obj.get_field(field_name)
                         else
                           raise Error, "Cannot access field '#{field_name}' on #{obj.class.name}"
@@ -951,6 +959,62 @@ module Aua
       def interpreter_error(message)
         # Raise an error with a formatted message and backtrace
         raise Error, "#{message}\n\nCall stack:\n#{backtrace.join("\n")}"
+      end
+
+      def import_script(file_path)
+        raise Error, "import requires a single Str argument" unless file_path.is_a?(Str)
+
+        path = file_path.value
+        Aua.logger.info "Importing Aura script: #{path}"
+
+        # Resolve path (allow relative paths)
+        resolved_path = if path.start_with?('/')
+          path
+        else
+          File.expand_path(path, Dir.pwd)
+        end
+
+        # Check if file exists
+        unless File.exist?(resolved_path)
+          Aua.logger.error "Import file does not exist: #{resolved_path}"
+          raise Error, "Cannot import '#{path}': file not found at #{resolved_path}"
+        end
+
+        # Check for circular imports by tracking call stack
+        current_imports = Thread.current[:aura_import_stack] ||= []
+        if current_imports.include?(resolved_path)
+          raise Error, "Circular import detected: #{resolved_path} already being imported"
+        end
+
+        begin
+          # Add to import stack
+          current_imports.push(resolved_path)
+
+          # Read the file
+          code = File.read(resolved_path)
+          Aua.logger.debug "Read #{code.length} characters from #{resolved_path}"
+
+          # Parse and evaluate using the current VM instance
+          ctx = Aua::Runtime::Context.new(code)
+
+          # Create a minimal interpreter for parsing only
+          temp_interpreter = Aua::Runtime::Interpreter.new(@env)
+          tokens = temp_interpreter.lex(ctx, code)
+          ast = temp_interpreter.parse(ctx, tokens)
+
+          # Evaluate in THIS VM's context (shares @env)
+          result = evaluate!(ast)
+
+          Aua.logger.info "Successfully imported #{resolved_path}"
+          result
+
+        rescue => e
+          Aua.logger.error "Failed to import #{resolved_path}: #{e.message}"
+          raise Error, "Import failed: #{e.message}"
+        ensure
+          # Remove from import stack
+          current_imports.pop
+        end
       end
     end
   end

@@ -1,0 +1,12 @@
+id: Dragon_R3_White
+name: Elite Dragon
+body_type: mythical
+rank: 3
+faction: White
+color: #ffffff
+stats:
+  attack: 13
+  hp: 15
+  defense: 4
+abilities: 0
+cost: 9

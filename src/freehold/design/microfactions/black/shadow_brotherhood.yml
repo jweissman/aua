@@ -1,0 +1,33 @@
+# Shadow Brotherhood - Covert microfaction under Chaos moiety
+name: "Shadow Brotherhood" 
+description: "Secretive organization of assassins and spies"
+moiety: "chaos"
+faction: "black"
+
+# Preferred archetypes
+preferred_archetypes: ["Shadow", "Wraith", "Reaver"]
+rare_archetypes: ["Necromancer", "Cultist"]
+
+# Available squads  
+squads:
+  - night_stalkers
+  - poison_blades
+  - void_dancers
+
+# Naming patterns
+title_prefixes: ["Dark", "Shadow", "Void", "Cursed"]
+name_patterns:
+  - "{title} {archetype} of Shadows"
+  - "The {archetype} {codename}"
+
+# Stat modifiers
+stat_modifiers:
+  agility: 2
+  cunning: 2
+  perception: 1
+
+# Organization details
+shadow_master: "The Faceless One"
+founded: "Unknown"
+sacred_tenets: ["Strike from darkness", "Leave no witness", "Trust no one"]
+recruitment: "invitation_only"

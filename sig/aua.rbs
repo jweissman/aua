@@ -603,6 +603,7 @@ module Aua
     def set_field: (String, Obj) -> void
     def introspect: () -> String
     def name: () -> String
+    def keys: () -> Array[String]
   end
 
   class ObjectLiteral < Obj

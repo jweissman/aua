@@ -1,0 +1,12 @@
+# Generate a random hex color for identity
+r = rand(256)
+g = rand(256)
+b = rand(256)
+
+# For simplicity, just generate a predefined white faction color
+# In a full implementation, we'd do proper hex conversion
+color = "#ffffff"
+
+say(color)
+
+color

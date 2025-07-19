@@ -1,0 +1,32 @@
+# Temple Order - Major religious microfaction under Church moiety
+name: "Temple Order"
+description: "Ancient religious hierarchy devoted to divine law and protection"
+moiety: "church"
+faction: "white"
+
+# Preferred archetypes for this microfaction
+preferred_archetypes: ["Paladin", "Guardian", "Crusader"]
+rare_archetypes: ["Knight", "Sentinel"]
+
+# Squad templates available to this microfaction
+squads:
+  - temple_guards
+  - holy_warriors
+  - shrine_keepers
+
+# Naming patterns
+title_prefixes: ["Sacred", "Divine", "Holy", "Blessed"]
+name_patterns: 
+  - "{title} {archetype} of the Temple"
+  - "{archetype} of the Sacred Order"
+
+# Stat modifiers for this microfaction
+stat_modifiers:
+  faith: 2
+  willpower: 1
+  toughness: 1
+
+# Founder reference (future: link to hero card)
+founder: "Saint Luminous the First Paladin"
+founding_year: 847
+sacred_texts: ["The Divine Codex", "Canticles of Light"]

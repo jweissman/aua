@@ -1,0 +1,19 @@
+---
+duel_id: Dragon_R3_White_vs_Squire_R3_White
+participants:
+  creature_a:
+    id: Dragon_R3_White
+    name: Elite Dragon
+    final_hp: 11
+  creature_b:
+    id: Squire_R3_White
+    name: Elite Squire
+    final_hp: -8
+result:
+  winner: creature_a
+  victor_name: Elite Dragon
+  rounds: 2
+  ended_by: elimination
+metrics:
+  total_damage_dealt: 22
+  combat_efficiency: 18

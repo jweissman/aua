@@ -1,0 +1,236 @@
+bodies:
+  - nickname: "Wraith"
+    description: "Stealthy unit with high mobility and low visibility"
+    body_type: "ghost"
+    stats:
+      power: 0
+      toughness: 1
+    abilities:
+      uncommon: 2
+    aspects:
+      - stealth
+      - mobility
+  - nickname: "Pixie"
+    description: "Small, agile unit with stealth capabilities"
+    body_type: "mote"
+    stats:
+      power: 1
+      toughness: 1
+    abilities:
+      uncommon: 3
+    aspects:
+      - stealth
+      - mobility
+      - speed
+  - nickname: "Pawn"
+    description: "Basic infantry unit, versatile and adaptable"
+    body_type: "human"
+    stats:
+      power: 1
+      toughness: 2
+  - nickname: "Squire"
+    description: "Basic cavalry unit, excels in combat and mobility"
+    body_type: "human"
+    stats:
+      power: 2
+      toughness: 1
+    abilities:
+      common: 1
+  - nickname: "Broker"
+    description: "Support unit with multiple abilities"
+    body_type: "human"
+    stats:
+      power: 1
+      toughness: 3
+    abilities:
+      common: 2
+      uncommon: 2
+    aspects:
+      - negotiation
+  - nickname: "Belligerent"
+    description: "Aggressive unit with high power and low toughness"
+    body_type: "human"
+    stats:
+      power: 3
+      toughness: 2
+  - nickname: "Brute"
+    description: "Heavy infantry unit, excels in combat and defense"
+    body_type: "human"
+    stats:
+      power: 3
+      toughness: 3
+    abilities:
+      common: 1
+  - nickname: "Golem"
+    body_type: "construct"
+    description: "Artificial creature, powerful and resilient"
+    stats:
+      power: 2
+      toughness: 4
+    abilities:
+      uncommon: 2
+      rare: 1
+    aspects:
+      - strength
+      - resilience
+      - mobility
+      - reconnaissance
+      - negotiation
+      - occult
+  - nickname: "Bishop"
+    description: "Support unit with advanced abilities"
+    body_type: "human"
+    stats:
+      power: 0
+      toughness: 5
+    abilities:
+      uncommon: 2
+      rare: 1
+    aspects:
+      - faith
+      - mobility
+      - negotiation
+  - nickname: "Berseker"
+    description: "Powerful cavalry unit, aggressive and vulnerable"
+    body_type: "human"
+    stats:
+      power: 5
+      toughness: 1
+    abilities:
+      common: 1
+  - nickname: "Knight"
+    description: "Elite combat unit, strong and resilient"
+    body_type: "human"
+    stats:
+      power: 3
+      toughness: 4
+    abilities:
+      common: 1
+      uncommon: 2
+    aspects:
+      - faith
+      - mobility
+  - nickname: "Ranger"
+    description: "Stealthy scout unit, excels in reconnaissance"
+    body_type: "human"
+    stats:
+      power: 1
+      toughness: 4
+    abilities:
+      common: 2
+      rare: 1
+    aspects:
+      - stealth
+      - mobility
+      - reconnaissance
+  - nickname: "Mage"
+    description: "Powerful spellcaster, capable of devastating magic"
+    body_type: "human"
+    stats:
+      power: 0
+      toughness: 5
+    abilities:
+      uncommon: 3
+      rare: 1
+    aspects:
+      - occult
+  - nickname: "Rook"
+    description: "Heavy infantry unit, excels in defense and control"
+    body_type: "human"
+    stats:
+      power: 2
+      toughness: 7
+    abilities:
+      common: 3
+      uncommon: 1
+    aspects:
+      - defense
+  - nickname: "Queen"
+    description: "Versatile unit with a mix of combat and support abilities"
+    body_type: "human"
+    stats:
+      power: 4
+      toughness: 5
+    abilities:
+      common: 1
+      uncommon: 1
+      rare: 1
+      epic: 1
+  - nickname: "King"
+    description: "Ultimate unit, powerful and resilient"
+    body_type: "human"
+    stats:
+      power: 5
+      toughness: 7
+    abilities:
+      epic: 2
+    aspects:
+      - strategy
+      - occult
+  - nickname: "Titan"
+    body_type: "giant"
+    description: "Massive unit, excels in combat and defense"
+    stats:
+      power: 6
+      toughness: 7
+    abilities:
+      uncommon: 1
+      rare: 1
+      epic: 1
+    aspects:
+      - strength
+      - chaos
+      - resilience
+      - negotiation
+  - nickname: "Dragon"
+    body_type: "mythical"
+    description: "Legendary creature, powerful and majestic"
+    stats:
+      power: 7
+      toughness: 6
+    abilities:
+      uncommon: 2
+      rare: 1
+      epic: 1
+    aspects:
+      - flight
+      - occult
+      - mobility
+      - reconnaissance
+  - nickname: "Leviathan"
+    body_type: "mythical"
+    description: "Colossal sea creature, powerful and resilient"
+    stats:
+      power: 9
+      toughness: 10
+    abilities:
+      uncommon: 3
+      rare: 1
+    aspects:
+      - flight OR aquatic OR mobility
+      - strength
+      - resilience
+  - nickname: "Behemoth"
+    body_type: "mythical"
+    description: "Massive land creature, powerful and resilient"
+    stats:
+      power: 10
+      toughness: 9
+    abilities:
+      rare: 4
+    aspects:
+      - strength
+      - resilience
+  - nickname: "Melpomene"
+    description: "Apocalyptic harbinger, powerful and destructive"
+    body_type: "mythical"
+    stats:
+      power: 12
+      toughness: 10
+    abilities:
+      epic: 3
+    aspects:
+      - destruction
+      - chaos
+      - apocalypse
+  

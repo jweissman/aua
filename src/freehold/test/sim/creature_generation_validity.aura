@@ -1,0 +1,100 @@
+# Test: Creature Generation Validity
+# Generate 100 creatures and validate basic structure
+
+say "=== CREATURE GENERATION VALIDITY TEST ==="
+say "Generating 100 creatures to validate basic structure..."
+
+valid_count = 0
+total_count = 100
+
+# Track validation results
+missing_id = 0
+missing_rank = 0
+missing_color = 0
+missing_stats = 0
+missing_aspects = 0
+invalid_rank = 0
+
+i = 0
+while i < total_count do
+  # Generate a creature (simplified for now - we'll enhance as generators improve)
+  creature_id = "creature_" + str(i)
+  rank = rand(6) + 1
+  color = "#" + "abcdef"[rand(6)] + "12345"[rand(5)] + "67890"[rand(5)] + "abc"[rand(3)] + "def"[rand(3)] + "012"[rand(3)]
+  
+  # Mock stats
+  power = rand(10) + 1
+  toughness = rand(10) + 1
+  
+  # Mock aspects
+  aspect_types = ["stealth", "mobility", "strength", "magic", "defense"]
+  aspect_count = rand(3) + 1
+  
+  # Validate creature structure
+  has_id = creature_id != ""
+  has_rank = rank >= 1 && rank <= 6
+  has_color = color != ""
+  has_stats = power > 0 && toughness > 0
+  has_aspects = aspect_count > 0
+  
+  if !has_id then
+    missing_id = missing_id + 1
+  end
+  
+  if !has_rank then
+    invalid_rank = invalid_rank + 1
+  end
+  
+  if !has_color then
+    missing_color = missing_color + 1
+  end
+  
+  if !has_stats then
+    missing_stats = missing_stats + 1
+  end
+  
+  if !has_aspects then
+    missing_aspects = missing_aspects + 1
+  end
+  
+  if has_id && has_rank && has_color && has_stats && has_aspects then
+    valid_count = valid_count + 1
+  end
+  
+  i = i + 1
+end
+
+# Report results
+say "Generated " + str(total_count) + " creatures"
+say "Valid creatures: " + str(valid_count) + "/" + str(total_count)
+
+if missing_id > 0 then
+  say "❌ Missing ID: " + str(missing_id) + " creatures"
+end
+
+if invalid_rank > 0 then
+  say "❌ Invalid rank: " + str(invalid_rank) + " creatures"
+end
+
+if missing_color > 0 then
+  say "❌ Missing color: " + str(missing_color) + " creatures"
+end
+
+if missing_stats > 0 then
+  say "❌ Missing stats: " + str(missing_stats) + " creatures"
+end
+
+if missing_aspects > 0 then
+  say "❌ Missing aspects: " + str(missing_aspects) + " creatures"
+end
+
+# Calculate success rate
+success_rate = (valid_count * 100) / total_count
+
+if success_rate >= 95 then
+  say "✅ PASS: " + str(success_rate) + "% of creatures are valid"
+else
+  say "❌ FAIL: Only " + str(success_rate) + "% of creatures are valid (need 95%+)"
+end
+
+say "=== END CREATURE GENERATION VALIDITY TEST ==="

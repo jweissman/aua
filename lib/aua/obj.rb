@@ -386,6 +386,11 @@ module Aua
       )
     end
 
+    define_aura_method(:to_ruby_s) do
+      aura_send(:to_s).value
+    end
+
+
     define_aura_method(:sample) do
       return Nihil.new if @values.empty?
 
@@ -438,7 +443,7 @@ module Aua
 
     # Support member access
     def get_field(field_name)
-      raise Error, "Key '#{field_name}' not found in dictionary" unless @values.key?(field_name)
+      raise Error, "Key '#{field_name}' not found in dictionary (#{fields.join(", ")})" unless @values.key?(field_name)
 
       @values[field_name]
     end
@@ -456,6 +461,19 @@ module Aua
     def fields
       @values.keys
     end
+
+    define_aura_method(:to_s) do
+      Str.new(
+        "{#{@values.map { |k, v| "#{k}: #{v.aura_send(:to_s).value}" }.join(", ")}}"
+      )
+    end
+
+    define_aura_method(:to_ruby_s) do
+      aura_send(:to_s).value
+    end
+
+    define_aura_method(:and) { Bool.new(fields.any? && _1.value) }  # logical AND
+    define_aura_method(:or) { Bool.new(fields.any? || _1.value) }   # logical OR
   end
 
   # Structured object for record types
@@ -494,6 +512,10 @@ module Aua
       # This would need to be looked up from the type registry
       # For now, create a simple klass
       @klass ||= Klass.new(@type_name, Klass.obj)
+    end
+
+    def keys
+      @values.keys
     end
   end
 

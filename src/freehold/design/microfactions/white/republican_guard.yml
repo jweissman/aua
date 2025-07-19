@@ -1,0 +1,33 @@
+# Republican Guard - Military microfaction under Army moiety  
+name: "Republican Guard"
+description: "Elite professional soldiers defending the realm's borders"
+moiety: "army"
+faction: "white"
+
+# Preferred archetypes 
+preferred_archetypes: ["Knight", "Guardian", "Sentinel"]
+rare_archetypes: ["Crusader", "Paladin"]
+
+# Available squads
+squads:
+  - border_patrol
+  - heavy_infantry
+  - siege_engineers
+
+# Naming patterns
+title_prefixes: ["Elite", "Veteran", "Iron", "Storm"]
+name_patterns:
+  - "{title} {archetype} #{unit_number}"
+  - "Guard {archetype} {surname}"
+
+# Stat modifiers
+stat_modifiers:
+  power: 1
+  toughness: 2
+  perception: 1
+
+# Organization details
+commander: "General Marcus Ironhelm"
+founded: 923
+motto: "Strength Through Unity"
+colors: ["steel-gray", "royal-blue"]

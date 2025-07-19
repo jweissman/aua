@@ -1,0 +1,44 @@
+# Bone Reapers - Undead shock troops
+name: "Bone Reapers"
+description: "Undead warriors raised to serve the Death Cult"
+microfaction: "death_cult"
+size: 10
+composition: "undead_shock"
+
+# Preferred body types for undead
+preferred_bodies: ["wraith-form", "behemoth", "leviathan"]
+rare_bodies: ["bone-construct", "flesh-golem"]
+
+# Squad-specific stat modifiers
+stat_modifiers:
+  power: 2
+  toughness: 2
+  intelligence: -1  # Mindless undead
+  willpower: -2     # No will of their own
+  faith: 3          # Dark faith animates them
+  agility: -1       # Shambling movement
+
+# Equipment and abilities focus
+equipment_focus: "overwhelming_force"
+ability_preferences: ["Summon", "Fear", "Decay"]
+
+# Squad characteristics
+temperament_bias: ["manic", "melancholic"]  # Undead madness
+terrain_specialization: ["crypt", "wasteland", "moors"]
+
+# Tactical role
+role: "shock_trooper"
+formation: "undead_horde"
+specialization: "terror_tactics"
+
+# Unit naming
+unit_patterns:
+  - "Reaper #{grave_number}"
+  - "{former_name} the Risen"
+  - "Bone {title}"
+
+# Leadership
+necromancer: "Mortis the Eternal"
+raised: 1134
+resurrection_date: "Various"
+binding_ritual: "The Black Covenant"

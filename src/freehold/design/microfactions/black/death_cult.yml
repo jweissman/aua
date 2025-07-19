@@ -1,0 +1,33 @@
+# Death Cult - Religious microfaction under Necromancy moiety
+name: "Death Cult"
+description: "Fanatical worshippers of entropy and decay"
+moiety: "necromancy" 
+faction: "black"
+
+# Preferred archetypes
+preferred_archetypes: ["Necromancer", "Cultist", "Wraith"]
+rare_archetypes: ["Shadow", "Reaver"]
+
+# Available squads
+squads:
+  - bone_reapers
+  - grave_walkers
+  - soul_binders
+
+# Naming patterns  
+title_prefixes: ["Vile", "Rotting", "Cursed", "Undying"]
+name_patterns:
+  - "{title} {archetype} of Death"
+  - "{archetype} the {epithet}"
+
+# Stat modifiers
+stat_modifiers:
+  intelligence: 1
+  faith: 2  # Dark faith
+  willpower: 1
+
+# Organization details
+high_priest: "Mortis the Eternal"
+founded: 1134
+sacred_rituals: ["The Black Mass", "Communion with Decay"]
+unholy_symbols: ["skull_chalice", "bone_crown"]

@@ -1,0 +1,9 @@
+# Test script for import functionality
+say("Hello from imported script!")
+
+fun greet(name)
+  "Hello, ${name}!"
+end
+
+# Return a value that the importer can use
+42

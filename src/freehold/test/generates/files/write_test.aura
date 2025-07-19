@@ -1,0 +1,12 @@
+# Test actual file writing capability using line-by-line approach
+yaml_lines = "name: Test Card
+faction: White
+rank: 1
+stats:
+  attack: 5
+  hp: 3"
+
+result = write_file("test_output.yaml", yaml_lines)
+
+say("✓ File writing test completed - output written to test_output.yaml")
+"PASS"

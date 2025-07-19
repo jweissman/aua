@@ -1,0 +1,9 @@
+# Test importing functionality
+say("Testing import...")
+
+result = import("test_import.aura")
+say("Import returned: ${result}")
+
+# Try to use the imported function
+greeting = greet("World")
+say("Calling imported function: ${greeting}")

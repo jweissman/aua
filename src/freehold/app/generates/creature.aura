@@ -1,0 +1,80 @@
+# Generate a creature from body + rank + color
+# Inputs: params.body, params.identity from pipeline
+# Output: creature data structure
+
+# Get data from pipeline
+rank = 3  # Fixed rank for now
+hex_color = if params then if params.identity then params.identity else "#ffffff" else "#ffffff"
+
+say("=== Generating Creature ===")
+say("Rank: ${rank}")
+say("Color: ${hex_color}")
+
+# Use body from pipeline if available  
+if params
+  if params.body
+    selected_body = params.body
+    say("✓ Using body from pipeline: ${selected_body.nickname}")
+  else
+    # Fallback: load from YAML and select randomly
+    say("Loading body data from YAML...")
+    bodies_data = load_yaml("design/bodies.yml")
+    bodies = bodies_data.bodies
+    body_index = rand(bodies.length)
+    selected_body = bodies[body_index]
+    say("⚠ No pipeline body, selected random: ${selected_body.nickname}")
+  end
+else
+  # No params at all - fallback
+  say("Loading body data from YAML...")
+  bodies_data = load_yaml("design/bodies.yml")
+  bodies = bodies_data.bodies
+  body_index = rand(bodies.length)
+  selected_body = bodies[body_index]
+  say("⚠ No params, selected random: ${selected_body.nickname}")
+end
+
+# Calculate creature stats based on rank and body
+base_power = selected_body.stats.power
+base_toughness = selected_body.stats.toughness
+base_type = selected_body.body_type
+
+# Scale stats with rank
+attack = base_power + (rank * 2)
+hp = base_toughness + (rank * 3)
+defense = rank + 1
+
+# Generate creature name with rank prefix
+rank_prefix = if rank == 1 then "Novice" else if rank == 2 then "Trained" else if rank == 3 then "Elite" else if rank == 4 then "Veteran" else "Champion"
+creature_name = "${rank_prefix} ${selected_body.nickname}"
+
+# Select faction based on color (simplified)
+faction = if hex_color == "#ffffff" then "White" else if hex_color == "#000000" then "Black" else "Neutral"
+
+# Create creature ID
+creature_id = "${selected_body.nickname}_R${rank}_${faction}"
+
+# Create creature YAML content
+creature_yaml = "id: ${creature_id}
+name: ${creature_name}
+body_type: ${base_type}
+rank: ${rank}
+faction: ${faction}
+color: ${hex_color}
+stats:
+  attack: ${attack}
+  hp: ${hp}
+  defense: ${defense}
+abilities: ${if selected_body.abilities then selected_body.abilities.common else 0}
+cost: ${rank * 2 + 3}"
+
+# Write creature to file
+filename = "cards/creatures/${creature_id}.yaml"
+write_file(filename, creature_yaml)
+
+say("✓ Generated: ${creature_name}")
+say("  └─ ATK:${attack} HP:${hp} DEF:${defense}")
+say("  └─ Saved to: ${filename}")
+
+# Return creature ID for pipeline
+creature_id

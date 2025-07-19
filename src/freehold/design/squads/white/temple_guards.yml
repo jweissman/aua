@@ -1,0 +1,41 @@
+# Temple Guards - Elite defenders of holy sites
+name: "Temple Guards"
+description: "Sacred warriors who protect temples and shrines"
+microfaction: "temple_order"
+size: 12
+composition: "heavy_defense"
+
+# Preferred body types for tactical role
+preferred_bodies: ["brute", "titan", "behemoth"]
+rare_bodies: ["buyer", "leviathan"]
+
+# Squad-specific stat modifiers 
+stat_modifiers:
+  toughness: 3
+  willpower: 2
+  faith: 2
+  agility: -1  # Heavy armor penalty
+
+# Equipment and abilities focus
+equipment_focus: "defensive"
+ability_preferences: ["Shield", "Bless", "Rally"]
+
+# Squad characteristics
+temperament_bias: ["stoic", "zealous"]
+terrain_specialization: ["temple", "citadel", "sanctuary"]
+
+# Tactical role
+role: "defender"
+formation: "shield_wall" 
+specialization: "area_denial"
+
+# Unit naming
+unit_patterns:
+  - "Temple Guard #{number}"
+  - "{rank} {surname} the Defender"
+  - "Guardian {epithet}"
+
+# Leadership
+squad_leader: "Captain Theonas Lightbringer"
+founded: 847
+battle_honors: ["Siege of Dark Hollow", "Defense of Sacred Grove"]

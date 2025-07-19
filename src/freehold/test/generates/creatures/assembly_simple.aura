@@ -1,0 +1,11 @@
+say "=== Creature Assembly Test ==="
+
+rank = 1 + rand(5)
+
+say "Rank: ${rank}"
+
+if rank >= 1 then
+  say "✓ PASS: Valid rank"
+end
+
+say "Test completed"

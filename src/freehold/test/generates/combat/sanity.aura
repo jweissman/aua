@@ -1,0 +1,109 @@
+# Simple 1v1 Combat Simulation Test
+# Mission Step 2: Test basic combat mechanics
+
+say("=== FREEHOLD Combat Simulation Test ===")
+
+# Create two test creatures for 1v1 combat
+creature1_name = "Elite Knight"
+creature1_attack = 9
+creature1_hp = 13
+creature1_defense = 6
+
+creature2_name = "Champion Mage"
+creature2_attack = 8
+creature2_hp = 17
+creature2_defense = 4
+
+say("Combat: ${creature1_name} vs ${creature2_name}")
+say("  ${creature1_name}: ATK:${creature1_attack} HP:${creature1_hp} DEF:${creature1_defense}")
+say("  ${creature2_name}: ATK:${creature2_attack} HP:${creature2_hp} DEF:${creature2_defense}")
+
+# Simulate simple combat (simplified mechanics)
+creature1_current_hp = creature1_hp
+creature2_current_hp = creature2_hp
+turn = 1
+max_turns = 20
+winner = "unknown"
+combat_complete = false
+
+say("")
+say("=== Combat Log ===")
+
+while creature1_current_hp > 0 && creature2_current_hp > 0 && turn <= max_turns && !combat_complete
+  # Creature 1 attacks Creature 2
+  damage_to_2 = creature1_attack - creature2_defense
+  if damage_to_2 < 1
+    damage_to_2 = 1  # Minimum 1 damage
+  end
+  creature2_current_hp = creature2_current_hp - damage_to_2
+  
+  say("Turn ${turn}a: ${creature1_name} attacks for ${damage_to_2} damage")
+  say("  └─ ${creature2_name} HP: ${creature2_current_hp}")
+  
+  # Check if creature 2 is defeated
+  if creature2_current_hp <= 0
+    say("  └─ ${creature2_name} defeated!")
+    winner = creature1_name
+    combat_complete = true
+  end
+  
+  # Only continue if combat not complete
+  if !combat_complete
+    # Creature 2 attacks Creature 1
+    damage_to_1 = creature2_attack - creature1_defense
+    if damage_to_1 < 1
+      damage_to_1 = 1  # Minimum 1 damage
+    end
+    creature1_current_hp = creature1_current_hp - damage_to_1
+    
+    say("Turn ${turn}b: ${creature2_name} attacks for ${damage_to_1} damage")
+    say("  └─ ${creature1_name} HP: ${creature1_current_hp}")
+    
+    # Check if creature 1 is defeated
+    if creature1_current_hp <= 0
+      say("  └─ ${creature1_name} defeated!")
+      winner = creature2_name
+      combat_complete = true
+    end
+  end
+  
+  turn = turn + 1
+end
+
+say("")
+if turn > max_turns && !combat_complete
+  say("✗ FAIL: Combat exceeded ${max_turns} turns (infinite loop)")
+  say("Combat result: Draw (timeout)")
+else
+  say("✓ PASS: Combat completed in ${turn} turns")
+  say("Combat result: ${winner} wins")
+end
+
+say("")
+say("=== Threat Rating Calculation ===")
+
+# Simple threat rating calculation (using integer math to avoid float issues)
+creature1_threat_raw = (creature1_attack * creature1_hp)
+creature2_threat_raw = (creature2_attack * creature2_hp)
+
+creature1_threat = creature1_threat_raw / 10
+creature2_threat = creature2_threat_raw / 10
+
+say("${creature1_name} threat rating: ${creature1_threat}")
+say("${creature2_name} threat rating: ${creature2_threat}")
+
+# Validate threat rating distribution  
+if creature1_threat > 0 && creature1_threat < 50
+  say("✓ PASS: ${creature1_name} threat rating in valid range")
+else
+  say("✗ FAIL: ${creature1_name} threat rating out of range")
+end
+
+if creature2_threat > 0 && creature2_threat < 50
+  say("✓ PASS: ${creature2_name} threat rating in valid range")
+else
+  say("✗ FAIL: ${creature2_name} threat rating out of range")
+end
+
+say("")
+say("Combat simulation complete - ready for threat analysis")

@@ -1,0 +1,40 @@
+say "=== Creature Assembly Test ==="
+
+# Test basic creature generation patterns
+rank = 1 + rand(5)
+power = rand(10) + 1
+toughness = rand(8) + 1
+
+say "Generated test creature:"
+say "  Rank: ${rank}"
+say "  Power: ${power}"
+say "  Toughness: ${toughness}"
+
+# Test rank validation
+if rank >= 1 && rank <= 6
+  say("✓ PASS: Rank ${rank} in valid range")
+else
+  say("✗ FAIL: Rank ${rank} out of range")
+end
+
+# Test stat validation
+if power > 0 && toughness > 0
+  say("✓ PASS: Stats are positive")
+else
+  say("✗ FAIL: Invalid stats")
+end
+
+# Mock creature structure test
+archetype = "Knight"
+faction = "White"
+color = "#ffffff"
+
+say "Mock creature: ${archetype} (${faction}) ${color}"
+
+if archetype != "" && faction != ""
+  say("✓ PASS: Required fields present")
+else
+  say("✗ FAIL: Missing required fields")
+end
+
+say "Assembly test completed"

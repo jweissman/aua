@@ -1,0 +1,126 @@
+races:
+  human:
+    aspects:
+      - adaptability
+      - curiosity
+      - resilience
+      - ambition
+      - innovation
+  elven:
+    aspects:
+      - grace
+      - wisdom
+      - nature
+      - magic
+      - healing
+  dwarven:
+    aspects:
+      - strength
+      - endurance
+      - greed
+      - fortitude
+      - craftsmanship
+  orcish:
+    aspects:
+      - ferocity
+      - tribalism
+      - honor
+      - survival
+      - strength
+  draconic:
+    aspects:
+      - majesty
+      - wisdom
+      - greed
+      - ambition
+      - honor
+      - magic
+      - strength
+  fey:
+    aspects:
+      - trickery
+      - nature
+      - whimsy
+      - magic
+  undead:
+    aspects:
+      - decay
+      - darkness
+      - corruption
+      - resilience
+  elemental:
+    aspects:
+      - primal
+      - strength
+      - magic
+      - balance
+      - survival
+  celestial:
+    aspects:
+      - purity
+      - light
+      - justice
+      - wisdom
+      - resilience
+      - protection
+      - healing
+  infernal:
+    aspects:
+      - corruption
+      - darkness
+      - ambition
+      - chaos
+      - curiosity
+      - decay
+      - power
+  beast:
+    aspects:
+      - primal
+      - survival
+      - instinct
+      - strength
+  construct:
+    aspects:
+      - resilience
+      - logic
+      - order
+      - strength
+  spirit:
+    aspects:
+      - ethereal
+      - wisdom
+      - magic
+      - balance
+  plant:
+    aspects:
+      - growth
+      - nature
+      - resilience
+      - harmony
+  insect:
+    aspects:
+      - hive
+      - growth
+      - strength
+      - resilience
+      - survival
+  aquatic:
+    aspects:
+      - survival
+      - strength
+      - instinct
+      - wisdom
+      - balance
+  avian:
+    aspects:
+      - flight
+      - freedom
+      - instinct
+      - survival
+  shapeshifter:
+    aspects:
+      - adaptability
+      - cunning
+      - freedom
+      - survival
+      - transformation

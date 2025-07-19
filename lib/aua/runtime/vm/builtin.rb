@@ -3,6 +3,37 @@ module Aua
     class VM
       module Builtin
         class << self
+          def builtin_size(obj)
+            raise Error, "size requires a single argument" unless obj.is_a?(Obj)
+
+            case obj
+            when Aua::List then Int.new(obj.values.length)
+            when Aua::Dict then Int.new(obj.values.length)
+            when Aua::Str then Int.new(obj.value.length)
+            when Aua::RecordObject then Int.new(obj.keys.length)
+            else
+              raise Error, "size not supported for type: #{obj.class.name}"
+            end
+          end
+
+          def builtin_write_file(file_path, content)
+            raise Error, "write_file requires two arguments" unless file_path.is_a?(Str)
+            raise Error, "write_file requires a second argument" unless content.is_a?(Str)
+
+            path = file_path.value
+            Aua.logger.info "Writing to file: #{path}"
+            begin
+              File.open(path, "w") do |file|
+                file.write(content.value)
+              end
+              Aua.logger.info "Successfully wrote to file: #{path}"
+              Aua::Nihil.new
+            rescue => e
+              Aua.logger.error "Failed to write to file: #{e.message}"
+              raise Error, "Failed to write to file: #{e.message}"
+            end
+          end
+
           def builtin_cast(obj, target)
             raise Error, "cast requires two arguments" unless obj.is_a?(Obj)
 
@@ -301,6 +332,143 @@ module Aua
             # Parse response and return Bool
             result = JSON.parse(response)["value"]
             Aua::Bool.new(result)
+          end
+
+          def builtin_list_files(dir_path)
+            raise Error, "list_files requires a single Str argument" unless dir_path.is_a?(Str)
+
+            path = dir_path.value
+            Aua.logger.info "Listing files in directory: #{path}"
+
+            # Return empty list if directory doesn't exist
+            unless Dir.exist?(path)
+              Aua.logger.warn "Directory does not exist: #{path}"
+              return Aua::List.new([])
+            end
+
+            begin
+              # Get all files (not directories) in the specified directory
+              files = Dir.entries(path).select do |entry|
+                full_path = File.join(path, entry)
+                File.file?(full_path) && !entry.start_with?('.')
+              end.sort
+
+              Aua.logger.info "Found #{files.length} files: #{files.join(', ')}"
+
+              # Convert to Aura List of Str objects
+              aura_files = files.map { |filename| Aua::Str.new(filename) }
+              Aua::List.new(aura_files)
+            rescue => e
+              Aua.logger.error "Error reading directory #{path}: #{e.message}"
+              Aua::List.new([])
+            end
+          end
+
+          def builtin_load_yaml(file_path)
+            raise Error, "load_yaml requires a single Str argument" unless file_path.is_a?(Str)
+
+            path = file_path.value
+            Aua.logger.info "Loading YAML file: #{path}"
+
+            # Return nihil if file doesn't exist
+            unless File.exist?(path)
+              Aua.logger.warn "File does not exist: #{path}"
+              return Aua::Nihil.new
+            end
+
+            begin
+              require 'yaml'
+              yaml_content = YAML.load_file(path)
+              Aua.logger.info "Loaded YAML content: #{yaml_content.inspect}"
+
+              # Convert Ruby hash/array structure to Aura objects
+              convert_yaml_to_aura(yaml_content)
+            rescue => e
+              Aua.logger.error "Failed to load YAML file: #{e.message}"
+              Aua::Nihil.new
+            end
+          end
+
+          # Parse a YAML string and convert it to Aura objects
+          def builtin_parse_yaml(yaml_str)
+            begin
+              require 'yaml'
+              yaml_data = YAML.safe_load(yaml_str.value, permitted_classes: [Symbol, Date, Time])
+
+              convert_yaml_to_aura(yaml_data)
+            rescue YAML::SyntaxError => e
+              Aua.logger.error "YAML parsing error: #{e.message}"
+              raise Error, "Invalid YAML format: #{e.message}"
+            end
+          end
+
+
+          def to_ruby(obj)
+            case obj
+            when Aua::Dict then obj.values.transform_values(&method(:to_ruby))
+            when Aua::List then obj.values.map(&method(:to_ruby))
+            when Aua::ObjectLiteral
+               # debugger
+               obj.fields.map do |key|
+                 [key, to_ruby(obj.get_field(key))]
+               end.to_h
+            else
+              obj.value
+            end
+          end
+
+          def builtin_dump_yaml(obj)
+            raise Error, "dump_yaml requires a single Obj argument" unless obj.is_a?(Obj)
+
+            Aua.logger.info "Dumping object to YAML: #{obj.introspect}"
+
+            # Convert Aura object to Ruby hash/array structure
+            ruby_obj = to_ruby(obj)
+
+            # Dump to YAML string
+            begin
+              require 'yaml'
+              yaml_str = YAML.dump(ruby_obj)
+              Aua.logger.info "YAML dump result: #{yaml_str.inspect}"
+
+              Aua::Str.new(yaml_str)
+            rescue => e
+              Aua.logger.error "Failed to dump object to YAML: #{e.message}"
+              raise Error, "Failed to dump object to YAML: #{e.message}"
+            end
+          end
+
+          private
+
+          def convert_yaml_to_aura(obj)
+            case obj
+            when Hash
+              # Convert to Aura Dict
+              aura_hash = {}
+              obj.each do |key, value|
+                aura_key = key.to_s
+                aura_value = convert_yaml_to_aura(value)
+                aura_hash[aura_key] = aura_value
+              end
+              Aua::Dict.new(aura_hash)
+            when Array
+              # Convert to Aura List
+              aura_array = obj.map { |item| convert_yaml_to_aura(item) }
+              Aua::List.new(aura_array)
+            when String
+              Aua::Str.new(obj)
+            when Integer
+              Aua::Int.new(obj)
+            when Float
+              Aua::Float.new(obj)
+            when TrueClass, FalseClass
+              Aua::Bool.new(obj)
+            when NilClass
+              Aua::Nihil.new
+            else
+              # For other types, convert to string
+              Aua::Str.new(obj.to_s)
+            end
           end
         end
       end

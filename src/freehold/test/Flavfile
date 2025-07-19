@@ -1,0 +1,10 @@
+# Test Flavfile for FREEHOLD simulation layer
+app:
+  generates:
+    - task: creature_validity
+    - task: creature_diversity  
+    - task: combat_sanity
+    - task: threat_distribution
+    - task: semantic_alignment
+    - task: house_consistency
+    - task: squad_integrity

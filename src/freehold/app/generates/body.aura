@@ -1,0 +1,14 @@
+# Generate a random body using bodies.yml data
+bodies_data = load_yaml("design/bodies.yml")
+
+bodies_list = bodies_data.bodies
+say("Found ${bodies_list.length} bodies")
+index = rand(bodies_list.length)
+if index >= bodies_list.length
+  index = bodies_list.length - 1
+end
+selected_body = bodies_list[index]
+say("Body: ${selected_body}")
+
+# Return the selected body for pipeline use
+selected_body

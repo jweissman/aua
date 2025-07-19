@@ -195,7 +195,7 @@ module Aua
       function_name = parse_function_name
       parameters = parse_function_parameters
       body = parse_function_body
-      
+
       s(:function_definition, function_name, parameters, body)
     end
 
