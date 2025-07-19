@@ -26,3 +26,5 @@ gem "pbt", "~> 0.5.0"
 gem "gosu", "~> 1.4"
 
 gem "ruby-lsp-rspec", "~> 0.1.25", group: :development
+
+gem "rouge", "~> 4.5"

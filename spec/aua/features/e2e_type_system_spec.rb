@@ -496,17 +496,17 @@ RSpec.describe "End-to-End Type System Features" do
     end
   end
 
-  describe "edge cases", :skip do
+  describe "edge cases" do
     it "empty fns" do
       code = <<~AURA
-        fun empty_function() : Int
-          0
+        fun empty_function()
+        end
 
         empty_function()
       AURA
 
       result = Aua.run(code)
-      expect(result.value).to eq(0)
+      expect(result).to be_a(Aua::Nihil)
     end
   end
 end

@@ -1,12 +1,12 @@
+---
 id: Squire_R3_White
 name: Elite Squire
 body_type: human
 rank: 3
 faction: White
-color: #ffffff
+color: "#ffffff"
 stats:
   attack: 8
   hp: 10
   defense: 4
-abilities: 0
 cost: 9

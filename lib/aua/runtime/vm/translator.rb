@@ -97,7 +97,10 @@ module Aua
         def translate_sequence(node)
           stmts = node.value
           Aua.logger.info("vm:tx") { "Translating sequence: #{stmts.inspect}" }
-          raise Error, "Empty sequence" if stmts.empty?
+          # raise Error, "Empty sequence" if stmts.empty?
+          return [
+            Statement.new(type: :nihil, value: nil)
+          ] if stmts.empty?
           raise Error, "Sequence must be an array" unless stmts.is_a?(Array)
           raise Error, "Sequence must contain only AST nodes" unless stmts.all? { |s| s.is_a?(AST::Node) }
 

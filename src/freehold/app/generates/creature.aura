@@ -20,7 +20,7 @@ if params
     say("Loading body data from YAML...")
     bodies_data = load_yaml("design/bodies.yml")
     bodies = bodies_data.bodies
-    body_index = rand(bodies.length)
+    body_index = rand(bodies.length - 1)
     selected_body = bodies[body_index]
     say("⚠ No pipeline body, selected random: ${selected_body.nickname}")
   end
@@ -29,7 +29,7 @@ else
   say("Loading body data from YAML...")
   bodies_data = load_yaml("design/bodies.yml")
   bodies = bodies_data.bodies
-  body_index = rand(bodies.length)
+  body_index = rand(bodies.length - 1)
   selected_body = bodies[body_index]
   say("⚠ No params, selected random: ${selected_body.nickname}")
 end
@@ -55,18 +55,35 @@ faction = if hex_color == "#ffffff" then "White" else if hex_color == "#000000" 
 creature_id = "${selected_body.nickname}_R${rank}_${faction}"
 
 # Create creature YAML content
-creature_yaml = "id: ${creature_id}
-name: ${creature_name}
-body_type: ${base_type}
-rank: ${rank}
-faction: ${faction}
-color: ${hex_color}
-stats:
-  attack: ${attack}
-  hp: ${hp}
-  defense: ${defense}
-abilities: ${if selected_body.abilities then selected_body.abilities.common else 0}
-cost: ${rank * 2 + 3}"
+creature = {
+  id: creature_id,
+  name: creature_name,
+  body_type: base_type,
+  rank: rank,
+  faction: faction,
+  color: hex_color,
+  stats: {
+    attack: attack,
+    hp: hp,
+    defense: defense
+  },
+  # "abilities" => selected_body.abilities ? selected_body.abilities.common : [],
+  cost: rank * 2 + 3
+}
+
+creature_yaml = dump_yaml(creature)
+# creature_yaml = "id: ${creature_id}
+# name: ${creature_name}
+# body_type: ${base_type}
+# rank: ${rank}
+# faction: ${faction}
+# color: ${hex_color}
+# stats:
+#   attack: ${attack}
+#   hp: ${hp}
+#   defense: ${defense}
+# abilities: ${if selected_body.abilities then selected_body.abilities.common else 0}
+# cost: ${rank * 2 + 3}"
 
 # Write creature to file
 filename = "cards/creatures/${creature_id}.yaml"

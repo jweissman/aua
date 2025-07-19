@@ -79,7 +79,7 @@ module Aua
         val = stmt.value
 
         case stmt.type
-        when :id, :let, :send, :member_access then evaluate_simple(stmt)
+        when :nihil, :id, :let, :send, :member_access then evaluate_simple(stmt)
         when :member_assignment then eval_member_assignment(val[0], val[1], val[2])
         when :type_declaration then eval_type_declaration(val[0], val[1])
         when :function_definition then eval_function_definition(val)
@@ -120,6 +120,7 @@ module Aua
       def evaluate_simple(stmt)
         val = stmt.value
         case stmt.type
+        when :nihil then Nihil.new
         when :id then eval_id(val)
         when :let then eval_let(val[0], evaluate_one(val[1]))
         when :send then eval_send(val[0], val[1], *val[2..])

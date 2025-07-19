@@ -1,0 +1,41 @@
+# Simple duel test
+say("=== CREATURE DUEL TEST ===")
+
+# Use hardcoded creature IDs for testing
+creature_a_id = "Dragon_R3_White"
+creature_b_id = "Squire_R3_White"
+
+say("Dueling: ${creature_a_id} vs ${creature_b_id}")
+
+# Load creature data
+creature_a_yaml = load_yaml("cards/creatures/${creature_a_id}.yaml")
+creature_b_yaml = load_yaml("cards/creatures/${creature_b_id}.yaml")
+
+say("Creature A: ${creature_a_yaml.name}")
+say("  └─ ATK:${creature_a_yaml.stats.attack} HP:${creature_a_yaml.stats.hp} DEF:${creature_a_yaml.stats.defense}")
+
+say("Creature B: ${creature_b_yaml.name}")
+say("  └─ ATK:${creature_b_yaml.stats.attack} HP:${creature_b_yaml.stats.hp} DEF:${creature_b_yaml.stats.defense}")
+
+# Simple combat - just one round for testing
+a_attack = creature_a_yaml.stats.attack
+b_defense = creature_b_yaml.stats.defense
+damage = if a_attack > b_defense then a_attack - b_defense else 1
+
+say("${creature_a_yaml.name} attacks for ${damage} damage!")
+
+# Test YAML creation
+combat_log = {
+  duel_id: "${creature_a_id}_vs_${creature_b_id}",
+  winner: creature_a_yaml.name,
+  damage_dealt: damage
+}
+
+# Test dump_yaml
+combat_log_yaml = dump_yaml(combat_log)
+log_filename = "logs/test_duel.yaml"
+write_file(log_filename, combat_log_yaml)
+
+say("✅ Combat log saved to: ${log_filename}")
+
+"SUCCESS"

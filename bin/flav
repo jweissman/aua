@@ -3,390 +3,60 @@
 
 require "bundler/setup"
 require "aua"
-require "yaml"
-require "rainbow/refinement"
-using Rainbow
-
-# Flav - Aura-native task runner
-# Reads Flavfile (YAML) and executes tasks with dependency resolution
-
-class FlavRunner
-  def initialize(flavfile_path = "Flavfile")
-    @flavfile_path = flavfile_path
-    @tasks = {}
-    @executed = {}
-    @pipeline_data = {} # Store data passed between pipeline stages
-    load_flavfile
-  end
-
-  def load_flavfile
-    unless File.exist?(@flavfile_path)
-      puts "No #{@flavfile_path} found in current directory.".color(:red)
-      exit 1
-    end
-
-    begin
-      content = YAML.load_file(@flavfile_path)
-
-      @tasks = {}
-
-      # Handle multiple namespaces
-      if content["app"] && content["app"]["generates"]
-        app_tasks = convert_generates_to_tasks(content["app"]["generates"], "app")
-        @tasks.merge!(app_tasks)
-      end
-
-      if content["test"] && content["test"]["generates"]
-        test_tasks = convert_generates_to_tasks(content["test"]["generates"], "test")
-        @tasks.merge!(test_tasks)
-      end
-
-      # Legacy format
-      if content["tasks"]
-        @tasks.merge!(content["tasks"])
-      end
-
-      if @tasks.empty?
-        puts "No tasks found in #{@flavfile_path}".color(:red)
-        exit 1
-      end
-
-      puts "Loaded #{@tasks.keys.length} tasks from #{@flavfile_path}".color(:green)
-    rescue => e
-      puts "Error loading #{@flavfile_path}: #{e.message}".color(:red)
-      exit 1
-    end
-  end
-
-  def convert_generates_to_tasks(generates_data, namespace = "app")
-    tasks = {}
-
-    if generates_data.is_a?(Array)
-      # Simple array format: [task1, task2, ...]
-      generates_data.each do |item|
-        if item.is_a?(Hash) && item["task"]
-          task_name = item["task"]
-          wants = item["wants"] ? item["wants"].split(/,\s*/) : []
-
-          tasks[task_name] = {
-            "task" => "#{namespace}/generates/#{task_name}.aura",
-            "description" => "Generate #{task_name}",
-            "wants" => wants,
-            "pipeline" => true
-          }
-        end
-      end
-    elsif generates_data.is_a?(Hash)
-      # Nested format: { creatures: [...], house: [...] }
-      generates_data.each do |category, items|
-        if items.is_a?(Array)
-          items.each do |item|
-            if item.is_a?(Hash) && item["task"]
-              task_name = "#{category}:#{item["task"]}"
-              wants = item["wants"] ? item["wants"].split(/,\s*/) : []
-
-              tasks[task_name] = {
-                "task" => "#{namespace}/generates/#{category}/#{item["task"]}.aura",
-                "description" => "Generate #{category} #{item["task"]}",
-                "wants" => wants,
-                "pipeline" => true
-              }
-            end
-          end
-        elsif items.is_a?(Hash)
-          # Handle nested categories like test.generates.creatures
-          items.each do |subcategory, subitems|
-            if subitems.is_a?(Array)
-              subitems.each do |item|
-                if item.is_a?(Hash) && item["task"]
-                  task_name = "#{category}:#{subcategory}:#{item["task"]}"
-                  wants = item["wants"] ? item["wants"].split(/,\s*/) : []
-
-                  tasks[task_name] = {
-                    "task" => "#{namespace}/generates/#{category}/#{subcategory}/#{item["task"]}.aura",
-                    "description" => "Generate #{category} #{subcategory} #{item["task"]}",
-                    "wants" => wants,
-                    "pipeline" => true
-                  }
-                end
-              end
-            end
-          end
-        end
-      end
-    end
-
-    tasks
-  end
-
-  def list_tasks
-    puts "Available tasks:".color(:cyan).bright
-    @tasks.each do |name, config|
-      desc = config["description"] || "No description"
-      wants = config["wants"] || []
-      wants_str = wants.empty? ? "" : " [wants: #{wants.join(', ')}]"
-      pipeline_str = config["pipeline"] ? " 🔗".color(:green) : ""
-      puts "  #{name.color(:yellow)} - #{desc}#{wants_str.color(:blue)}#{pipeline_str}"
-    end
-  end
-
-  def run_task(name)
-    unless @tasks.key?(name)
-      puts "Task '#{name}' not found.".color(:red)
-      list_tasks
-      exit 1
-    end
-
-    # Check if already executed (avoid cycles)
-    if @executed[name]
-      puts "Task '#{name}' already executed.".color(:blue)
-      return @pipeline_data[name] # Return cached pipeline data
-    end
-
-    task_config = @tasks[name]
-
-    # Execute dependencies first and collect their pipeline data
-    wants = task_config["wants"] || []
-    dependency_data = {}
-
-    wants.each do |dep|
-      if dep.include?(":")
-        # Handle task:alias syntax (e.g., creature:a, creature:b)
-        task_name, alias_name = dep.split(":", 2)
-        puts "Running dependency: #{task_name} (as #{alias_name})".color(:blue)
-        dep_result = run_task(task_name)
-        dependency_data[alias_name] = dep_result if dep_result
-      else
-        # Regular dependency
-        puts "Running dependency: #{dep}".color(:blue)
-        dep_result = run_task(dep)
-        dependency_data[dep] = dep_result if dep_result
-      end
-    end
-
-    # Check conditions
-    if task_config["if"]
-      condition_result = evaluate_condition(task_config["if"])
-      unless condition_result
-        puts "Skipping task '#{name}' - condition not met: #{task_config["if"]}".color(:yellow)
-        @executed[name] = true
-        return
-      end
-    end
-
-    if task_config["unless"]
-      condition_result = evaluate_condition(task_config["unless"])
-      if condition_result
-        puts "Skipping task '#{name}' - unless condition met: #{task_config["unless"]}".color(:yellow)
-        @executed[name] = true
-        return
-      end
-    end
-
-    # Execute the task
-    puts "Running task: #{name}".color(:green).bright
-    result = execute_task(name, task_config, dependency_data)
-    @executed[name] = true
-
-    # Store result for pipeline tasks
-    if task_config["pipeline"] && result
-      @pipeline_data[name] = result
-      puts "  └─ Pipeline data: #{result.inspect}".color(:cyan)
-    end
-
-    result
-  end
-
-  def evaluate_condition(condition)
-    # Simple evaluation - for now just check file existence
-    # Later we can execute this as Aura code
-    if condition.start_with?("file_exists:")
-      file_path = condition.sub("file_exists:", "").strip
-      File.exist?(file_path)
-    elsif condition.start_with?("!")
-      # Negation
-      !evaluate_condition(condition[1..-1])
-    else
-      # For now, try to evaluate as Aura code
-      begin
-        result = Aua.run(condition)
-        case result
-        when Aua::Bool then result.value
-        when Aua::Nihil then false
-        else true
-        end
-      rescue
-        false
-      end
-    end
-  end
-
-  def execute_task(name, config, dependency_data = {})
-    start_time = Time.now
-
-    if config["task"]
-      # Execute Aura script
-      script_path = config["task"]
-      if File.exist?(script_path)
-        puts "  └─ Executing Aura script: #{script_path}".color(:blue)
-
-        # For pipeline tasks, we need to execute the script and capture output
-        if config["pipeline"]
-          result = execute_aura_pipeline_script(script_path, dependency_data)
-        else
-          # result = system("aura #{script_path}")
-          # result = system("/home/jweissman/work/games/aua/bin/aura #{script_path}")
-          unless result
-            puts "Task '#{name}' failed with exit code #{$?.exitstatus}".color(:red)
-            exit 1
-          end
-          result = nil # Non-pipeline tasks don't return data
-        end
-      else
-        puts "Script not found: #{script_path}".color(:red)
-        exit 1
-      end
-    elsif config["command"]
-      # Execute shell command
-      command = config["command"]
-      puts "  └─ Executing command: #{command}".color(:blue)
-      result = system(command)
-      unless result
-        puts "Task '#{name}' failed with exit code #{$?.exitstatus}".color(:red)
-        exit 1
-      end
-      result = nil # Shell commands don't return pipeline data
-    elsif config["script"]
-      # Inline Aura script
-      puts "  └─ Executing inline Aura script".color(:blue)
-      begin
-        aura_result = Aua.run(config["script"])
-        puts "  └─ Result: #{aura_result.pretty}".color(:green)
-
-        # If this is a pipeline task, extract the value
-        result = if config["pipeline"]
-          case aura_result
-          when Aua::Str then aura_result.value
-          when Aua::Int then aura_result.value
-          when Aua::Bool then aura_result.value
-          else aura_result.pretty
-          end
-        else
-          nil
-        end
-      rescue => e
-        puts "Inline script failed: #{e.message}".color(:red)
-        exit 1
-      end
-    else
-      puts "Task '#{name}' has no executable content (task, command, or script)".color(:yellow)
-      result = nil
-    end
-
-    duration = ((Time.now - start_time) * 1000).round(2)
-    puts "  └─ Completed in #{duration}ms".color(:green)
-
-    result
-  end
-
-  def execute_aura_pipeline_script(script_path, dependency_data)
-    # Execute the script directly in the Aura VM with dependency data
-
-    begin
-      # Read the script content
-      script_content = File.read(script_path)
-
-      # Create a new VM instance with dependency data in environment
-      vm = Aua.vm # Aua::Runtime::VM.new
-      # interpreter
-
-      # Add dependency data to environment as params hash
-      unless dependency_data.empty?
-        # Convert dependency data to Aura objects
-        aura_params = {}
-        dependency_data.each do |key, value|
-          aura_params[key] = case value
-          when String then Aua::Str.new(value)
-          when Integer then Aua::Int.new(value)
-          when Float then Aua::Float.new(value)
-          when TrueClass, FalseClass then Aua::Bool.new(value)
-          else Aua::Str.new(value.to_s)
-          end
-        end
-
-        # Set params in VM environment
-        vm.env["params"] = Aua::Dict.new(aura_params)
-      end
-
-      # Execute the script
-      result = Aua.run(script_content)
-
-      # Extract the result value for pipeline use
-      case result
-      when Aua::Str
-        result.value
-      when Aua::Int
-        result.value.to_s
-      when Aua::Bool
-        result.value.to_s
-      when Aua::Nihil
-        nil
-      else
-        result.pretty
-      end
-
-    rescue => e
-      puts "Pipeline script failed: #{e.message}".color(:red)
-      puts e.backtrace.join("\n").color(:red)
-      exit 1
-    end
-  end
-end
+require "flav/runner"
+require 'rouge'
 
 # CLI interface
 if ARGV.empty? || ARGV.first == "list"
-  runner = FlavRunner.new
+  runner = Flav::Runner.new
   runner.list_tasks
 elsif ARGV.first == "help"
+  using Rainbow
+  app_name = "flav"
+  emoji = "🕶️"
+  # yaml_code = File.read('Flavfile.example.yaml')
+  example_yaml = <<~YAML
+    group_name:
+      - task: simple_task                # Run group_name/simple_task.aura
+        wants: [dep1, dep2]              # Dependencies
+        description: "What this task does"
+        prefilter:                       # Optional filters
+          - confirm_inputs
+        postfilter:
+          - check_output
+        repeat: 3                        # Repeat the task 3 times
+        if: "condition"                  # Run only if condition is true
+        unless: "condition"              # Skip if condition is true
+
+
+    YAML
+  formatter = Rouge::Formatters::Terminal256.new
+  lexer = Rouge::Lexers::YAML.new
   puts <<~HELP
-    Flav - Aura-native task runner
+    #{emoji} #{app_name.blue}
+    Aura-native task runner
 
     Usage:
-      flav [task_name]    # Run a specific task
-      flav list           # List all available tasks
-      flav help           # Show this help
+      #{app_name} [task_name]    # Run a specific task
+      #{app_name} list           # List all available tasks
+      #{app_name} help           # Show this help
 
-    Flavfile format (YAML):
-      tasks:
-        task_name:
-          description: "What this task does"
-          wants: [dep1, dep2]              # Dependencies
-          if: "condition"                  # Run only if condition is true
-          unless: "condition"              # Skip if condition is true
-          task: "path/to/script.aura"      # Aura script to execute
-          # OR
-          command: "shell command"         # Shell command to execute
-          # OR
-          script: |                        # Inline Aura code
-            say("Hello from inline script!")
+    #{"Task file format (YAML)".blue}
+    A Flavfile specifies tasks in a YAML format.
 
-    Examples:
-      tasks:
-        gen:creature:
-          description: "Generate a creature using structured pipeline"
-          task: "src/freehold/generation/creature.aura"
+    Here's an example:
+    #{formatter.format(lexer.lex(example_yaml))}
 
-        test:
-          description: "Run tests"
-          command: "bundle exec rspec"
-
-        clean:
-          description: "Clean generated files"
-          if: "file_exists:output"
-          command: "rm -rf output/*"
   HELP
 else
   task_name = ARGV.first
-  runner = FlavRunner.new
-  runner.run_task(task_name)
+  opts = ARGV[1..-1].each_with_object({}) do |arg, hash|
+    if arg.start_with?("--")
+      key, value = arg[2..].split("=", 2)
+      hash[key] = value || true
+    end
+  end
+  puts "Running task: #{task_name} with options: #{opts.inspect}"
+  runner = Flav::Runner.new
+  runner.run_task(task_name, opts)
 end

@@ -1,12 +1,12 @@
+---
 id: Rook_R3_White
 name: Elite Rook
 body_type: human
 rank: 3
 faction: White
-color: #ffffff
+color: "#ffffff"
 stats:
   attack: 8
   hp: 16
   defense: 4
-abilities: 0
 cost: 9

@@ -15,12 +15,13 @@ test:
     combat:
       - task: sanity
 
+# app:
+#   generates:
+# Core duel pipeline
 app:
   generates:
-    # Core duel pipeline
     - task: duel
       wants: creature:a, creature:b
-    
     - task: body
     - task: identity
     - task: creature
@@ -37,9 +38,8 @@ app:
       wants: microfaction
     - task: cardset
       wants: identity
-
 # Test harness for FREEHOLD simulation validation
-tasks:
-  "test:freehold":
-    description: "Comprehensive FREEHOLD simulation test suite"
-    task: "test/freehold_simulation_tests.aura"
+# tasks:
+#   "test:freehold":
+#     description: "Comprehensive FREEHOLD simulation test suite"
+#     task: "test/freehold_simulation_tests.aura"

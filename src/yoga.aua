@@ -1,1 +1,2 @@
-# yoga is an aua command runner
+# yoga is an aua command runner (flav successor once that's more stable + aura could handle it?)
+# the idea is we could parse a flav file and execute things the same way??
