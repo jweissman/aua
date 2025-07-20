@@ -314,6 +314,12 @@ module Aua
       Int.new(val)
     end
 
+    define_aura_method(:capit) { Str.new(@value.capitalize) }
+    define_aura_method(:downc) { Str.new(@value.downcase) }
+    define_aura_method(:upc) { Str.new(@value.upcase) }
+    define_aura_method(:len) { Int.new(@value.length) }
+    define_aura_method(:to_ruby_s) { @value.to_s } # Return self as Ruby string
+
     def self.json_schema
       { type: "object", properties: { value: { type: "string" } }, required: ["value"] }
     end
@@ -389,7 +395,6 @@ module Aua
     define_aura_method(:to_ruby_s) do
       aura_send(:to_s).value
     end
-
 
     define_aura_method(:sample) do
       return Nihil.new if @values.empty?
@@ -474,6 +479,7 @@ module Aua
 
     define_aura_method(:and) { Bool.new(fields.any? && _1.value) }  # logical AND
     define_aura_method(:or) { Bool.new(fields.any? || _1.value) }   # logical OR
+    define_aura_method(:keys) { List.new(fields.map { |k| Str.new(k) }, "List<Str>") }
   end
 
   # Structured object for record types
@@ -578,7 +584,6 @@ module Aua
     define_aura_method(:to_ruby_s) do
       aura_send(:to_s).value
     end
-
   end
 
   # Model for user-defined functions (first-class functions with closures)

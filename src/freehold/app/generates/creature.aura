@@ -2,6 +2,8 @@
 # Inputs: params.body, params.identity from pipeline
 # Output: creature data structure
 
+say("Creature params ${params}")
+
 # Get data from pipeline
 rank = 3  # Fixed rank for now
 hex_color = if params then if params.identity then params.identity else "#ffffff" else "#ffffff"
@@ -46,13 +48,16 @@ defense = rank + 1
 
 # Generate creature name with rank prefix
 rank_prefix = if rank == 1 then "Novice" else if rank == 2 then "Trained" else if rank == 3 then "Elite" else if rank == 4 then "Veteran" else "Champion"
-creature_name = "${rank_prefix} ${selected_body.nickname}"
+# moiety = if params.moiety then params.moiety else "Unknown"
+moiety = params.moiety.capit
+creature_name = "${moiety} ${selected_body.nickname}"
 
 # Select faction based on color (simplified)
 faction = if hex_color == "#ffffff" then "White" else if hex_color == "#000000" then "Black" else "Neutral"
 
 # Create creature ID
-creature_id = "${selected_body.nickname}_R${rank}_${faction}"
+# creature_id = "${selected_body.nickname}_R${rank}_${faction}"
+creature_id = "R${rank}_${faction}_${moiety}_${selected_body.nickname}"
 
 # Create creature YAML content
 creature = {
@@ -60,8 +65,10 @@ creature = {
   name: creature_name,
   body_type: base_type,
   rank: rank,
+  prowess: rank_prefix,
   faction: faction,
   color: hex_color,
+  moiety: moiety,
   stats: {
     attack: attack,
     hp: hp,
@@ -71,6 +78,7 @@ creature = {
   cost: rank * 2 + 3
 }
 
+say(creature.to_s)
 creature_yaml = dump_yaml(creature)
 # creature_yaml = "id: ${creature_id}
 # name: ${creature_name}
@@ -86,7 +94,7 @@ creature_yaml = dump_yaml(creature)
 # cost: ${rank * 2 + 3}"
 
 # Write creature to file
-filename = "cards/creatures/${creature_id}.yaml"
+filename = "cards/${faction.downc}/${creature_id}.yaml"
 write_file(filename, creature_yaml)
 
 say("✓ Generated: ${creature_name}")
@@ -95,3 +103,4 @@ say("  └─ Saved to: ${filename}")
 
 # Return creature ID for pipeline
 creature_id
+# creature

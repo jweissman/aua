@@ -1,0 +1,2 @@
+say("rare crit: ${params}")
+# we could lookup creature from id

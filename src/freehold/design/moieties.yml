@@ -1,22 +1,562 @@
 # Simple Moiety List
-# Just the names and basic descriptions - logic stays in code
+moieties:
+  primitive:
+    - type: Clan
+      name: "${region} ${animal} Clan"
+      description: "A tribal group known for their strength and unity."
+      fills:
+        animal: ["Wolf", "Bear", "Eagle", "Lion"]
+        region: ["North", "South", "East", "West"]
+      aspects:
+        - unity
+        - faith
+        - mobility
+        - adventure
+        - resilience
+        - trickery
+    - type: Tribe
+      name: "${tribe} People Tribe of ${landmark}"
+      description: "A nomadic group known for their deep connection to nature."
+      fills:
+        tribe: ["Sky", "Earth", "Water", "Fire"]
+        landmark: ["Mountain", "River", "Forest", "Desert"]
+      aspects:
+        - tribalism
+        - primal
+        - strength
+        - mobility
+        - resilience
+        - negotiation
+  government:
+    - type: Republic
+      name: "${region} ${government} Republic"
+      description: "A democratic government that values freedom and equality."
+      fills:
+        region: ["Northern", "Southern", "Eastern", "Western"]
+        government: ["People's", "Citizens'", "Commonwealth"]
+      aspects:
+        - unity
+        - freedom
+        - justice
+        - balance
+        - negotiation
+        - diplomacy
+    - type: Kingdom
+      name: "${kingdom} Kingdom of ${ruler}"
+      description: "A monarchy ruled by a wise and just leader."
+      fills:
+        kingdom: ["Golden", "Silver", "Emerald", "Crimson"]
+        ruler: ["King", "Queen", "Emperor", "Empress"]
+      aspects:
+        - power
+        - influence
+        - honor
+        - ambition
+        - unity
+        - diplomacy
+    - type: Empire
+      name: "${adjective} ${empire} of ${territory}"
+      description: "A vast empire that spans multiple regions and cultures."
+      fills:
+        adjective: ["Iron", "Silver", "Golden", "Crimson", "Emerald"]
+        empire: ["Empire", "Dominion", "Realm", "Imperium"]
+        territory: ["Arcadia", "Elysium", "Avalon", "Eden", "Utopia"]
+      aspects:
+        - power
+        - influence
+        - ambition
+        - unity
+        - diplomacy
+    - type: Confederation
+      name: "${confederation} Confederation of ${adjective} ${states}"
+      description: "A loose alliance of independent states that work together for mutual benefit."
+      fills:
+        confederation: ["Northern", "Southern", "Eastern", "Western"]
+        states: ["States", "Provinces", "Territories"]
+        adjective: ["Free", "Independent", "United"]
+      aspects:
+        - unity
+        - freedom
+        - cooperation
+        - balance
+        - negotiation
+        - diplomacy
 
-white_moieties:
-  - name: "priests"
-    description: "Divine servants focused on healing and protection"
-  - name: "army" 
-    description: "Disciplined military forces maintaining order"
-  - name: "scholars"
-    description: "Keepers of knowledge and arcane wisdom"
-  - name: "merchants"
-    description: "Trade guilds and economic powers"
+  agricultural:
+    - type: Guild
+      name: "${crop} Guild of ${region}"
+      description: "A cooperative focused on sustainable farming practices."
+      fills:
+        crop: ["Wheat", "Corn", "Rice", "Barley"]
+        region: ["Elysium", "Arcadia", "Avalon", "Eden"]
+      aspects:
+        - survival
+        - resilience
+        - wisdom
+        - nature
+        - purity
+        - balance
 
-black_moieties:
-  - name: "shadow"
-    description: "Assassins and spies operating from darkness"
-  - name: "chaos"
-    description: "Forces of destruction and corruption"
-  - name: "necromancy"
-    description: "Death magic practitioners and undead masters"
-  - name: "rebellion"
-    description: "Outcasts and revolutionaries against order"
+    - type: Cooperative
+      name: "${community} Cooperative"
+      description: "A group dedicated to sustainable farming practices."
+      fills:
+        community: ["Green", "Harvest", "Earth", "Sunrise"]
+      aspects:
+        - unity
+        - innovation
+        - nature
+        - survival
+        - resilience
+        - balance
+  occult:
+    - type: Mystery
+      name: "${element} of the ${affect} ${mystery}"
+      fills:
+        element: ["Flame", "Shadow", "Void", "Storm"]
+        affect: ["Radiant", "Enlightened", "Holy", "Iron"]
+        mystery: ["Night", "Dawn", "Twilight", "Eclipse"]
+      aspects:
+        - magic
+        - trickery
+        - darkness
+        - transformation
+        - cunning
+        - chaos
+    - type: Cult
+      name: "${order} of St. ${founder}"
+      description: "A secretive group that practices dark rituals and seeks forbidden knowledge."
+      fills:
+        order: ["Order", "Brotherhood", "Sisterhood", "Coven"]
+        founder: ["Lucius", "Morgana", "Aurelius", "Selene"]
+      aspects:
+        - corruption
+        - innovation
+        - instinct
+        - ambition
+        - freedom
+        - cruelty
+    - type: Heresy
+      name: "${heresy} of the ${deity}"
+      description: "A belief system that deviates from mainstream religious practices."
+      fills:
+        heresy: ["Cult", "Sect", "Faith", "Order"]
+        deity: ["Sun", "Moon", "Stars", "Earth"]
+      aspects:
+        - faith
+        - logic
+        - balance
+        - transformation
+        - growth
+        - wisdom
+  religious:
+    - type: Sect
+      name: "${deity}'s ${servants}"
+      description: "A religious group dedicated to the worship of a specific deity."
+      fills:
+        deity: ["Sol", "Luna", "Terra", "Aether", "Ignis"]
+        servants: ["Chosen", "Discipline", "Acolytes", "Majesty", "Guardians"]
+      aspects:
+        - faith
+        - wisdom
+        - balance
+        - purity
+        - harmony
+        - justice
+    - type: Faith
+      name: "${idea} of ${virtue}"
+      description: "A belief system centered around the worship of a divine entity."
+      fills:
+        idea: ["Light", "Darkness", "Balance", "Wisdom"]
+        virtue: ["Hope", "Kindness", "Courage", "Justice"]
+      aspects:
+        - faith
+        - wisdom
+        - discipline
+        - logic
+        - balance
+        - growth
+    - type: Order
+      name: "${order} of the ${deity}"
+      description: "A monastic order dedicated to the teachings of a specific deity."
+      fills:
+        order: ["Knights", "Paladins", "Monks", "Clerics"]
+        deity: ["Sun", "Moon", "Stars", "Earth"]
+      aspects:
+        - faith
+        - wisdom
+        - discipline
+        - balance
+        - order
+        - protection
+    - type: Church
+      name: "${deity} Church of ${virtue}"
+      description: "A religious institution dedicated to the worship of a specific deity."
+      fills:
+        deity: ["Sol", "Luna", "Terra", "Aether"]
+        virtue: ["Hope", "Wisdom", "Courage", "Justice"]
+      aspects:
+        - faith
+        - wisdom
+        - discipline
+        - protection
+        - healing
+        - light
+  military:
+    - type: Legion
+      name: "${rank} of the ${unit}"
+      description: "An elite military unit known for their discipline and combat prowess."
+      fills:
+        rank: ["General", "Commander", "Captain", "Lieutenant"]
+        unit:
+          ["Iron Guard", "Silver Legion", "Crimson Battalion", "Golden Company"]
+      aspects:
+        - strength
+        - discipline
+        - honor
+        - courage
+        - resilience
+        - unity
+    - type: Army
+      name: "${army} of the ${nation}"
+      description: "A formidable military force that defends the realm."
+      fills:
+        army: ["Royal", "Imperial", "Rebel", "Free"]
+        nation: ["Kingdom", "Empire", "Republic", "Confederation"]
+      aspects:
+        - strength
+        - discipline
+        - honor
+        - courage
+        - resilience
+        - survival
+    - type: Fleet
+      name: "${ship} Fleet"
+      description: "A powerful naval force that dominates the seas."
+      fills:
+        ship: ["Stormbringer", "Wavecrusher", "Sea Serpent", "Ocean's Fury"]
+      aspects:
+        - strength
+        - honor
+        - resilience
+        - survival
+        - wisdom
+        - mobility
+  scientific:
+    - type: Academy
+      name: "${discipline} Academy"
+      description: "An institution dedicated to the study and advancement of knowledge."
+      fills:
+        discipline: ["Arcane", "Philosophical", "Enigmatic"]
+      aspects:
+        - wisdom
+        - knowledge
+        - innovation
+        - logic
+        - balance
+        - order
+    - type: Institute
+      name: "${research} Institute"
+      description: "A research organization focused on scientific discoveries."
+      fills:
+        research:
+          [
+            "Astral",
+            "Biotechnic",
+            "Abstract Dynamic",
+            "Arcane",
+            "Philosophical",
+          ]
+      aspects:
+        - knowledge
+        - innovation
+        - chaos
+        - whimsy
+        - discovery
+        - growth
+    - type: Laboratory
+      name: "${experiment} Laboratory"
+      description: "A facility dedicated to conducting experiments and research."
+      fills:
+        experiment: ["Quantum", "Genetic", "Arcane", "Philosophical"]
+      aspects:
+        - knowledge
+        - innovation
+        - chaos
+        - whimsy
+        - discovery
+        - danger
+  artistic:
+    - type: Guild
+      name: "${art} Guild"
+      description: "A collective of artists dedicated to the pursuit of creativity."
+      fills:
+        art: ["Visual", "Performing", "Literary", "Musical"]
+      aspects:
+        - creativity
+        - expression
+        - inspiration
+        - passion
+        - unity
+        - innovation
+  criminal:
+    - type: Syndicate
+      name: "${syndicate} Syndicate"
+      description: "A powerful criminal organization that controls the underworld."
+      fills:
+        syndicate: ["Shadow", "Iron", "Silver", "Crimson"]
+      aspects:
+        - cunning
+        - ambition
+        - corruption
+        - survival
+        - cruelty
+        - freedom
+    - type: Cartel
+      name: "${cartel} Cartel"
+      description: "A network of criminals involved in illegal activities."
+      fills:
+        cartel: ["Drug", "Arms", "Smuggling", "Pirate"]
+      aspects:
+        - cunning
+        - ambition
+        - corruption
+        - survival
+        - cruelty
+        - freedom
+    - type: Gang
+      name: "${gang} Gang"
+      description: "A street gang known for their territorial control and violence."
+      fills:
+        gang: ["Iron", "Silver", "Crimson", "Black"]
+      aspects:
+        - cunning
+        - ambition
+        - corruption
+        - survival
+        - cruelty
+        - freedom
+  nobility:
+    - type: House
+      name: "${house} House of ${noble}"
+      description: "A noble family known for their wealth and influence."
+      fills:
+        house: ["Golden", "Silver", "Crimson", "Emerald"]
+        noble: ["Aristocrat", "Duke", "Countess", "Baron"]
+      aspects:
+        - wealth
+        - power
+        - influence
+        - honor
+        - ambition
+        - unity
+    - type: Dynasty
+      name: "${dynasty} Dynasty"
+      description: "A ruling family that has maintained power for generations."
+      fills:
+        dynasty: ["Royal", "Imperial", "Noble"]
+      aspects:
+        - power
+        - influence
+        - legacy
+        - honor
+        - ambition
+        - unity
+    - type: Court
+      name: "${court} Court of ${noble}"
+      description: "A royal court where nobles gather to discuss matters of state."
+      fills:
+        court: ["Royal", "Imperial", "Noble"]
+        noble: ["King", "Queen", "Prince", "Princess"]
+      aspects:
+        - power
+        - influence
+        - diplomacy
+        - honor
+        - ambition
+        - unity
+  economic:
+    - type: Consortium
+      name: "${industry} Consortium"
+      description: "A group of businesses that collaborate for mutual benefit."
+      fills:
+        industry: ["Trade", "Mining", "Manufacturing", "Finance"]
+      aspects:
+        - wealth
+        - power
+        - influence
+        - innovation
+        - unity
+        - ambition
+    - type: Corporation
+      name: "${company} Corporation"
+      description: "A large business entity that operates in various sectors."
+      fills:
+        company: ["Tech", "Energy", "Finance", "Retail"]
+      aspects:
+        - wealth
+        - power
+        - influence
+        - innovation
+        - unity
+        - ambition
+    - type: Guild
+      name: "${trade} Guild of ${territory}"
+      description: "A professional association that regulates trade practices."
+      fills:
+        trade: ["Merchant", "Craftsmen", "Artisans", "Venturing"]
+        territory: ["Arcadia", "Elysium", "Avalon", "Eden"]
+      aspects:
+        - wealth
+        - power
+        - influence
+        - innovation
+        - unity
+        - ambition
+    - type: Union
+      name: "${region} ${workers} Union"
+      description: "An organization that represents the interests of workers."
+      fills:
+        region: ["Northern", "Southern", "Eastern", "Western"]
+        workers: ["Labor", "Craftsmen", "Artisans"]
+      aspects:
+        - unity
+        - strength
+        - resilience
+        - justice
+        - negotiation
+        - balance
+  medical:
+    - type: Hospital
+      name: "${hospital} Medical Center"
+      description: "A healthcare facility that provides medical services to the community."
+      fills:
+        hospital: ["Starlight", "Sunrise", "Moonlight", "Harmony"]
+      aspects:
+        - healing
+        - compassion
+        - resilience
+        - knowledge
+        - balance
+        - innovation
+    - type: Clinic
+      name: "${clinic} Health Clinic"
+      description: "A small healthcare facility that offers basic medical care."
+      fills:
+        clinic: ["Green", "Wellness", "Care", "Hope"]
+      aspects:
+        - healing
+        - compassion
+        - resilience
+        - knowledge
+        - balance
+        - innovation
+  construction:
+    - type: Guild
+      name: "${trade} Construction Guild"
+      description: "A professional association that regulates construction practices."
+      fills:
+        trade: ["Stone", "Wood", "Metal", "Glass"]
+      aspects:
+        - strength
+        - resilience
+        - innovation
+        - unity
+        - balance
+        - craftsmanship
+    - type: Company
+      name: "${company} Company"
+      description: "A business entity that specializes in construction projects."
+      fills:
+        company: ["Skyline", "Foundation", "Pinnacle", "Horizon"]
+      aspects:
+        - strength
+        - resilience
+        - innovation
+        - unity
+        - balance
+        - craftsmanship
+  culinary:
+    - type: Guild
+      name: "${cuisine} Culinary Guild"
+      description: "A professional association that promotes culinary arts."
+      fills:
+        cuisine: ["Gourmet", "Fusion", "Traditional", "Modern"]
+      aspects:
+        - creativity
+        - innovation
+        - unity
+        - passion
+        - balance
+        - craftsmanship
+    - type: Restaurant
+      name: "${restaurant} Dining"
+      description: "A dining establishment that offers a unique culinary experience."
+      fills:
+        restaurant: ["Epicurean", "Gastronomic", "Culinary", "Savory"]
+      aspects:
+        - creativity
+        - innovation
+        - unity
+        - passion
+        - balance
+        - craftsmanship
+  toxic:
+    - type: Black Market
+      name: "${market} Black Market"
+      description: "An underground market that deals in illegal goods and services."
+      fills:
+        market: ["Shadow", "Iron", "Silver", "Crimson"]
+      aspects:
+        - cunning
+        - ambition
+        - corruption
+        - survival
+        - cruelty
+        - freedom
+    - type: Anarchist Cell
+      name: "${adjective} ${cell}"
+      description: "A group that opposes authority and seeks to disrupt the status quo."
+      fills:
+        adjective: ["Black", "Ghost", "Invisible", "Shadow"]
+        cell:
+          [
+            "Collective",
+            "Alliance",
+            "Network",
+            "Confederation",
+            "Bloc",
+            "League",
+          ]
+      aspects:
+        - cunning
+        - chaos
+        - corruption
+        - innovation
+        - cruelty
+        - freedom
+mystery:
+  - type: Divine Conspiracy
+    name: "Divine Conspiracy"
+    description: "A secret plan orchestrated by divine beings to influence mortal affairs."
+    aspects:
+      - faith
+      - wisdom
+      - balance
+  - type: Cosmic Enigma
+    name: "Cosmic Enigma"
+    description: "A mysterious force that shapes the universe and its inhabitants."
+    aspects:
+      - mystery
+      - knowledge
+      - chaos
+  - type: Titanomachy
+    name: "Titanomachy"
+    description: "A legendary conflict between the Titans and the Olympians."
+    aspects:
+      - chaos
+      - ambition
+      - power
+      - transformation
+      - legacy
+      - wisdom

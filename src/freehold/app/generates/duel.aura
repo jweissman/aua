@@ -5,28 +5,36 @@
 say("=== CREATURE DUEL SIMULATION ===")
 
 # Get creature IDs from pipeline data
-creature_a_id = if params then if params.a then params.a else "Dragon_R3_White" else "Dragon_R3_White"
-creature_b_id = if params then if params.b then params.b else "Squire_R3_White" else "Squire_R3_White"
+creature_a_id = params.a # if params then if params.a then params.a else "Dragon_R3_White" else "Dragon_R3_White"
+creature_b_id = params.b # if params then if params.b then params.b else "Squire_R3_White" else "Squire_R3_White"
 
 say("Dueling: ${creature_a_id} vs ${creature_b_id}")
 
 # Load creature data
-creature_a_yaml = load_yaml("cards/creatures/${creature_a_id}.yaml")
-creature_b_yaml = load_yaml("cards/creatures/${creature_b_id}.yaml")
+faction = params.faction
+creature_a = load_yaml("cards/${faction}/${creature_a_id}.yaml")
+creature_b = load_yaml("cards/${faction}/${creature_b_id}.yaml")
 
-say("Creature A: ${creature_a_yaml.name}")
-say("  └─ ATK:${creature_a_yaml.stats.attack} HP:${creature_a_yaml.stats.hp} DEF:${creature_a_yaml.stats.defense}")
+fun say_critter(creature)
+  say("Creature A: ${creature.name}")
+  say("  └─ ATK:${creature.stats.attack} HP:${creature.stats.hp} DEF:${creature.stats.defense}")
+end
 
-say("Creature B: ${creature_b_yaml.name}")
-say("  └─ ATK:${creature_b_yaml.stats.attack} HP:${creature_b_yaml.stats.hp} DEF:${creature_b_yaml.stats.defense}")
+say_critter(creature_a)
+say_critter(creature_b)
+# say("Creature A: ${creature_a.name}")
+# say("  └─ ATK:${creature_a.stats.attack} HP:${creature_a.stats.hp} DEF:${creature_a_yaml.stats.defense}")
+# 
+# say("Creature B: ${creature_b.name}")
+# say("  └─ ATK:${creature_b.stats.attack} HP:${creature_b_yaml.stats.hp} DEF:${creature_b_yaml.stats.defense}")
 
 # Initialize combat state
-a_hp = creature_a_yaml.stats.hp
-b_hp = creature_b_yaml.stats.hp
-a_attack = creature_a_yaml.stats.attack
-b_attack = creature_b_yaml.stats.attack
-a_defense = creature_a_yaml.stats.defense
-b_defense = creature_b_yaml.stats.defense
+a_hp = creature_a.stats.hp
+b_hp = creature_b.stats.hp
+a_attack = creature_a.stats.attack
+b_attack = creature_b.stats.attack
+a_defense = creature_a.stats.defense
+b_defense = creature_b.stats.defense
 
 round_num = 1
 max_rounds = 20
@@ -42,24 +50,24 @@ while round_num <= max_rounds && a_hp > 0 && b_hp > 0
   # Creature A attacks Creature B
   damage_to_b = if a_attack > b_defense then a_attack - b_defense else 1
   b_hp = b_hp - damage_to_b
-  say("${creature_a_yaml.name} attacks for ${damage_to_b} damage!")
-  say("${creature_b_yaml.name} HP: ${b_hp + damage_to_b} → ${b_hp}")
+  say("${creature_a.name} attacks for ${damage_to_b} damage!")
+  say("${creature_b.name} HP: ${b_hp + damage_to_b} → ${b_hp}")
   
   # Check if B is defeated
   if b_hp <= 0
     winner = "creature_a"
-    say("💀 ${creature_b_yaml.name} is defeated!")
+    say("💀 ${creature_b.name} is defeated!")
   else
     # Creature B attacks Creature A
     damage_to_a = if b_attack > a_defense then b_attack - a_defense else 1
     a_hp = a_hp - damage_to_a
-    say("${creature_b_yaml.name} attacks for ${damage_to_a} damage!")
-    say("${creature_a_yaml.name} HP: ${a_hp + damage_to_a} → ${a_hp}")
+    say("${creature_b.name} attacks for ${damage_to_a} damage!")
+    say("${creature_a.name} HP: ${a_hp + damage_to_a} → ${a_hp}")
     
     # Check if A is defeated
     if a_hp <= 0
       winner = "creature_b"
-      say("💀 ${creature_a_yaml.name} is defeated!")
+      say("💀 ${creature_a.name} is defeated!")
     end
   end
   
@@ -74,7 +82,7 @@ if round_num > max_rounds
 end
 
 # Determine victor
-victor_name = if winner == "creature_a" then creature_a_yaml.name else if winner == "creature_b" then creature_b_yaml.name else "Draw"
+victor_name = if winner == "creature_a" then creature_a.name else if winner == "creature_b" then creature_b.name else "Draw"
 
 say("🏆 VICTOR: ${victor_name}")
 
@@ -84,12 +92,12 @@ combat_log = {
   participants: {
     creature_a: {
       id: creature_a_id,
-      name: creature_a_yaml.name,
+      name: creature_a.name,
       final_hp: a_hp
     },
     creature_b: {
       id: creature_b_id,
-      name: creature_b_yaml.name,
+      name: creature_b.name,
       final_hp: b_hp
     }
   },
@@ -100,7 +108,7 @@ combat_log = {
     ended_by: if winner == "draw" then "timeout" else "elimination"
   },
   metrics: {
-    total_damage_dealt: (creature_a_yaml.stats.hp - a_hp) + (creature_b_yaml.stats.hp - b_hp),
+    total_damage_dealt: (creature_a.stats.hp - a_hp) + (creature_b.stats.hp - b_hp),
     combat_efficiency: if winner != "draw" then (max_rounds - round_num + 1) else 0
   }
 }

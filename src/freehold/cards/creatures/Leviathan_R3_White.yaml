@@ -1,10 +1,12 @@
 ---
 id: Leviathan_R3_White
-name: Elite Leviathan
+name: Government Leviathan
 body_type: mythical
 rank: 3
+prowess: Elite
 faction: White
 color: "#ffffff"
+moiety: government
 stats:
   attack: 15
   hp: 19

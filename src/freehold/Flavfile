@@ -1,45 +1,37 @@
 # Flavfile 0.1
 
-# Wrap a CLI around existing scripts:
-test:
-  generates:
-    creatures:
-      - task: assembly
-      - task: distribution
-      - task: threat
-      - task: alignment
-    house:
-      - task: consistency
-    squad:
-      - task: integrity
-    combat:
-      - task: sanity
+# Could Wrap a CLI around existing scripts:
+# test:
+#   generates:
+#     creatures:
+#       - task: assembly
+#       - task: distribution
+#       - task: threat
+#       - task: alignment
+#     house:
+#       - task: consistency
+#     squad:
+#       - task: integrity
+#     combat:
+#       - task: sanity
 
 # app:
 #   generates:
 # Core duel pipeline
 app:
   generates:
-    - task: duel
-      wants: creature:a, creature:b
     - task: body
     - task: identity
-    - task: creature
-      wants: body, identity
-    - task: archetype
-      wants: creature
-    - task: faction
-      wants: identity
     - task: moiety
-      wants: faction
-    - task: microfaction
-      wants: moiety
-    - task: squad
-      wants: microfaction
-    - task: cardset
-      wants: identity
-# Test harness for FREEHOLD simulation validation
-# tasks:
-#   "test:freehold":
-#     description: "Comprehensive FREEHOLD simulation test suite"
-#     task: "test/freehold_simulation_tests.aura"
+    - task: faction
+    - task: archetype
+    # script: load_yaml('design/archetypes.yml').archetypes.keys.sample
+    # (which has subtypes), microtype (subtype + subtype...)
+    # - task: moiety (which 'are' subtypes, but in the sim layer)
+
+    - task: creature
+      wants: body, identity, moiety
+    - task: rare.creature
+      wants: creature, archetype
+    - task: duel
+      wants: faction, creature:a, creature:b

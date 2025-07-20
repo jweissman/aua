@@ -3,7 +3,7 @@ duel_id: Dragon_R3_White_vs_Squire_R3_White
 participants:
   creature_a:
     id: Dragon_R3_White
-    name: Elite Dragon
+    name: Elite Toxic Dragon
     final_hp: 11
   creature_b:
     id: Squire_R3_White
@@ -11,7 +11,7 @@ participants:
     final_hp: -8
 result:
   winner: creature_a
-  victor_name: Elite Dragon
+  victor_name: Elite Toxic Dragon
   rounds: 2
   ended_by: elimination
 metrics:

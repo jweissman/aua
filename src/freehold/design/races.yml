@@ -1,6 +1,7 @@
 races:
   human:
     aspects:
+      - unity
       - adaptability
       - curiosity
       - resilience
@@ -8,6 +9,7 @@ races:
       - innovation
   elven:
     aspects:
+      - faith
       - grace
       - wisdom
       - nature
@@ -20,6 +22,7 @@ races:
       - greed
       - fortitude
       - craftsmanship
+      - adventure
   orcish:
     aspects:
       - ferocity
@@ -27,6 +30,7 @@ races:
       - honor
       - survival
       - strength
+      - negotiation
   draconic:
     aspects:
       - majesty
@@ -42,6 +46,8 @@ races:
       - nature
       - whimsy
       - magic
+      - faith
+      - mobility
   undead:
     aspects:
       - decay
