@@ -65,7 +65,7 @@ creature = {
   name: creature_name,
   body_type: base_type,
   rank: rank,
-  prowess: rank_prefix,
+  # prowess: rank_prefix,
   faction: faction,
   color: hex_color,
   moiety: moiety,

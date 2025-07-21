@@ -1,0 +1,8 @@
+say("Generating creature archetype...")
+data = load_yaml("design/archetypes.yml")
+archetypes = data.archetypes
+key = archetypes.keys.sample
+say("Selected subtype: ${key}")
+archetype = archetypes[key].sample
+say("--> Selected Archetype: ${archetype}")
+archetype

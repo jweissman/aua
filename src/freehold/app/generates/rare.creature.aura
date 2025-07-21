@@ -1,2 +1,28 @@
 say("rare crit: ${params}")
-# we could lookup creature from id
+# we could lookup creature from id + apply the archetype
+
+creature = load_yaml("cards/${faction.downc}/${params.creature}.yaml")
+
+guidance = "You may suggest one name. It must be expressive and suggestive but brief. It should contain only English characters. You do not need to respond conversationally or explain why your example is appropriate. It is very, very, very important to respond only with a 1-3 word name."
+name = """${guidance}. Please come up with a name for this creature (${creature.name}) with archetype ${archetype}, faction ${faction} and moiety ${creature.moiety}. The stats are: ${creature.stats.attack} ATK, ${creature.stats.hp} HP, ${creature.stats.defense} DEF. The rank is ${creature.rank}. The color is ${creature.color}. The body type is ${creature.body_type}. The cost is ${creature.cost}. Please provide a unique and fitting name that reflects the creature's characteristics and archetype. It should be exactly 2-3 words long, with the first letter of each word capitalized. Avoid using any special characters or numbers. The name should be suitable for a fantasy creature card in a game setting. Just give the name without any additional text or explanation."""
+say("Generated name for creature: ${name}")
+
+rarified_creature = {
+  id: creature.id,
+  archetype: archetype,
+  name: name,
+  body_type: creature.body_type,
+  rank: creature.rank,
+  faction: faction,
+  color: creature.color,
+  moiety: creature.moiety,
+  stats: creature.stats,
+  cost: (creature.rank * 2 + 5)
+}
+
+filename = "cards/${faction.downc}/${name}.yaml"
+write_file(filename, dump_yaml(rarified_creature))
+
+say("✓ Generated: ${name}")
+say("  └─ Saved to: ${filename}")
+rarified_creature

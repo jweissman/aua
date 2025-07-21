@@ -1,0 +1,3 @@
+say("creature set")
+say("params: ${params}")
+say("  creatures: ${params.creature.to_s}")

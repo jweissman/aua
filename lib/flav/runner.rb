@@ -98,10 +98,13 @@ module Flav
                    exit 1
                  end
 
+      # Create cache key that includes nonce for proper isolation
+      cache_key = nonce ? "#{name}:#{nonce}" : name
+      
       # Check if already executed (avoid cycles)
-      if @executed[name] && !nonce # == @pipeline_data[name]["nonce"]
+      if @executed[cache_key]
         puts "Task '#{name}' already executed.".color(:blue)
-        return @pipeline_data[name] # Return cached pipeline data
+        return @pipeline_data[cache_key] # Return cached pipeline data
       end
 
       task_config = @tasks[name]
@@ -112,15 +115,34 @@ module Flav
 
       wants.each do |dep|
         if dep.include?(":")
-          # Handle task:alias syntax (e.g., creature:a, creature:b)
-          task_name, alias_name = dep.split(":", 2)
-          puts "Running dependency: #{task_name} (as #{alias_name})".color(:blue)
-          dep_result = run_task(task_name, current_path: task_config["materialized_path"])
-          dependency_data[alias_name] = dep_result if dep_result
+          # Handle task:alias syntax (e.g., creature:a, creature:b) or task:count syntax (e.g., creature:300)
+          task_name, suffix = dep.split(":", 2)
+          
+          # Check if suffix is numeric (repetition count) or alias
+          if suffix.match?(/^\d+$/)
+            # Numeric suffix - handle as repetition
+            count = suffix.to_i
+            puts "Running dependency: #{task_name} (#{count} times)".color(:blue)
+            combined_nonce = nonce ? "#{nonce}:#{task_name}" : task_name
+            results = []
+            count.times do |i|
+              dep_result = run_task(task_name, current_path: task_config["materialized_path"], nonce: "#{combined_nonce}:#{i}")
+              results << dep_result if dep_result
+            end
+            dependency_data[task_name] = results
+          else
+            # Alias suffix - handle as aliased dependency
+            alias_name = suffix
+            puts "Running dependency: #{task_name} (as #{alias_name})".color(:blue)
+            # Combine parent nonce with alias to ensure uniqueness across iterations
+            combined_nonce = nonce ? "#{nonce}:#{alias_name}" : alias_name
+            dep_result = run_task(task_name, current_path: task_config["materialized_path"], nonce: combined_nonce)
+            dependency_data[alias_name] = dep_result if dep_result
+          end
         else
-          # Regular dependency
+          # Regular dependency - propagate nonce to ensure full isolation
           puts "Running dependency: #{dep}".color(:blue)
-          dep_result = run_task(dep, current_path: task_config["materialized_path"])
+          dep_result = run_task(dep, current_path: task_config["materialized_path"], nonce: nonce)
           dependency_data[dep] = dep_result if dep_result
         end
       end
@@ -130,7 +152,7 @@ module Flav
         condition_result = evaluate_condition(task_config["if"])
         unless condition_result
           puts "Skipping task '#{name}' - condition not met: #{task_config["if"]}".color(:yellow)
-          @executed[name] = true
+          @executed[cache_key] = true
           return
         end
       end
@@ -139,7 +161,7 @@ module Flav
         condition_result = evaluate_condition(task_config["unless"])
         if condition_result
           puts "Skipping task '#{name}' - unless condition met: #{task_config["unless"]}".color(:yellow)
-          @executed[name] = true
+          @executed[cache_key] = true
           return
         end
       end
@@ -147,11 +169,11 @@ module Flav
       # Execute the task
       puts "Running task: #{name}".color(:green).bright
       result = execute_task(name, task_config, dependency_data)
-      @executed[name] = true
+      @executed[cache_key] = true
 
       # Store result for pipeline tasks
       if task_config["pipeline"] && result
-        @pipeline_data[name] = result
+        @pipeline_data[cache_key] = result
         puts "  └─ Pipeline data: #{result.inspect}".color(:cyan)
       end
 

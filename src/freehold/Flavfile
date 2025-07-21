@@ -25,13 +25,13 @@ app:
     - task: moiety
     - task: faction
     - task: archetype
-    # script: load_yaml('design/archetypes.yml').archetypes.keys.sample
-    # (which has subtypes), microtype (subtype + subtype...)
-    # - task: moiety (which 'are' subtypes, but in the sim layer)
-
     - task: creature
       wants: body, identity, moiety
     - task: rare.creature
-      wants: creature, archetype
+      wants: creature, archetype, faction
     - task: duel
       wants: faction, creature:a, creature:b
+    - task: creature.set
+      wants: faction, creature:30, rare.creature:10
+    - task: threat.eval
+      wants: creature.set
