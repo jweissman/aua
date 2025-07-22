@@ -1,0 +1,80 @@
+mods:
+  starving:
+    overlay:
+      power: 2
+      toughness: -2
+      agility: -1
+    aspects:
+      - hunger
+      - survival
+      - decay
+      - resilience
+  hologram:
+    overlay:
+      power: -4
+    aspects:
+      - illusion
+      - light
+      - hallucination
+      - derealization
+      - mirror
+      - deception
+  zombie:
+    overlay:
+      power: -2
+      agility: -2
+    aspects:
+      - decay
+      - darkness
+      - corruption
+      - resilience
+      - persistence
+      - eternity
+  berserk:
+    overlay:
+      power: 3
+      toughness: -1
+      agility: 1
+    aspects:
+      - rage
+      - aggression
+      - chaos
+      - destruction
+      - strength
+      - survival
+  ghost:
+    overlay:
+      power: -2
+      agility: -2
+    aspects:
+      - ethereal
+      - wisdom
+      - magic
+      - balance
+      - freedom
+      - memory
+  fortified:
+    overlay:
+      power: 1
+      toughness: 3
+      agility: -1
+    aspects:
+      - defense
+      - resilience
+      - strategy
+      - protection
+      - healing
+      - strength
+  cursed:
+    overlay:
+      power: -2
+      toughness: -2
+      agility: -2
+    aspects:
+      - ruin
+      - sparkles
+      - darkness
+      - insanity
+      - corruption
+      - derealization
+      - hallucination

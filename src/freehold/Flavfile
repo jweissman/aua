@@ -32,6 +32,6 @@ app:
     - task: duel
       wants: faction, creature:a, creature:b
     - task: creature.set
-      wants: faction, creature:30, rare.creature:10
-    - task: threat.eval
-      wants: creature.set
+      wants: faction, creature:3, rare.creature:1
+    - name: prowess
+      command: ruby furnace.rb all-pairs

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Furnace Combat Viewer</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        button:hover {
+            background: #00ff00;
+            color: #1a1a1a;
+        }
+        
+        .battle-area {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .grid-container {
+            border: 2px solid #00ff00;
+            padding: 10px;
+            background: #222;
+        }
+        
+        .combat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 2px;
+            margin: 10px;
+        }
+        
+        .cell {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .cell:nth-child(odd) {
+            background: #2a2a2a;
+        }
+        
+        .cell:nth-child(even) {
+            background: #1a1a1a;
+        }
+        
+        .unit {
+            color: #ffffff;
+            text-shadow: 0 0 5px currentColor;
+            animation: spawn 0.5s ease-in;
+        }
+        
+        .unit.low-hp {
+            color: #ff6666;
+            animation: hurt 0.3s ease-in-out;
+        }
+        
+        .unit.moving {
+            animation: move 0.5s ease-in-out;
+        }
+        
+        .unit.attacking {
+            animation: attack 0.3s ease-in-out;
+        }
+        
+        @keyframes spawn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes move {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes attack {
+            0% { transform: scale(1); color: #ffffff; }
+            50% { transform: scale(1.3); color: #ff0000; }
+            100% { transform: scale(1); color: #ffffff; }
+        }
+        
+        @keyframes hurt {
+            0% { background: transparent; }
+            50% { background: #ff0000; }
+            100% { background: transparent; }
+        }
+        
+        .event-log {
+            width: 400px;
+            height: 400px;
+            background: #111;
+            border: 2px solid #00ff00;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        
+        .event {
+            padding: 2px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .event.attack { color: #ff6666; }
+        .event.move { color: #66ccff; }
+        .event.defeat { color: #ff0000; font-weight: bold; }
+        
+        .status {
+            text-align: center;
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid #444;
+            background: #222;
+        }
+        
+        .hp-display {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            font-size: 10px;
+            background: #333;
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚔️ FURNACE COMBAT VIEWER ⚔️</h1>
+        
+        <div class="controls">
+            <button onclick="startRandomBattle()">Random Battle</button>
+            <button onclick="stopBattle()">Stop</button>
+            <button onclick="clearGrid()">Clear</button>
+        </div>
+        
+        <div class="status" id="status">Ready to battle...</div>
+        
+        <div class="battle-area">
+            <div class="grid-container">
+                <h3 style="text-align: center; margin-top: 0;">Combat Grid</h3>
+                <div class="combat-grid" id="grid">
+                    <div class="cell" data-x="0" data-y="0"></div>
+                    <div class="cell" data-x="1" data-y="0"></div>
+                    <div class="cell" data-x="2" data-y="0"></div>
+                    <div class="cell" data-x="0" data-y="1"></div>
+                    <div class="cell" data-x="1" data-y="1"></div>
+                    <div class="cell" data-x="2" data-y="1"></div>
+                </div>
+            </div>
+            
+            <div class="event-log" id="eventLog">
+                <h3 style="margin-top: 0;">Event Log</h3>
+                <div id="events"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let combatants = {};
+        let currentTurn = 0;
+        let lastCombatantData = [];
+
+        function getCell(x, y) {
+            return document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        }
+
+        function addEvent(message, type = '') {
+            const events = document.getElementById('events');
+            const event = document.createElement('div');
+            event.className = `event ${type}`;
+            event.textContent = `[${currentTurn}] ${message}`;
+            events.appendChild(event);
+            events.scrollTop = events.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function clearGrid() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.textContent = '';
+                cell.className = 'cell';
+            });
+            document.getElementById('events').innerHTML = '<h3 style="margin-top: 0;">Event Log</h3>';
+            combatants = {};
+            currentTurn = 0;
+        }
+
+        function placeUnit(name, x, y, hp) {
+            const cell = getCell(x, y);
+            const char = name[0].toUpperCase();
+            cell.innerHTML = `
+                <span class="unit">${char}</span>
+                <div class="hp-display">${hp}</div>
+            `;
+            cell.className = 'cell';
+            
+            // Store unit data
+            combatants[name] = { x, y, hp, char, maxHp: hp };
+        }
+
+        function moveUnit(name, fromX, fromY, toX, toY) {
+            const fromCell = getCell(fromX, fromY);
+            const toCell = getCell(toX, toY);
+            const unit = combatants[name];
+            
+            if (unit) {
+                // Clear old position
+                fromCell.innerHTML = '';
+                fromCell.className = 'cell';
+                
+                // Place at new position with animation
+                toCell.innerHTML = `
+                    <span class="unit moving">${unit.char}</span>
+                    <div class="hp-display">${unit.hp}</div>
+                `;
+                
+                // Update stored position
+                unit.x = toX;
+                unit.y = toY;
+                
+                setTimeout(() => {
+                    const unitEl = toCell.querySelector('.unit');
+                    if (unitEl) unitEl.classList.remove('moving');
+                }, 500);
+            }
+        }
+
+        function attackAnimation(attackerName, targetName, damage, targetHpAfter) {
+            const attacker = combatants[attackerName];
+            const target = combatants[targetName];
+            
+            if (attacker && target) {
+                const attackerCell = getCell(attacker.x, attacker.y);
+                const targetCell = getCell(target.x, target.y);
+                
+                // Attacker animation
+                const attackerUnit = attackerCell.querySelector('.unit');
+                if (attackerUnit) {
+                    attackerUnit.classList.add('attacking');
+                    setTimeout(() => attackerUnit.classList.remove('attacking'), 300);
+                }
+                
+                // Target damage animation and HP update
+                const targetUnit = targetCell.querySelector('.unit');
+                const hpDisplay = targetCell.querySelector('.hp-display');
+                
+                if (targetUnit && hpDisplay) {
+                    targetCell.classList.add('hurt');
+                    target.hp = targetHpAfter;
+                    hpDisplay.textContent = targetHpAfter;
+                    
+                    // Low HP visual
+                    if (targetHpAfter < target.maxHp / 3) {
+                        targetUnit.classList.add('low-hp');
+                    }
+                    
+                    setTimeout(() => targetCell.classList.remove('hurt'), 300);
+                }
+            }
+        }
+
+        function defeatUnit(name) {
+            const unit = combatants[name];
+            if (unit) {
+                const cell = getCell(unit.x, unit.y);
+                cell.innerHTML = '💀';
+                cell.style.color = '#666';
+                delete combatants[name];
+            }
+        }
+
+        function handleEvent(event) {
+            const data = JSON.parse(event.data);
+            
+            switch (data.type) {
+                case 'combat_setup':
+                    clearGrid();
+                    updateStatus('Combat starting...');
+                    addEvent('=== Combat Setup ===');
+                    lastCombatantData = data.combatants;
+                    data.combatants.forEach((c, i) => {
+                        addEvent(`${i + 1}. ${c.name} [${c.faction}/${c.moiety}] ATK:${c.attack} HP:${c.hp} DEF:${c.defense}`);
+                    });
+                    break;
+                    
+                case 'unit_placed':
+                    const [x, y] = data.position;
+                    const combatant = lastCombatantData.find(c => c.name === data.unit);
+                    if (combatant) {
+                        placeUnit(data.unit, x, y, combatant.hp);
+                        addEvent(`${data.unit} positioned at (${x},${y})`);
+                    }
+                    break;
+                    
+                case 'combat_start':
+                    updateStatus('⚔️ Combat in progress...');
+                    addEvent('=== Combat Begin ===');
+                    break;
+                    
+                case 'turn_start':
+                    currentTurn = data.turn;
+                    addEvent(`--- Turn ${data.turn} ---`);
+                    break;
+                    
+                case 'move':
+                    moveUnit(data.unit, data.from[0], data.from[1], data.to[0], data.to[1]);
+                    addEvent(`${data.unit} moves from (${data.from.join(',')}) → (${data.to.join(',')})`, 'move');
+                    break;
+                    
+                case 'attack':
+                    attackAnimation(data.attacker, data.target, data.damage, data.target_hp_after);
+                    addEvent(`${data.attacker} attacks ${data.target} for ${data.damage} damage`, 'attack');
+                    break;
+                    
+                case 'defeat':
+                    defeatUnit(data.unit);
+                    addEvent(`${data.unit} is defeated!`, 'defeat');
+                    break;
+                    
+                case 'victory':
+                    updateStatus(`🏆 Victory: ${data.winners.join(', ')}`);
+                    addEvent(`Victory: ${data.winners.join(', ')}`, 'defeat');
+                    break;
+                    
+                case 'stream_end':
+                    updateStatus('Combat complete!');
+                    addEvent('=== Combat End ===');
+                    break;
+            }
+        }
+
+        function startRandomBattle() {
+            stopBattle();
+            clearGrid();
+            updateStatus('Connecting...');
+            
+            eventSource = new EventSource('/random');
+            eventSource.onmessage = handleEvent;
+            eventSource.onerror = () => updateStatus('Connection error');
+        }
+
+        function stopBattle() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        }
+
+        // Auto-start a battle on load
+        window.onload = () => {
+            setTimeout(startRandomBattle, 1000);
+        };
+    </script>
+</body>
+</html>
