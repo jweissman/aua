@@ -28,3 +28,10 @@ gem "gosu", "~> 1.4"
 gem "ruby-lsp-rspec", "~> 0.1.25", group: :development
 
 gem "rouge", "~> 4.5"
+
+gem "sinatra", "~> 4.1"
+
+gem "sinatra-contrib", "~> 4.1"
+
+gem "rackup", "~> 2.2"
+gem "puma", "~> 6.6"

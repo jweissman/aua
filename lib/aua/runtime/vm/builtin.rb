@@ -23,6 +23,9 @@ module Aua
             path = file_path.value
             Aua.logger.info "Writing to file: #{path}"
             begin
+              # mkdir -p to ensure the directory exists
+              dir = File.dirname(path)
+              FileUtils.mkdir_p(dir) unless Dir.exist?(dir)
               File.open(path, "w") do |file|
                 file.write(content.value)
               end

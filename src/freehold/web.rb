@@ -9,6 +9,7 @@ class FurnaceViewer < Sinatra::Base
  using Rainbow
  helpers Sinatra::Streaming
 
+  set :furnace, Furnace.new
 
   set :public_folder, File.dirname(__FILE__) + '/static'
   set :views, File.dirname(__FILE__) + '/views'
@@ -42,20 +43,32 @@ class FurnaceViewer < Sinatra::Base
   end
 
   get "/random" do
+    cards = settings.furnace.random_cards(2)
+    stream_combat cards, furnace: settings.furnace
+  end
+
+  get "/fight/:card1/:card2" do
+    card1 = params[:card1]
+    card2 = params[:card2]
+
+    cards = settings.furance.find_cards_by_name(card1, card2)
+    stream_combat cards, furnace: settings.furnace
+  end
+
+  def stream_combat(cards, furnace:)
     content_type "text/event-stream"
     headers "Cache-Control" => "no-cache",
             "Access-Control-Allow-Origin" => "*"
 
     stream(:keep_open) do |out|
       begin
-        furnace = Furnace.new
-        cards = furnace.random_cards(2)
+        spatial = true
 
         # Create SSE logger
         logger = SSELogger.new(out)
 
         # Run combat
-        combat = Furnace::Combat.new(cards, spatial: true, logger: logger)
+        combat = Furnace::Combat.new(cards, spatial:, logger:)
         combat.run_combat
 
         out.puts "data: {\"type\":\"stream_end\"}\n\n"

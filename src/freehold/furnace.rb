@@ -1,13 +1,236 @@
 #!/usr/bin/env ruby
 
+require "stringio"
 require "yaml"
 require "json"
+require "securerandom"
 require "rainbow/refinement"
 require "fileutils"
 
 # Furnace - A generalized, spatialized duel framework for card combat simulation
 class Furnace
   using Rainbow
+
+  module Text
+    def self.array_to_sentence(*items)
+      if items.empty?
+        ""
+      elsif items.length == 1
+        items.first.to_s
+      elsif items.length == 2
+        "#{items[0]} and #{items[1]}"
+      else
+        "#{items[0..-2].join(", ")} and #{items.last}"
+      end
+    end
+  end
+
+  class Effect < Data.define(:type, :on_impact, :aspect, :damage, :lifegain, :duration, :configuration)
+    # effect dsl
+    class DSL
+      class Location
+        def initialize(pos, combat)
+          @position = pos
+          @combat = combat
+        end
+
+        def damage(amount)
+          @combat.apply_damage(@position, amount)
+        end
+      end
+
+      class CardGroup < Array
+        def initialize(cards)
+          super(cards)
+        end
+
+        def alive?
+          any?(&:alive?)
+        end
+
+        def dead?
+          none?(&:alive?)
+        end
+
+        def middle
+          x_coords = map { |c| c.position.x }
+          y_coords = map { |c| c.position.y }
+
+          mid_x = (x_coords.min + x_coords.max) / 2.0
+          mid_y = (y_coords.min + y_coords.max) / 2.0
+
+          Position.new(mid_x.round, mid_y.round)
+        end
+
+        # we want a clustering, on a scale of 1-5, indicating how far apart the cards are in the battle space
+        # if they're all adjacent, it's 5, if they're all scattered, it's 1
+        # def clustering
+        # end
+
+        # def clustered?
+        # end
+
+        def to_s
+          map(&:to_s).join(", ")
+        end
+      end
+
+      ############ DSL Methods ############
+
+      def initialize(combat, card)
+        @combat = combat
+        @card = card
+      end
+
+      def condition(expr) = process(expr)
+      def target(expr)    = process(expr)
+      def apply(expr, target)
+        # process(expr)
+        @active_target = target
+        ret = instance_eval(expr)
+        @active_target = nil
+
+        ret
+      end
+
+      private
+
+      def enemies
+        CardGroup.new(@combat.combatants.select { |c| c.alive? && c.alignment != @card.alignment })
+      end
+
+      def spot
+        Location.new(@active_target, @combat)
+      end
+
+      def process(expression)
+        return false unless expression
+        ret = instance_eval(expression)
+        puts "[DSL] Processing expression: #{expression.inspect} => #{ret.inspect}"
+        ret
+      end
+    end
+  end
+
+  Ability = Data.define(:trigger, :target, :condition, :effects) do
+  end
+
+  Action = Data.define(:type, :card, :target) do
+  end
+
+  class CardBody
+
+    def initialize(abilities: [])
+      @abilities = abilities
+    end
+
+    def any?
+      @abilities.any?
+    end
+
+    def each(&block)
+      @abilities.each(&block)
+    end
+
+    # note this only works if we _don't_ do compiled IR to avoid parsing strings at runtime
+    def friendly_text
+      body_items = []
+      @abilities.map do |ability|
+        ability_text = StringIO.new
+        if ability.trigger
+          ability_text << "When #{ability.trigger}, "
+        end
+
+        if ability.condition
+          ability_text << "if #{ability.condition}, "
+        end
+
+        ability_text << "target #{ability.target} with " if ability.target
+
+        # ability.effects.each do |effect|
+        #   ability_text << effect # "#{effect} "
+        #   # effect_list = []
+        #   # if effect.damage
+        #   #   effect_list << " hits for #{effect.damage} damage"
+        #   # end
+        #   # if effect.lifegain
+        #   #   effect_list << " heals you for #{effect.lifegain} life"
+        #   # end
+        #   #ability_text << effect_list.join(" and ")
+        # end
+        ability_text << Text.array_to_sentence(*ability.effects)
+        body_items << ability_text.string
+      end
+
+      body_items #.join(". ") + "."
+    end
+
+    def self.parse(ability_data = [])
+      puts "Parsing abilities: #{ability_data.inspect}"
+      abilities = ability_data.map do |ability|
+        effect = ability['effect']
+        # fx = ability['effects'].map do |effect|
+        #   Effect.new(
+        #     type: effect['type'],
+        #     on_impact: effect['on_impact'],
+        #     aspect: effect['aspect'],
+        #     damage: effect['damage'],
+        #     lifegain: effect['lifegain'],
+        #     duration: effect['duration'],
+        #     configuration: effect['configuration'] || {}
+        #   )
+        # end
+
+        # compile to mini-ir
+        # trigger = ->(combat, card) { card.instance_eval(ability['trigger'], combat) if ability['trigger'] }
+        # target = ->(combat, card) { card.instance_eval(ability['target'], combat) if ability['target'] }
+        # condition = ->(combat,card) { card.instance_eval(ability['condition'], combat) if ability['condition'] }
+        # effects = ->(combat, card) { fx.each { |effect| card.instance_eval("effect_#{effect['type']}", combat) } }
+        Ability.new(#trigger:, target:, condition:, effects:)
+          trigger: ability['trigger'],
+          target: ability['target'],
+          condition: ability['condition'],
+          effects: [effect]
+        )
+      end
+      new(abilities:)
+    end
+  end
+
+  class RulesEngine
+    def gather_events(combat)
+      @events ||= {}
+      living = combat.combatants.select(&:alive?)
+      @events[combat.turn_count] ||= living.map do |card|
+        combat.take_spatial_turn(card)
+      end
+    end
+
+    def movement_phase(combat)
+      # Decide and collect moves for all units
+      gather_events(combat).select do |event|
+        event.is_a?(Array) && event.first == :advance
+      end
+    end
+
+    def action_phase(combat)
+      # Decide and collect attacks for all units
+      gather_events(combat).select do |event|
+        event.is_a?(Array) && event.first == :attack
+      end
+    end
+
+    def resolution_phase(combat, attacks)
+      # Apply all attacks, resolve damage, check defeats
+      attacks.each do |event|
+        if event.is_a?(Array) && event.first == :attack
+          attacker = event[1]
+          target = event[2][:target]
+          combat.attack(attacker, target)
+        end
+      end
+    end
+  end
 
   # Event logging for structured output
   class EventLogger
@@ -135,7 +358,7 @@ class Furnace
 
   # Represents a card in combat
   class Card
-    attr_reader :id, :name, :faction, :moiety, :body_type, :max_hp
+    attr_reader :id, :name, :faction, :moiety, :body_type, :max_hp, :abilities
     attr_accessor :hp, :position, :alignment
 
     def initialize(data)
@@ -150,7 +373,11 @@ class Furnace
       @attack = @stats["attack"] || 5
       @defense = @stats["defense"] || 0
       @position = nil
-      @alignment = moiety || faction # Basic alignment = moiety, fallback to faction
+      @abilities = CardBody.parse(data["abilities"] || [])
+      puts "Card created: #{name} (#{faction}/#{moiety}) -- #{@abilities.friendly_text}" # if @abilities.any?
+      @alignment = SecureRandom.uuid # Unique identifier for combat alignment
+
+      # moiety || faction # Basic alignment = moiety, fallback to faction
     end
 
     def attack_power
@@ -181,6 +408,10 @@ class Furnace
 
     def detailed_info
       "#{name} [#{faction}/#{moiety}] ATK:#{attack_power} HP:#{hp}/#{max_hp} DEF:#{defense_power}"
+    end
+
+    def enemies(combat)
+      combat.combatants.select { |c| c.alive? && c.alignment != alignment }
     end
   end
 
@@ -336,8 +567,10 @@ class Furnace
     end
   end
 
+
   # Combat simulation engine
   class Combat
+
     attr_reader :grid, :combatants, :logger, :turn_count
 
     def initialize(cards, spatial: true, logger: nil)
@@ -384,34 +617,76 @@ class Furnace
       end
     end
 
-    def run_combat
-      @logger.log_event(:combat_start, { spatial: @spatial })
+    def rules_engine
+      @rules_engine ||= RulesEngine.new
+    end
 
+    def run_combat
       until combat_over?
         @turn_count += 1
-        @logger.log_event(:turn_start, { turn: @turn_count })
-
+        moves = rules_engine.movement_phase(self)
+        apply_moves(moves)
+        attacks = rules_engine.action_phase(self)
+        rules_engine.resolution_phase(self, attacks)
+        logger.log_event(:turn_start, { turn: turn_count })
         @grid.display if @spatial && @logger.instance_variable_get(:@mode) == :verbose
-
-        # Each living card gets a turn
-        living_cards = @combatants.select(&:alive?)
-        living_cards.each do |card|
-          next if card.dead?
-
-          if @spatial
-            take_spatial_turn(card)
-          else
-            take_simple_turn(card)
-          end
-
-          break if combat_over?
-        end
+        # sleep 0.2
       end
-
       finalize_combat
     end
 
+    def apply_moves(move_list)
+      move_list.each do |event|
+        if event.is_a?(Array) && event.first == :advance
+          puts "Moving #{event[1].name} towards #{event[2][:target].name}"
+          card = event[1]
+          target = event[2][:target]
+          move_towards(card, target)
+        else
+          raise "Invalid move event: #{event.inspect}"
+        end
+      end
+    end
+
+    def evaluate_condition(condition, card)
+      puts "Evaluating condition: #{condition.inspect} for card: #{card.name}"
+      if condition
+        Effect::DSL.new(self, card).condition(condition)
+      else
+        true
+      end
+    end
+
+    def resolve_targets(target, card)
+      puts "Resolving targets for #{card.name} with target: #{target.inspect}"
+      [Effect::DSL.new(self, card).target(target)]
+    end
+
+    def apply_effect(effect, card, target)
+      puts "Applying effect: #{effect.inspect} from #{card.name} to #{target}"
+      Effect::DSL.new(self, card).apply(effect, target)
+    end
+
+    def execute_abilities(card)
+      card.abilities.each do |ability|
+        next unless evaluate_condition(ability.condition, card)
+        targets = resolve_targets(ability.target, card)
+        ability.effects.each do |effect|
+          targets.each do |target|
+            apply_effect(effect, card, target)
+          end
+        end
+      end
+    end
+
     def take_spatial_turn(card)
+      if card.abilities.any?
+        effect_actions = execute_abilities(card)
+        if effect_actions.any?
+          return effect_actions
+        end
+      end
+
       enemies = @combatants.select { |c| c.alive? && c.alignment != card.alignment }
       return if enemies.empty?
 
@@ -426,10 +701,14 @@ class Furnace
       distance = card_pos.manhattan_distance_to(enemy_pos)
 
       if distance <= 1
-        attack(card, nearest_enemy)
+        # attack(card, nearest_enemy)
+        # [ :attack, card, target: nearest_enemy ]
+        Action[:attack, card, nearest_enemy ]
       else
         # Try to move closer
-        move_towards(card, nearest_enemy)
+        # move_towards(card, nearest_enemy)
+        # [ :advance, card, target: nearest_enemy ]
+        Action[:advance, card, nearest_enemy]
       end
     end
 
@@ -475,6 +754,30 @@ class Furnace
                             target: target.name
                           })
       end
+    end
+
+    def apply_damage(position, amount)
+      cards = @grid.cards_with_positions
+      card = cards.find { |pos, c| pos == position }&.last
+      return unless card
+
+      actual_damage = card.take_damage(amount)
+      @logger.log_event(:damage_applied, {
+                          unit: card.name,
+                          position: [position.x, position.y],
+                          damage: actual_damage,
+                          hp_before: card.hp + actual_damage,
+                          hp_after: card.hp
+                        })
+
+      if card.dead?
+        @logger.log_event(:unit_defeated, {
+                            unit: card.name,
+                            position: [position.x, position.y]
+                          })
+      end
+
+      actual_damage
     end
 
     def attack(attacker, defender)
@@ -598,16 +901,29 @@ class Furnace
   def initialize(cards_dir: "cards")
     @cards_dir = cards_dir
     @available_cards = []
+    @factions = {}
     load_cards
   end
 
   def load_cards
-    pattern = File.join(@cards_dir, "**", "*.yaml")
-    Dir.glob(pattern).each do |file_path|
-      card_data = YAML.load_file(file_path)
-      @available_cards << card_data if card_data&.dig("stats")
-    rescue StandardError => e
-      puts "Warning: Could not load #{file_path}: #{e.message}".color(:yellow)
+    factions = ["white", "black"]
+
+    factions.each do |faction|
+      pattern = File.join(@cards_dir, faction, "*.yaml")
+      Dir.glob(pattern).each do |file_path|
+        begin
+          card_data = YAML.load_file(file_path)
+          if card_data && card_data["stats"]
+            @available_cards << card_data
+            @factions[faction] ||= []
+            @factions[faction] << card_data["name"]
+          else
+            puts "Warning: Skipping invalid card file #{file_path}".color(:yellow)
+          end
+        rescue StandardError => e
+          puts "Warning: Could not load #{file_path}: #{e.message}".color(:yellow)
+        end
+      end
     end
 
     puts "Loaded #{@available_cards.length} cards".color(:green)
@@ -621,7 +937,7 @@ class Furnace
     names.map do |name|
       card = @available_cards.find { |c| c["name"]&.downcase == name.downcase }
       unless card
-        puts "Card not found: #{name}".color(:red)
+        warn "Card not found: #{name}".color(:red)
         exit 1
       end
       card

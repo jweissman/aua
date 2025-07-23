@@ -32,13 +32,21 @@ module Flav
         content = YAML.load_file(@flavfile_path)
         leaves = flatten_tree(content)
         @tasks = leaves.to_h do |materialized_path, item|
-          task_name = item["task"]
+          task_name = item["task"] || item["name"]
           wants = item["wants"] ? item["wants"].split(/,\s*/) : []
           path = materialized_path.split(":")
           namespace = path[0..-2].join("/")
           material_path_up_to = path[0..-2].join(":")
+
+          task_idea = if item["task"] || item["script"]
+            { "script" => "#{namespace}/#{task_name}.aura" }
+          elsif item["command"]
+            { "command" => item["command"] }
+          end
+
           [materialized_path, {
-            "task" => "#{namespace}/#{task_name}.aura",
+            # "script" => "#{namespace}/#{task_name}.aura",
+            **task_idea,
             "materialized_path" => material_path_up_to,
             "description" => "Generate #{task_name}",
             "wants" => wants,
@@ -46,6 +54,8 @@ module Flav
             "unless" => item["unless"],
             # "prefilter" => item["prefilter"] || [],
             # "postfilter" => item["postfilter"] || [],
+            "runs" => item["runs"] || :default,
+            "strat" => item["strategy"] || :one_off,
             "repeat" => item["repeat"] || 1,
             "pipeline" => true
           }]
@@ -84,7 +94,7 @@ module Flav
     end
 
     def run_task(name, opts={}, current_path: @default_path, nonce: nil)
-      times = (opts.delete("n") || opts.delete("repeat") || opts.delete("times") || opts.delete("count") || 1).to_i
+      times = (opts.delete("n") || opts.delete("times") || 1).to_i
       return repeat_task(name, opts, current_path:, repeat_count: times) if times > 1
 
       pathed_name = current_path ? "#{current_path}:#{name}" : name
@@ -100,7 +110,7 @@ module Flav
 
       # Create cache key that includes nonce for proper isolation
       cache_key = nonce ? "#{name}:#{nonce}" : name
-      
+
       # Check if already executed (avoid cycles)
       if @executed[cache_key]
         puts "Task '#{name}' already executed.".color(:blue)
@@ -117,7 +127,7 @@ module Flav
         if dep.include?(":")
           # Handle task:alias syntax (e.g., creature:a, creature:b) or task:count syntax (e.g., creature:300)
           task_name, suffix = dep.split(":", 2)
-          
+
           # Check if suffix is numeric (repetition count) or alias
           if suffix.match?(/^\d+$/)
             # Numeric suffix - handle as repetition
@@ -186,7 +196,7 @@ module Flav
 
     private
 
-    def flatten_tree(tree, prefix = "", item_key = 'task')
+    def flatten_tree(tree, prefix = "", item_keys = ['task', 'name'])
       flat_leaves = {}
       tree.each do |key, value|
         if value.is_a?(Hash)
@@ -198,6 +208,7 @@ module Flav
           value.each do |item|
             if item.is_a?(Hash)
               # Each item is a task definition
+              item_key = item_keys.find { |k| item.key?(k) }
               item_name = "#{prefix}#{key}:#{item[item_key]}"
               flat_leaves[item_name] = item
             else
@@ -238,12 +249,14 @@ module Flav
       end
     end
 
-    def execute_task(name, config, dependency_data = {})
+    def execute_task(name, configuration, dependency_data = {})
       start_time = Time.now
-
-      if config["task"]
+      config = configuration.dup.freeze
+      puts "  └─ Task configuration: #{config.inspect}".color(:cyan)
+      puts "  └─ Executing task: #{name}".color(:blue)
+      if config["task"] || config["script"]
         # Execute Aura script
-        script_path = config["task"]
+        script_path = config["task"] || config["script"]
         if File.exist?(script_path)
           puts "  └─ Executing Aura script: #{script_path}".color(:blue)
 
@@ -260,39 +273,52 @@ module Flav
             result = nil # Non-pipeline tasks don't return data
           end
         else
-          puts "Script not found: #{script_path}".color(:red)
-          exit 1
+          warn "Script not found: #{script_path}".color(:red)
+          raise "Script not found: #{script_path}"
+          # exit 1
         end
       elsif config["command"]
         # Execute shell command
         command = config["command"]
         puts "  └─ Executing command: #{command}".color(:blue)
         result = system(command)
-        unless result
-          puts "Task '#{name}' failed with exit code #{$?.exitstatus}".color(:red)
-          exit 1
-        end
-        result = nil # Shell commands don't return pipeline data
-      elsif config["script"]
-        # Inline Aura script
-        puts "  └─ Executing inline Aura script".color(:blue)
-        begin
-          aura_result = Aua.run(config["script"])
-          puts "  └─ Result: #{aura_result.pretty}".color(:green)
+        # TODO prep pipeline env if there's a strategy here and/or kickstart repetition...?
 
-          # If this is a pipeline task, extract the value
-          result = if config["pipeline"]
-                     case aura_result
-                     when Aua::Str then aura_result.value
-                     when Aua::Int then aura_result.value
-                     when Aua::Bool then aura_result.value
-                     else aura_result.pretty
-                     end
-                   end
-        rescue StandardError => e
-          puts "Inline script failed: #{e.message}".color(:red)
-          exit 1
-        end
+        # note: one of the 'wants' is marked as 'it' and this is the structure to all-pairs through if we have that strategy
+        # we can generalize later i guess since this does seem useful at non-command level too and in some ways much more awkward...?
+
+        # round trip with aura vm
+        # aura_run("dict = {}")
+        # all_pairs.each do |a,b|
+        #   round_tripped_command = aura_run("\"#{configuration['command']}\"", { a:, b: })
+        #   # debugger
+        #   round_tripped_result = aura_run("dict.merge(#{result})")
+        #   unless result
+        #     puts "Task '#{name}' failed with exit code #{$?.exitstatus}".color(:red)
+        #     exit 1
+        #   end
+        # end
+        # result = aura_run("dict") # Shell commands don't return pipeline data
+      # elsif config["script"]
+      #   # Inline Aura script
+      #   puts "  └─ Executing inline Aura script".color(:blue)
+      #   begin
+      #     aura_result = Aua.run(config["script"])
+      #     puts "  └─ Result: #{aura_result.pretty}".color(:green)
+
+      #     # If this is a pipeline task, extract the value
+      #     result = if config["pipeline"]
+      #                case aura_result
+      #                when Aua::Str then aura_result.value
+      #                when Aua::Int then aura_result.value
+      #                when Aua::Bool then aura_result.value
+      #                else aura_result.pretty
+      #                end
+      #              end
+      #   rescue StandardError => e
+      #     puts "Inline script failed: #{e.message}".color(:red)
+      #     exit 1
+      #   end
       else
         puts "Task '#{name}' has no executable content (task, command, or script)".color(:yellow)
         result = nil
@@ -309,6 +335,13 @@ module Flav
 
       # Read the script content
       script_content = File.read(script_path)
+
+      puts "  └─ Running Aura script: #{script_path}".color(:blue)
+
+      aura_run(script_content, dependency_data)
+    end
+
+    def aura_run(script_content, dependency_data = {})
 
       # Create a new VM instance with dependency data in environment
       vm = Aua.vm # Aua::Runtime::VM.new
